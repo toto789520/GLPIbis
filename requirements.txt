@@ -1,4 +1,4 @@
 pysqlite3
 datetime
-os-sys
+os-sys==1.9.2
 Cython
