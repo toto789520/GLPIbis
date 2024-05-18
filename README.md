@@ -1,2 +1,6 @@
 ## indépanse a install : 
-pip install mysql-connector-python
+pysqlite3
+datetime
+os-sys!=1.9.3
+Cython
+
