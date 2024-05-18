@@ -74,6 +74,3 @@ def test_delete_user(db):
 
     # Close the database connection
     conn.close()
-
-
-test_adduser("database.db")
