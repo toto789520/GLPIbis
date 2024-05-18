@@ -19,7 +19,6 @@ def adduser(by, age, tel, email, password):
         'age': age,
         'tel': tel,
         'email': email,
-        'tiqué_ouver': 0,  # Assuming this is a default value
         'hashed_password': str(hashed_password.hexdigest())
     }
 
@@ -30,11 +29,12 @@ def adduser(by, age, tel, email, password):
         print("L'e-mail existe déjà dans la base de données.")
         raise ValueError("L'e-mail existe déjà dans la base de données.")
 
-    cursor.execute("""INSERT INTO USEUR(ID, dete_de_crétion, name, age, tel, email, tiqué_ouver, hashed_password) 
-                    VALUES(:ID, :dete_de_crétion, :name, :age, :tel, :email, :tiqué_ouver, :hashed_password)""", data)
+    cursor.execute("""INSERT INTO USEUR(ID, dete_de_crétion, name, age, tel, email, hashed_password) 
+                    VALUES(:ID, :dete_de_crétion, :name, :age, :tel, :email, :hashed_password)""", data)
     conn.commit()
     conn.close()
     print("Utilisateur ajouté avec succès!")
+    return True
 
 
 def verify_password(password, email):
@@ -68,8 +68,10 @@ def delete_user(email):
         conn.commit()
         conn.close()
         print("Utilisateur supprimé avec succès!")
+        return True
     else:
         print("Pas de compte associé à cet e-mail.")
+        return False
 
 
 # Example usage:
