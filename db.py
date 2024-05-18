@@ -28,6 +28,7 @@ def adduser(by, age, tel, email, password):
     if existing_user:
         print("L'e-mail existe déjà dans la base de données.")
         raise ValueError("L'e-mail existe déjà dans la base de données.")
+        return False
 
     cursor.execute("""INSERT INTO USEUR(ID, dete_de_crétion, name, age, tel, email, hashed_password) 
                     VALUES(:ID, :dete_de_crétion, :name, :age, :tel, :email, :hashed_password)""", data)
@@ -38,7 +39,7 @@ def adduser(by, age, tel, email, password):
 
 
 def verify_password(password, email):
-    conn = sqlite3.connect('.\database.db')  # Updated connection string
+    conn = sqlite3.connect('database.db')  # Updated connection string
     cursor = conn.cursor()
     cursor.execute("SELECT hashed_password FROM USEUR WHERE email=?", (email,))
     existing_user = cursor.fetchone()
@@ -58,7 +59,7 @@ def verify_password(password, email):
 
 
 def delete_user(email):
-    conn = sqlite3.connect('.\database.db')  # Updated connection string
+    conn = sqlite3.connect('database.db')  # Updated connection string
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM USEUR WHERE email=?", (email,))
     existing_user = cursor.fetchone()
@@ -77,4 +78,4 @@ def delete_user(email):
 # Example usage:
 # adduser("coucou", 16, "0643744076", "opm852159@gmail.com", "test123")
 # verify_password("test123", "opm852159@gmail.com")
-# delete_user("opm852159@gmail.com")
+# delete_user("test_user@example.com")
