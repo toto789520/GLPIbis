@@ -15,7 +15,9 @@ def test_create_tiqué():
     assert tiqué_id is not None
     conn = sqlite3.connect('database.db')  # Updated connection string
     cursor = conn.cursor()
-    cursor.execute("DELETE * FROM tiqué WHERE ID_tiqué=?", (tiqué_id,))
+    cursor.execute("DELETE FROM tiqué WHERE ID_tiqué=?", (tiqué_id,))
+    conn.commit()
+    conn.close()
 
 def test_close_tiqué():
     # Create a tiqué for testing
