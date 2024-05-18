@@ -1,6 +1,4 @@
 pysqlite3
-hashlib
 datetime
 secrets
 os
-pytest
