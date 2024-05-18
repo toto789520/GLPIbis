@@ -24,7 +24,7 @@ def adduser(by, age, tel, email, password):
 
     cursor.execute("SELECT * FROM USEUR WHERE email=?", (email,))
     existing_user = cursor.fetchone()
-
+    print(existing_user)
     if existing_user:
         print("L'e-mail existe déjà dans la base de données.")
         raise ValueError("L'e-mail existe déjà dans la base de données.")
