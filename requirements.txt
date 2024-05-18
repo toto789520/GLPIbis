@@ -1,3 +1,4 @@
 pysqlite3
 datetime
 os-sys
+build-essential
