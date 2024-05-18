@@ -16,6 +16,10 @@ def test_adduser(db):
     conn = sqlite3.connect(db)
     cursor = conn.cursor()
 
+    # Add the user to the database
+    adduser(by, age, tel, email, password)
+    conn.commit()
+    
     # Check if the user has been added
     cursor.execute("SELECT * FROM USEUR WHERE email=?", (email,))
     new_user = cursor.fetchone()
