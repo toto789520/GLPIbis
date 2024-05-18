@@ -19,9 +19,6 @@ def test_adduser(db):
     # Check if the user has been added
     cursor.execute("SELECT * FROM USEUR WHERE email=?", (email,))
     new_user = cursor.fetchone()
-    print("************************",new_user[1],"  ",str(datetime.date.today()))
-    print("************************",new_user[2],"  ",by)
-    print("************************",new_user[3],"  ",age)
     assert new_user is not None, "User not added to the database"
     assert new_user[1] == str(datetime.date.today()), "Incorrect date of creation"  # Resolved the warning message
     assert new_user[2] == age, "Incorrect age"
