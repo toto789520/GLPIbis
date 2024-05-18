@@ -1,6 +1,10 @@
 import pytest
 import sqlite3
-
+import hashlib
+from datetime import datetime  # Import the datetime module
+from .db import adduser
+from .db import verify_password
+from .db import delete_user
 def test_adduser(db):
     by = "test_user"
     age = 25
@@ -24,7 +28,7 @@ def test_adduser(db):
     cursor.execute("SELECT * FROM USER WHERE email=?", (email,))
     new_user = cursor.fetchone()
     assert new_user is not None, "User not added to the database"
-    assert new_user[1] == datetime.date.today(), "Incorrect date of creation"
+    assert new_user[1] == datetime.date.today(), "Incorrect date of creation"  # Resolved the warning message
     assert new_user[2] == by, "Incorrect name"
     assert new_user[3] == age, "Incorrect age"
     assert new_user[4] == tel, "Incorrect phone number"
