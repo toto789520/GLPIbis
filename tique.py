@@ -4,7 +4,7 @@ import datetime
 import secrets
 
 def generate_valid_table_name(length=16):
-    valid_chars = string.ascii_letters + string.digits
+    valid_chars = string.ascii_letters
     return ''.join(secrets.choice(valid_chars) for _ in range(length))
 
 def create_tiqué(ID_user, titre, description, gravité, tags):
