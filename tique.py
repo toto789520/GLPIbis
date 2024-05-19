@@ -1,10 +1,16 @@
+import string
 import sqlite3
 import datetime
 import secrets
+
+def generate_valid_table_name(length=16):
+    valid_chars = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(valid_chars) for _ in range(length))
+
 def create_tiqué(ID_user, titre, description, gravité, tags):
     conn = sqlite3.connect('database.db')  # Updated connection string
     cursor = conn.cursor()
-    ID_tiqué =str(secrets.token_urlsafe(16))
+    ID_tiqué = generate_valid_table_name(16)
     data = {
         'ID_user': ID_user,
         'ID_tiqué': ID_tiqué,
@@ -16,6 +22,11 @@ def create_tiqué(ID_user, titre, description, gravité, tags):
     }
     cursor.execute("""INSERT INTO tiqué(ID_tiqué, ID_user, date_open, titre, descipition, gavite, tag) 
                     VALUES(:ID_tiqué, :ID_user, :date_open, :titre, :descipition, :gavite, :tags)""", data)
+    conn.commit()
+    conn.close()
+    conn = sqlite3.connect('comm.db')  # Updated connection string
+    cursor = conn.cursor()
+    cursor.execute(f"""CREATE TABLE {ID_tiqué}(ID_user NUMERIC, date TEXT, commenter TEXT);""")
     conn.commit()
     conn.close()
     print("Tiqué ajouté avec succès!")
