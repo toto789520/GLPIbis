@@ -20,6 +20,15 @@ def db():
             password_hash TEXT NOT NULL
         )
     """)
-    conn.commit()
+    # Loop to find and delete users with emails ending in '@example.com'
+    while True:
+        cursor.execute("SELECT email FROM USEUR WHERE email LIKE ?", ('%@example.com',))
+        result = cursor.fetchone()
+        if result:
+            email_to_delete = result[0]
+            cursor.execute("DELETE FROM USEUR WHERE email = ?", (email_to_delete,))
+            conn.commit()
+        else:
+            break
     yield db_file
     conn.close()

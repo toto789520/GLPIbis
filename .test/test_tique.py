@@ -28,8 +28,13 @@ def test_create_tiqué():
 
 
 def test_close_tiqué():
-    # Create a tiqué for testing
-    tiqué_id = create_tiqué(123456, "Sample Tiqué", "This is a sample tiqué.", 1, "tag1, tag2")
+    # Create a tiqué with sample data
+    ID_user = 123456
+    titre = "Sample Tiqué"
+    description = "This is a sample tiqué."
+    gravité = 1
+    tags = "tag1, tag2"
+    tiqué_id = create_tiqué(ID_user, titre, description, gravité, tags)
 
     # Close the tiqué
     result = close_tiqué(tiqué_id)
