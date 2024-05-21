@@ -32,17 +32,26 @@ def create_tiqué(ID_user, titre, description, gravité, tags):
     print("Tiqué ajouté avec succès!")
     return ID_tiqué
 
-def close_tiqué(ID_tiqué):
+def close_tiqué(ID_tiqué, ID_user):
     conn = sqlite3.connect('database.db')  # Updated connection string
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tiqué WHERE ID_tiqué=?", (ID_tiqué,))
+    cursor.execute("SELECT * FROM tiqué WHERE ID_user=?", (ID_user,))
     existing_tiqué = cursor.fetchone()
     if existing_tiqué:
-        cursor.execute("""UPDATE tiqué SET open=0, date_close=? WHERE ID_tiqué=?""", (datetime.date.today(), ID_tiqué))
-        conn.commit()
-        conn.close()
-        print("Tiqué close avec succès!")
-        return True
+        conn.close
+        conn = sqlite3.connect('comm.db')  # Updated connection string
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM {ID_tiqué} WHERE ID_user=?", (ID_user,))
+        existing_tiqué = cursor.fetchone()
+        if existing_tiqué :
+            cursor.execute("""UPDATE tiqué SET open=0, date_close=? WHERE ID_tiqué=?""", (datetime.date.today(), ID_tiqué))
+            conn.commit()
+            conn.close()
+            print("Tiqué close avec succès!")
+            return True
+        else :
+            print("vous avez j'ameis mi de commenter sur le tiqué")
+            raise LookupError("vous avez j'ameis mi de commenter sur le tiqué")
     else:
         print("Pas de tiqué associé à cet ID.")
         raise ValueError("Pas de tiqué associé à cet ID.")

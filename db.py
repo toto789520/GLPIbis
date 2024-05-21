@@ -33,6 +33,13 @@ def adduser(by, age, tel, email, password):
     cursor.execute("""INSERT INTO USEUR(ID, dete_de_crétion, name, age, tel, email, hashed_password) 
                     VALUES(:ID, :dete_de_crétion, :name, :age, :tel, :email, :hashed_password)""", data)
     conn.commit()
+    data = {
+        'ID' : ID,
+        'tiqué_créer' : 0,
+        'tiqué_partisipé' : 0
+    }
+    cursor.execute("""INSERT INTO stsate(ID, tiqué_créer, tiqué_partisipé)""", data)
+    conn.commit()
     conn.close()
     print("Utilisateur ajouté avec succès!")
     return True

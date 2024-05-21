@@ -1,6 +1,6 @@
 import pytest
 import sqlite3
-from tique import create_tiqué, close_tiqué
+from tique import create_tiqué, close_tiqué, now_comment
 def ardclose(ID_tiqué):
     conn = sqlite3.connect('database.db')  # Updated connection string
     cursor = conn.cursor()
@@ -35,7 +35,7 @@ def test_close_tiqué():
     gravité = 1
     tags = "tag1, tag2"
     tiqué_id = create_tiqué(ID_user, titre, description, gravité, tags)
-
+    now_comment(tiqué_id, ID_user, "test tiqué")
     # Close the tiqué
     result = close_tiqué(tiqué_id)
     ardclose(tiqué_id)
