@@ -14,7 +14,7 @@ def adduser(by, age, tel, email, password):
     hashed_password = hashlib.md5(passw.encode())
     data = {
         'ID': ID,
-        'dete_de_crétion': str(datetime.date.today()),
+        'dete_de_creation': str(datetime.date.today()),
         'name': by,
         'age': age,
         'tel': tel,
@@ -30,15 +30,10 @@ def adduser(by, age, tel, email, password):
         raise ValueError("L'e-mail existe déjà dans la base de données.")
         return False
 
-    cursor.execute("""INSERT INTO USEUR(ID, dete_de_crétion, name, age, tel, email, hashed_password) 
-                    VALUES(:ID, :dete_de_crétion, :name, :age, :tel, :email, :hashed_password)""", data)
+    cursor.execute("""INSERT INTO USEUR(ID, dete_de_crétion, name, age, tel, email, hashed_password)
+                    VALUES(:ID, :dete_de_creation, :name, :age, :tel, :email, :hashed_password)""", data)
     conn.commit()
-    data = {
-        'ID' : ID,
-        'tiqué_créer' : 0,
-        'tiqué_partisipé' : 0
-    }
-    cursor.execute("""INSERT INTO stsate(ID, tiqué_créer, tiqué_partisipé)""", data)
+    cursor.execute("INSERT INTO stsate(id_user, tiqué_créer, tiqué_partisipé, comm) VALUES (?, 0, 0, 0)", (ID,))
     conn.commit()
     conn.close()
     print("Utilisateur ajouté avec succès!")
@@ -71,6 +66,8 @@ def delete_user(email, password):
 
     if existing_user:
         cursor.execute("DELETE FROM USEUR WHERE email=?", (email,))
+        conn.commit()
+        cursor.execute("DELETE FROM stsate WHERE id_user=?", (existing_user[0],))
         conn.commit()
         conn.close()
         print("Utilisateur supprimé avec succès!")
@@ -116,6 +113,6 @@ def modify_user(ID_user, by, age, tel, old_email, now_email, old_password, now_p
 
 
 # Example usage:
-# adduser("coucou", 16, "0643744076", "opm852159@gmail.com", "test123")
+adduser("coucou", 16, "0643744076", "opm852159@gmail.com", "test123")
 # verify_password("test123", "opm852159@gmail.com")
-# delete_user("test_user@example.com")
+delete_user("opm852159@gmail.com", "test123")
