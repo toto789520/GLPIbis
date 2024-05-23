@@ -66,7 +66,7 @@ def now_comment(ID_tiqué, ID_user, commenter):
         'hour': datetime.time(),
         'commenter': commenter
     }
-    conn.execute(f"""INSERT INTO {ID_tiqué}(ID_user, date, hour, commenter) VALUES(?,?,?)""",data)
+    conn.execute(f"""INSERT INTO {ID_tiqué}(ID_user, date, hour, commenter) VALUES(?,?,?,?)""",data)
 # test
 # create_tiqué(1515151515,"Tiqué test", "Description test", 1, "tag1, tag2")
 # close_tiqué(input("ID_tiqué"))
