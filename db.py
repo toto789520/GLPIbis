@@ -113,6 +113,6 @@ def modify_user(ID_user, by, age, tel, old_email, now_email, old_password, now_p
 
 
 # Example usage:
-adduser("coucou", 16, "0643744076", "opm852159@gmail.com", "test123")
-# verify_password("test123", "opm852159@gmail.com")
-delete_user("opm852159@gmail.com", "test123")
+# adduser("coucou", 16, "0643744076", "opm852159@gmail.com", "test123")
+# print(verify_password("test123", "opm852159@gmail.com"))
+# delete_user("opm852159@gmail.com", "test123")

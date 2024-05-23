@@ -11,7 +11,7 @@ def hard_delete_user(ID_user, db):
     cursor = conn.cursor()
     cursor.execute("DELETE FROM USEUR WHERE ID=?", (ID_user,))
     conn.commit()
-    cursor.execute("DELETE FROM stsate WHERE ID=?", (ID_user,))
+    cursor.execute("DELETE FROM stsate WHERE id_user=?", (ID_user,))
     conn.commit()
     conn.close()
 
