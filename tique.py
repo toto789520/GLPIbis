@@ -3,6 +3,13 @@ import sqlite3
 import datetime
 import secrets
 
+import datetime
+
+# Get the current date
+current_date = datetime.date.today()
+
+# Get the current date and time
+current_datetime = datetime.datetime.now()
 def generate_valid_table_name(length=16):
     valid_chars = string.ascii_letters
     return ''.join(secrets.choice(valid_chars) for _ in range(length))
@@ -60,13 +67,18 @@ def close_tiqué(ID_tiqué, ID_user):
 def now_comment(ID_tiqué, ID_user, commenter):
     conn = sqlite3.connect('comm.db')  # Updated connection string
     cursor = conn.cursor()
+    current_datetime = datetime.datetime.now()
     data = {
         'ID_user': ID_user,
-        'date': str(datetime.date.today()),
-        'hour': datetime.time(),
+        'date': str(datetime.date.today()),  # Current date
+        'hour': current_datetime.time().strftime("%H:%M:%S"),  # Current time
         'commenter': commenter
     }
-    conn.execute(f"""INSERT INTO {ID_tiqué}(ID_user, date, hour, commenter) VALUES(?,?,?,?)""",data)
+    conn.execute(f"""INSERT INTO {ID_tiqué}(ID_user, date, hour, commenter) VALUES(:ID_user, :date, :hour, :commenter)""", data)
+    conn.commit()
+    conn.close()
 # test
 # create_tiqué(1515151515,"Tiqué test", "Description test", 1, "tag1, tag2")
+now_comment("uosTWpOvqBKHpKlB", 1515151515, "coucou")
+now_comment("uosTWpOvqBKHpKlB", 1515151515, "help")
 # close_tiqué(input("ID_tiqué"))
