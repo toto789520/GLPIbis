@@ -37,7 +37,7 @@ def test_close_tiqué():
     tiqué_id = create_tiqué(ID_user, titre, description, gravité, tags)
     now_comment(tiqué_id, ID_user, "test tiqué")
     # Close the tiqué
-    result = close_tiqué(tiqué_id)
+    result = close_tiqué(tiqué_id, ID_user)
     ardclose(tiqué_id)
     # Check if the tiqué was closed successfully
     assert result is True
