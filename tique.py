@@ -79,6 +79,6 @@ def now_comment(ID_tiqué, ID_user, commenter):
     conn.close()
 # test
 # create_tiqué(1515151515,"Tiqué test", "Description test", 1, "tag1, tag2")
-now_comment("uosTWpOvqBKHpKlB", 1515151515, "coucou")
-now_comment("uosTWpOvqBKHpKlB", 1515151515, "help")
+# now_comment("uosTWpOvqBKHpKlB", 1515151515, "coucou")
+# now_comment("uosTWpOvqBKHpKlB", 1515151515, "help")
 # close_tiqué(input("ID_tiqué"))
