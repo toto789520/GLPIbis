@@ -63,7 +63,7 @@ def now_comment(ID_tiqué, ID_user, commenter):
     data = {
         'ID_user': ID_user,
         'date': str(datetime.date.today()),
-        'hour': int(datetime.time()),
+        'hour': datetime.time(),
         'commenter': commenter
     }
     conn.execute(f"""INSERT INTO {ID_tiqué}(ID_user, date, hour, commenter) VALUES(?,?,?)""",data)
