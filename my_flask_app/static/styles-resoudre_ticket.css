@@ -1,0 +1,26 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Freeman&display=swap');
+*{
+    font-family: "Montserrat";
+}
+
+
+body{
+    margin:0 auto
+}
+.list{
+    font-weight: 700;
+}
+
+.list-gros{
+    font-size: 130%;
+    font-weight: 700;
+}
+
+.tableau a{
+    color: rgb(0, 0, 0);
+    font-size: 20px;
+    text-decoration: none;
+    vertical-align: auto;
+}
