@@ -25,7 +25,7 @@ section.top-page {
     background-size: cover;
     height: 80vh;
     padding: 25px;
-
+}
 .gros-titre {
     color: rgb(247, 255, 247);
     font-size: 80px;
@@ -94,9 +94,9 @@ section.top-page {
       align-items: center;
 
     }
-
+}
 .img-container img{
         width: 100%;
         max-width: none;
         height: auto;
-}
+    }

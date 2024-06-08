@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GLPI/Creation-ticket</title>
+</head>
+<body>
+    <h1>Formulaire avec Flask</h1>
+    <form method="POST">
+        <label for="input_value">Entrez quelque chose :</label>
+        <input type="text" id="input_value" name="input_value" required>
+        <input type="text" id="input_value" name="input_value" required>
+        <input type="text" id="input_value" name="input_value" required>
+        <input type="text" id="input_value" name="input_value" required>
+        <button type="submit">Envoyer</button>
+    </form>
+    {% if result %}
+        <h2>Résultat:</h2>
+        <p>{{ result }}</p>
+    {% endif %}
+</body>
+</html>
