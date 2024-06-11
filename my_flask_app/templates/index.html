@@ -4,43 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GLPI</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
 </head>
 <body>
     <section class="top-page">
         <header>
-            <img src="image\logo.png" alt="logo">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo">
             <section class="ticket">
-                <a href="resoudre_ticket.html">
-                    Résoudre ticket
-                  </a>
-                <a href="creation_ticket.html">
-                    Création de ticket
-                  </a>
-                </section>
+                <a href="new-ticket">Résoudre ticket</a>
+                <a href="creation_ticket.html">Création de ticket</a>
+            </section>
         </header>
         <div class="landing-page">
             <h1 class="gros-titre">GLPI saint-gab</h1>
-                <a class="scroll-down" href="">Scroll ▼</a>
+            <a class="scroll-down" href="">Scroll ▼</a>
         </div>
-
     </section>
 
-</section>
-
-
-<section class="thomasdeseur">
-    <h2 class="section-title">
-        Thomas Deseur
-    </h2>
-    <div class="img-container">
-        <img src="image/deseur.jpg" alt="Image1">
-        <img src="image/deseur2.jpg" alt="Image2">
-        <img src="image/deseur3.jpg" alt="Image3">
-    </div> 
-
-
-</section>
-
+    <section class="thomasdeseur">
+        <h2 class="section-title">Thomas Deseur</h2>
+        <div class="img-container">
+            <img src="{{ url_for('static', filename='image/deseur.jpg') }}" alt="Image1">
+            <img src="{{ url_for('static', filename='image/deseur2.jpg') }}" alt="Image2">
+            <img src="{{ url_for('static', filename='image/deseur3.jpg') }}" alt="Image3">
+        </div>
+    </section>
 </body>
 </html>

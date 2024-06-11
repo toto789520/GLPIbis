@@ -37,7 +37,7 @@ def adduser(by, age, tel, email, password):
     conn.commit()
     conn.close()
     print("Utilisateur ajouté avec succès!")
-    return True
+    return ID
 
 
 def verify_password(password, email):
