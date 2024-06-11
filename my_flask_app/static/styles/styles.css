@@ -21,7 +21,7 @@ header img{
 }
 
 section.top-page {
-    background: url("image/fond.jpg");
+    background: url("../images/fond.jpg");
     background-size: cover;
     height: 80vh;
     padding: 25px;
