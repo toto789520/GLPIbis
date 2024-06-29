@@ -50,6 +50,7 @@
     padding: 10px 20px;
     border-bottom: 1px solid #D00000;
     font-weight: 600;
+    margin-left: 10px;
   }
   .nav-menu li:hover .sous-menu {
     display: block;
