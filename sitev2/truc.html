@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menu de Navigation Vertical</title>
+<link rel="stylesheet" href="stylestruc.css">
+<link rel="stylesheet" href="stylesmenu.css">
+
+</head>
+<body>
+
+    <ul class="nav-menu">
+        <li class="logo">GLPI - Softwer</li>
+        <li class="menu-item">
+            <a href="#">serveur</a>
+            <!-- Sous-menu pour la classe "serveur" -->
+            <ul class="sous-menu">
+                <li><a href="#">Serveur PC</a></li>
+                <li><a href="#">Serveur virtuel</a></li>
+            </ul>
+        </li>
+        <li class="menu-item">
+            <a href="#">windows</a>
+            <!-- Sous-menu pour la classe "windows" -->
+            <ul class="sous-menu">
+                <li><a href="#">Installations Windows/Linux</a></li>
+                <li><a href="#">problèmes Winsows/Linux</a></li>
+            </ul>
+        </li>
+        <li class="menu-item">
+        <a href="#">Rresau</a>
+        <ul class="sous-menu">
+            <li><a href="#">unifi</a></li>
+            <li><a href="#">netgear</a></li>
+            <li><a href="#">wifi</a></li>
+            <li><a href="#">comuniquation</a></li>
+            <li><a href="#">permision</a></li>
+        </ul> 
+    </li>
+        <li class="menu-item"><a href="#">autre</a></li>
+        <li class="logo">Wardewer</li>
+        <li class="menu-item"><a href="#">périferique</a></li>
+        <li class="menu-item"><a href="#">problaime pc</a></li>
+        <li class="menu-item"><a href="#">Rresau (hard)</a></li>
+        <li class="menu-item"><a href="#">autre</a></li>  
+    </ul>
+</ul>
+<form method="get" action="">
+    <fieldset>
+       <legend>Information</legend> <!-- Titre du fieldset --> 
+       <label for="activiter">Problaime ou activiter</label>
+       <input type="text" name="activiter" id="activiter">
+       <label for="prenom">Qui est-ce ?</label>
+       <input type="text" name="Qui ?" id="Qui ?">
+       <label for="lieu">Dans quel salle cela se situe</label>
+       <input type="lieu" name="lieu" id="lieu">
+    </fieldset>
+    <fieldset>
+       <legend>Information supémantaire</legend> <!-- Titre du fieldset -->
+       <p>
+          Faites un souhait que vous voudriez voir exaucé :
+          <input type="radio" name="Information" value="niveau 1" id="niveau 1"> <label for="niveau 1">niveau 1</label>
+          <input type="radio" name="Information" value="niveau 2" id="niveau 2"> <label for="niveau 2">niveau 2</label>
+          <input type="radio" name="Information" value="niveau 3" id="niveau 3"> <label for="niveau 3">niveau 3</label>
+          <input type="radio" name="Information" value="niveau 4" id="niveau 4"> <label for="niveau 4">niveau 4</label>
+          <input type="radio" name="Information" value="niveau 5" id="niveau 5"> <label for="niveau 5">niveau 5</label>
+          <input type="radio" name="Information" value="niveau 6" id="niveau 6"> <label for="niveau 6">niveau 6</label>
+          <input type="radio" name="Information" value="niveau 7" id="niveau 7"> <label for="niveau 7">niveau 7</label>
+          <input type="radio" name="Information" value="niveau 8" id="niveau 8"> <label for="niveau 8">niveau 8</label>
+          <input type="radio" name="Information" value="niveau 9" id="niveau 9"> <label for="niveau 9">niveau 9</label>
+          <input type="radio" name="Information" value="niveau 10" id="niveau 10"> <label for="niveau 10">niveau 10</label>
+       </p>
+       <p>
+          <label for="precisions">Si "Autre", veuillez préciser :</label>
+          <textarea name="precisions" id="precisions" cols="40" rows="4"></textarea>
+       </p>
+    </fieldset>
+</body>
+</html>
