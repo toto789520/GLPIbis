@@ -48,8 +48,8 @@ def add_ticket_route():
     if request.method == 'POST':
         ID = request.cookies.get('ID')
         titre = request.form['titre']
-        description = request.form['tel']
-        gravité = request.form['email']
+        description = request.form['description']
+        gravité = request.form['gravité']
         tags = request.form['tags']
         try:
             create_tiqué(ID,titre,description,gravité,tags)
@@ -58,7 +58,12 @@ def add_ticket_route():
             return response
         except ValueError as e:
             flash(str(e), "error")
-    return render_template('creation_ticket.html')
+    if request.method == 'GET':
+        if request.cookies.get('ID'):
+            return render_template('creation_ticket.html')
+        else :
+            flash("vous devé vous créer un conte dabor", "warning")
+            return render_template('creation_ticket.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
