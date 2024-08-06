@@ -111,6 +111,76 @@ def modify_user(ID_user, by, age, tel, old_email, now_email, old_password, now_p
     # Close the connection
     conn.close()
 
+def who(ID):
+    conn = sqlite3.connect('database.db')  # Updated connection string
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM USEUR WHERE ID=?", (str(ID),))
+    existing_user = cursor.fetchone()
+    print(existing_user)
+    print(str(ID)+" coucou")
+    if existing_user is None:
+        print("ID existe pas dans la base de données.")
+        raise ValueError("ID existe pas dans la base de données.")
+    else:
+        return existing_user[3]
+    
+def state_add_user(type, ID_user, ID_tiqué):
+    conn = sqlite3.connect('database.db')  # Updated connection string
+    cursor = conn.cursor()
+    
+    if type == "tiqué_créer" or "post_comm":
+        try:
+            user = who(ID_user)
+            for i  in user:
+                print(i)
+            if user is None:
+                raise ValueError("id user erreur")
+        except ValueError as e:
+            print(e)
+            return ValueError(e)
+
+        if type == "tiqué_créer":
+            conn.close
+            conn = sqlite3.connect('comm.db')  # Updated connection string
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT * FROM {ID_tiqué} WHERE ID_user=?", (ID_user,))
+            user = cursor.fetchone()
+            int(user[1]) == int(user[1]) +1
+            cursor.execute("""UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?""", user)
+            conn.commit()
+            return True
+        elif type == "post_comm":
+            conn.close
+            conn = sqlite3.connect('comm.db')  # Updated connection string
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT * FROM {ID_tiqué} WHERE ID_user=?", (ID_user,))
+            existing_tiqué = cursor.fetchone()
+            if existing_tiqué:
+                conn = sqlite3.connect('database.db')  # Updated connection string
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM USEUR WHERE ID=?", (ID_user,))
+                user = cursor.fetchone()
+                int(user[3]) == int(user[3]) +1
+                cursor.execute("""UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?""", user)
+                conn.commit()
+                return True
+            else:
+                conn = sqlite3.connect('database.db')  # Updated connection string
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM USEUR WHERE ID=?", (ID_user,))
+                user = cursor.fetchone()
+                int(user[2]) == int(user[2]) +1
+                int(user[3]) == int(user[3]) +1
+                cursor.execute("""UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?""", user)
+                conn.commit()
+                return True
+    else:
+        print("Type invalide.")
+        return False
+
+    conn.close()
+            
 
 # Example usage:
 # adduser("coucou", 16, "0643744076", "opm852159@gmail.com", "test123")

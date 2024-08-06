@@ -5,29 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GLPI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+    <style>
+        table {
+          border-collapse: collapse;
+          width: 100%;
+        }
+        
+        th, td {
+          text-align: left;
+          padding: 8px;
+        }
+        
+        tr:nth-child(even) {background-color: #ffffff;}
+    </style>
 </head>
 <body>
     <section class="top-page">
         <header>
             <img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo">
             <section class="ticket">
-                <a href="new-ticket">Résoudre ticket</a>
-                <a href="creation_ticket.html">Création de ticket</a>
+                <a href="add_user">nouveau utlisateur</a>
+                <a href="new-ticket">Création de ticket</a>
             </section>
         </header>
         <div class="landing-page">
             <h1 class="gros-titre">GLPI saint-gab</h1>
             <a class="scroll-down" href="">Scroll ▼</a>
+            <section class="ticketmaster">
+                <h2 class="section-title">ticket :</h2>
+                {% if result %}
+                    <table>
+                        <tr>
+                            <th>name</th>
+                            <th>def</th>
+                            <th>qui</th>
+                            <th>statu</th>
+                        </tr>
+                        {% for ticket in result %}
+                            <tr>
+                                <td>{{ ticket[5] }}<td>
+                                <td>{{ ticket[7] }}<td>
+                                <td>{{ ticket[1] }}<td>
+                                {% if ticket[8] == 1 %}
+                                    <td>Open<td>
+                                {% else %}
+                                    <td>Close</td>
+                                {% endif %}
+                                <td>
+                                    <form method="POST" action="/ticket">
+                                        <input type="hidden" name="ticket_id" value="{{ ticket[0] }}">
+                                        <button type="submit" name="action" value="open ticket">Open ticket</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                {% else %}
+                    <p>No tickets found.</p>
+                {% endif %}
+            </section>
         </div>
-    </section>
-
-    <section class="thomasdeseur">
-        <h2 class="section-title">Thomas Deseur</h2>
-        <div class="img-container">
-            <img src="{{ url_for('static', filename='image/deseur.jpg') }}" alt="Image1">
-            <img src="{{ url_for('static', filename='image/deseur2.jpg') }}" alt="Image2">
-            <img src="{{ url_for('static', filename='image/deseur3.jpg') }}" alt="Image3">
-        </div>
-    </section>
 </body>
 </html>
