@@ -2,7 +2,6 @@ pysqlite3
 datetime
 os-sys!=1.9.3
 Cython
-time=1.5
 alive_progress
 secrets
 string
