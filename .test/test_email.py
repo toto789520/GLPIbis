@@ -2,6 +2,8 @@ import pytest
 import sys
 import os
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# Ajouter le dossier racine au chemin de recherche des modules
+sys.path.append(project_root)
 from db import adduser
 
 def test_validate_email_format():
