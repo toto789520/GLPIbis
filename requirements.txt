@@ -1,4 +1,3 @@
-secrets
 pysqlite3
 datetime
 os-sys!=1.9.3
