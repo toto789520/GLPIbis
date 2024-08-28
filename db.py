@@ -3,7 +3,7 @@ import hashlib
 import datetime
 import secrets
 import os
-
+from email_validator import validate_email, EmailNotValidError
 def adduser(by, age, tel, email, password):
     path = os.path.dirname(os.path.abspath(__file__))
     db = os.path.join(path, 'database.db')
@@ -28,7 +28,13 @@ def adduser(by, age, tel, email, password):
     if existing_user:
         print("L'e-mail existe déjà dans la base de données.")
         raise ValueError("L'e-mail existe déjà dans la base de données.")
-        return False
+    
+    try:
+        valid = validate_email(email)
+    except EmailNotValidError:
+        raise ValueError("Email Incorrect")
+
+
 
     cursor.execute("""INSERT INTO USEUR(ID, dete_de_crétion, name, age, tel, email, hashed_password)
                     VALUES(:ID, :dete_de_creation, :name, :age, :tel, :email, :hashed_password)""", data)

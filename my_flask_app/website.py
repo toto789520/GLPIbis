@@ -15,6 +15,7 @@ from db import adduser, who, verify_password, tiqué_type, ader_type
 from tique import create_tiqué, list_tiqué, get_info_tiqué, get_info_tiqué_comment, now_comment, close_tiqué
 
 
+
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Necessary for flash messages to work
 
