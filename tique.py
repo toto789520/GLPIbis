@@ -86,9 +86,10 @@ def now_comment(ID_tiqué, ID_user, commenter):
 def list_tiqué(filter_value=None):
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
-
-    if filter_value:
-        cursor.execute("SELECT * FROM tiqué WHERE some_column = ?", (filter_value,))
+    if filter_value == "all":
+        cursor.execute("SELECT * FROM tiqué")
+    elif filter_value!="all":
+        cursor.execute("SELECT * FROM tiqué WHERE tag = ?", (filter_value,))
     else:
         cursor.execute("SELECT * FROM tiqué")
         

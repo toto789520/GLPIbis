@@ -128,12 +128,10 @@ def who(ID):
 def state_add_user(type, ID_user, ID_tiqué):
     conn = sqlite3.connect('database.db')  # Updated connection string
     cursor = conn.cursor()
-    
+    print("state user")
     if type == "tiqué_créer" or "post_comm":
         try:
             user = who(ID_user)
-            for i  in user:
-                print(i)
             if user is None:
                 raise ValueError("id user erreur")
         except ValueError as e:
@@ -141,37 +139,43 @@ def state_add_user(type, ID_user, ID_tiqué):
             return ValueError(e)
 
         if type == "tiqué_créer":
-            conn.close
-            conn = sqlite3.connect('comm.db')  # Updated connection string
-            cursor = conn.cursor()
-            cursor.execute(f"SELECT * FROM {ID_tiqué} WHERE ID_user=?", (ID_user,))
+            cursor.execute(f"SELECT * FROM stsate WHERE id_user=?", (ID_user,))
             user = cursor.fetchone()
-            int(user[1]) == int(user[1]) +1
-            cursor.execute("""UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?""", user)
+            user = list(user)
+            user[1] = int(user[1])+1
+            user = tuple(user)
+            cursor.execute("UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?", user)
             conn.commit()
             return True
         elif type == "post_comm":
+            print("post_comm")
             conn.close
             conn = sqlite3.connect('comm.db')  # Updated connection string
             cursor = conn.cursor()
             cursor.execute(f"SELECT * FROM {ID_tiqué} WHERE ID_user=?", (ID_user,))
             existing_tiqué = cursor.fetchone()
             if existing_tiqué:
+                conn.close
                 conn = sqlite3.connect('database.db')  # Updated connection string
                 cursor = conn.cursor()
-                cursor.execute("SELECT * FROM USEUR WHERE ID=?", (ID_user,))
+                cursor.execute("SELECT * FROM stsate WHERE id_user=?", (ID_user,))
                 user = cursor.fetchone()
-                int(user[3]) == int(user[3]) +1
+                user = list(user)
+                user[3] = int(user[3]) +1
+                user = tuple(user)
                 cursor.execute("""UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?""", user)
                 conn.commit()
                 return True
             else:
+                conn.close
                 conn = sqlite3.connect('database.db')  # Updated connection string
                 cursor = conn.cursor()
-                cursor.execute("SELECT * FROM USEUR WHERE ID=?", (ID_user,))
+                cursor.execute("SELECT * FROM stsate WHERE id_user=?", (ID_user,))
                 user = cursor.fetchone()
-                int(user[2]) == int(user[2]) +1
-                int(user[3]) == int(user[3]) +1
+                user = list(user)
+                user[2] = int(user[2]) +1
+                user[3] = int(user[3]) +1
+                user = tuple(user)
                 cursor.execute("""UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?""", user)
                 conn.commit()
                 return True
@@ -181,7 +185,23 @@ def state_add_user(type, ID_user, ID_tiqué):
 
     conn.close()
             
+def tiqué_type() :
+    conn = sqlite3.connect('database.db')  # Updated connection string
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tiqué_type") 
+    tickets = cursor.fetchall()
+    conn.close()
+    return tickets
 
+def ader_type() :
+    conn = sqlite3.connect('database.db')  # Updated connection string
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM arder") 
+    tickets = cursor.fetchall()
+    conn.close()
+    return tickets
+
+print(tiqué_type())
 # Example usage:
 # adduser("coucou", 16, "0643744076", "opm852159@gmail.com", "test123")
 # print(verify_password("test123", "opm852159@gmail.com"))

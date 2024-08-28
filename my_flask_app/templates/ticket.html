@@ -7,6 +7,9 @@
     <title>GLPI/ticket</title>
 </head>
 <body>
+    <form method="GET" action="/allticket">
+        <button type="submit" class="btn btn-secondary">Return</button>
+    </form>
     <div class="container">
         <h1 class="mt-5">Ticket</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -20,10 +23,10 @@
         {% endwith %}
         <table>
             <tr>
-                <th>name</th>
-                <th>def</th>
-                <th>qui</th>
-                <th>statu</th>
+                <th>name,</th>
+                <th>def,</th>
+                <th>qui,</th>
+                <th>statu,</th>
             </tr>
                 {% for ticket in result %}
                 <tr>
@@ -41,7 +44,7 @@
         {% for ticket in result %}
         <form method="POST" action="/ticket" class="mt-3">
             <input type="hidden" name="ticket_id" value="{{ ticket[0] }}">
-            <button type="submit" name="action" value="dilet" class="btn btn-primary">dilet</button>
+            <button type="submit" name="action" value="dilet" class="btn btn-primary">kill</button>
         </form>
         {% endfor %}
         {% for ticket in result %}
@@ -49,7 +52,7 @@
                 <h5>commenter : </h5>
                 <input type="text" name="commer" value="">
                 <input type="hidden" name="ticket_id" value="{{ ticket[0] }}">
-                <button type="submit" name="action" value="open ticket" class="btn btn-primary">poste</button>
+                <button type="submit" name="action" value="open ticket" class="btn btn-primary">Poste</button>
             </form>
         {% endfor %}
         <table>
