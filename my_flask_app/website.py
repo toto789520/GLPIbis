@@ -94,7 +94,7 @@ with alive_bar(0) as bar:
             except ValueError as e:
                 flash(str(e), "error")
         return response
-    @app.route('/ticket', methods=['POST'])
+    @app.route('/ticket', methods=['GET', 'POST'])
     def web_ticket_route():
         if request.method == 'POST':
             id_tiqué =  request.form['ticket_id']
