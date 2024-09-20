@@ -3,4 +3,5 @@ datetime
 os-sys!=1.9.3
 Cython
 alive_progress
-email_validator
+email_validator==2.2.0
+Flask==2.2.5

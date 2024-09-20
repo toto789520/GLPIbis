@@ -78,7 +78,7 @@ with alive_bar(0) as bar:
                 flash(str(e), "error")
         return render_template('creation_conte.html')
 
-    @app.route('/new-ticket', methods=['GET', 'POST'])
+    @app.route('/new-ticket', methods=['POST'])
     def add_ticket_route():
         if request.method == 'POST':
             IDs = request.cookies.get('ID')
@@ -93,15 +93,8 @@ with alive_bar(0) as bar:
                 return response
             except ValueError as e:
                 flash(str(e), "error")
-        if request.method == 'GET':
-            if request.cookies.get('ID'):
-                return render_template('creation_ticket.html')
-            else :
-                flash("Vos devais vous crée un conte d'abord", "warning")
-                return render_template('creation_ticket.html')
-        response = app.make_response(redirect(url_for('add_ticket_route')))
         return response
-    @app.route('/ticket', methods=['POST'])
+    @app.route('/ticket', methods=['GET', 'POST'])
     def web_ticket_route():
         if request.method == 'POST':
             id_tiqué =  request.form['ticket_id']
@@ -217,7 +210,7 @@ with alive_bar(0) as bar:
             a[0] = str(a[0]).replace(" ", "_")
             a = tuple(a)
             resultardercorige.append(a[0])
-        return render_template('Softwer.html', soft=resultsoft, ard=resultarder, page=page)
+        return render_template('Softwer.html', soft=resultsoft, ard=resultarder, page=page, ou=tiqué_type_var)
 
     # Pour chaque type de ticket, créer et attacher une route
     with app.app_context():

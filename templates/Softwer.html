@@ -95,10 +95,17 @@
                                 <label for="description">description:</label>
                                 <input type="text" class="form-control" id="description" name="description" required>
                             </div>
-                            <div class="form-group">
-                                <label for="tags">tag:</label>
-                                <input type="text" class="form-control" id="tags" name="tags" required>
-                            </div>
+                            {% if ou == all %}
+                                <div class="form-group">
+                                    <label for="tags">catécori:</label>
+                                    <input type="text" class="form-control" id="tags" name="tags" required>
+                                </div>
+                            {% else %}
+                                <div class="form-group">
+                                    <label for="tags">catécori:</label>
+                                    <input type="text" class="form-control" id="tags" name="tags" value="{{ ou }}" readonly>
+                                </div>
+                            {% endif %}
                             <button type="submit" class="btn btn-primary">Ajouter</button>
                         </form>
                 {% else %}
@@ -117,10 +124,17 @@
                                 <label for="description">description:</label>
                                 <input type="text" class="form-control" id="description" name="description" required>
                             </div>
-                            <div class="form-group">
-                                <label for="tags">tag:</label>
-                                <input type="text" class="form-control" id="tags" name="tags" required>
-                            </div>
+                            {% if ou == all %}
+                                <div class="form-group">
+                                    <label for="tags">catécori:</label>
+                                    <input type="text" class="form-control" id="tags" name="tags" required>
+                                </div>
+                            {% else %}
+                                <div class="form-group">
+                                    <label for="tags">catécori:</label>
+                                    <input type="text" class="form-control" id="tags" name="tags" value="{{ ou }}" readonly>
+                                </div>
+                            {% endif %}
                             <button type="submit" class="btn btn-primary">Ajouter</button>
                         </form>
                 {% endif %}
