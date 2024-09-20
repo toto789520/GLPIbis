@@ -5,32 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GLPI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
-    <style>
-        table {
-          border-collapse: collapse;
-          width: 100%;
-        }
-        
-        th, td {
-          text-align: left;
-          padding: 8px;
-        }
-        
-        tr:nth-child(even) {background-color: #ffffff;}
-    </style>
 </head>
 <body>
     <section class="top-page">
         <header>
             <img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo">
-            <section class="ticket">
-                <a href="add_user">nouveau utlisateur</a>
-                <a href="new-ticket">Création de ticket</a>
+            <section class="bouton-left">
+                <a href="allticket">Ticket</a>
+            </section>
+            <section class="bouton-right">
+                <a href="connet_user">se conecter</a>
+                <a href="add_user">s'inscrire</a>
             </section>
         </header>
         <div class="landing-page">
             <h1 class="gros-titre">GLPI saint-gab</h1>
-            <a class="scroll-down" href="">Scroll ▼</a>
             <section class="ticketmaster">
                 <h2 class="section-title">ticket :</h2>
                 {% if result %}

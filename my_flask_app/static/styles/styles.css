@@ -38,17 +38,20 @@ section.top-page {
     bottom: 160px;
 }
 
-.ticket {
-    display: flex;
-    justify-content: space-between;
-    list-style: none;
-    width: 400px;
-    margin-left: 30px;
-    font-weight: bold;
+.bouton-left {
+    margin-right: 30px;
+    width: 700px;
     font-size: 20px;
-    color:rgb(247, 255, 247);
+    font-weight: bold;
 }
 
+.bouton-right {
+    text-align: right;
+    margin-right: 30px;
+    width: 700px;
+    font-size: 20px;
+    font-weight: bold;
+}
 .ticket a {
     color: white; 
     text-decoration: none; 

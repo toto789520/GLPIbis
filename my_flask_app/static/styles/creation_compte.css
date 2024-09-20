@@ -1,0 +1,25 @@
+
+
+.container{
+margin: 50%;
+}
+.mt-5{
+    text-align: right;
+    margin-right: 30px;
+    width: 700px;
+    font-size: 20px;
+}
+
+.form-group{
+    text-align: right;
+    margin-right: 30px;
+    width: 700px;
+    font-size: 20px;
+}
+
+.alert mt-3{
+    text-align: right;
+    margin-right: 30px;
+    width: 700px;
+    font-size: 20px;
+}
