@@ -10,7 +10,6 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 # Ajouter le dossier racine au chemin de recherche des modules
 sys.path.append(project_root)
 
-# Maintenant, vous pouvez importer le module `coucou`
 from db import adduser, who, verify_password, tiqué_type, ader_type
 from tique import create_tiqué, list_tiqué, get_info_tiqué, get_info_tiqué_comment, now_comment, close_tiqué
 
@@ -170,6 +169,7 @@ with alive_bar(0) as bar:
         return results
     @app.route('/allticket', methods=['GET', 'POST'])
     def create_allticket_route(tiqué_type_var="all"):
+        retone = 0
         if request.method == 'POST':
             IDs = request.cookies.get('ID')
             titre = request.form['titre']
@@ -193,24 +193,29 @@ with alive_bar(0) as bar:
                 page = all_tiqué(tiqué_type_var)
             else :
                 flash("Avant de commencer, il était nécessaire de créer un compte.", "warning")
+                retone = 1
                 page= []
-        resultsoftcorige = []
-        resultardercorige = []
-        resultsoft = tiqué_type()
+        
+        if retone == 1:
+            return redirect(url_for('index'))
+        else :
+            resultsoftcorige = []
+            resultardercorige = []
+            resultsoft = tiqué_type()
 
-        for i in resultsoft:
-            a = list(i)
-            a[0] = str(a[0]).replace(" ", "_")
-            a = tuple(a)
-            resultsoftcorige.append(a[0])
+            for i in resultsoft:
+                a = list(i)
+                a[0] = str(a[0]).replace(" ", "_")
+                a = tuple(a)
+                resultsoftcorige.append(a[0])
 
-        resultarder = ader_type()
-        for i in resultsoft:
-            a = list(i)
-            a[0] = str(a[0]).replace(" ", "_")
-            a = tuple(a)
-            resultardercorige.append(a[0])
-        return render_template('Softwer.html', soft=resultsoft, ard=resultarder, page=page, ou=tiqué_type_var)
+            resultarder = ader_type()
+            for i in resultsoft:
+                a = list(i)
+                a[0] = str(a[0]).replace(" ", "_")
+                a = tuple(a)
+                resultardercorige.append(a[0])
+            return render_template('Softwer.html', soft=resultsoft, ard=resultarder, page=page, ou=tiqué_type_var)
 
     # Pour chaque type de ticket, créer et attacher une route
     with app.app_context():

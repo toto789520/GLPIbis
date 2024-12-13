@@ -6,6 +6,15 @@
     <title>GLPI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
 </head>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="alert mt-3">
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
 <body>
     <section class="top-page">
         <header>
@@ -20,39 +29,6 @@
         </header>
         <div class="landing-page">
             <h1 class="gros-titre">GLPI saint-gab</h1>
-            <section class="ticketmaster">
-                <h2 class="section-title">ticket :</h2>
-                {% if result %}
-                    <table>
-                        <tr>
-                            <th>name</th>
-                            <th>def</th>
-                            <th>qui</th>
-                            <th>statu</th>
-                        </tr>
-                        {% for ticket in result %}
-                            <tr>
-                                <td>{{ ticket[5] }}<td>
-                                <td>{{ ticket[7] }}<td>
-                                <td>{{ ticket[1] }}<td>
-                                {% if ticket[8] == 1 %}
-                                    <td>Open<td>
-                                {% else %}
-                                    <td>Close</td>
-                                {% endif %}
-                                <td>
-                                    <form method="POST" action="/ticket">
-                                        <input type="hidden" name="ticket_id" value="{{ ticket[0] }}">
-                                        <button type="submit" name="action" value="open ticket">Open ticket</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </table>
-                {% else %}
-                    <p>No tickets found.</p>
-                {% endif %}
-            </section>
         </div>
 </body>
 </html>
