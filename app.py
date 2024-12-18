@@ -44,20 +44,20 @@ with alive_bar(0) as bar:
 
             # Render the template with the modified results
             return render_template('index.html', result=results)
-    @app.route('/connet_user', methods=['GET', 'POST'])
-    def connet_user_route():
+    @app.route('/connexion', methods=['GET', 'POST'])
+    def connexion_route():
         if request.method == 'POST':
             email = request.form['email']
             password = request.form['password']
             try:
                 ID = verify_password(password, email)
                 flash("Utilisateur connet avec succès!", "success")
-                response = app.make_response(redirect(url_for('connet_user_route')))
+                response = app.make_response(redirect(url_for('connexion_route')))
                 response.set_cookie('ID', ID)  # Set the new cookie
                 return response
             except ValueError as e:
                 flash(str(e), "error")
-        return render_template('connet_conte.html')
+        return render_template('connexion.html')
 
     @app.route('/add_user', methods=['GET', 'POST'])
     def add_user_route():
