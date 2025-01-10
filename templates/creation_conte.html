@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,8 +7,9 @@
     <link rel="stylesheet" href="../static/styles/StylesconnexionUseur.css">
 </head>
 <body>
-    <div class="container">
-        <h1 class="mt-5">Ajouter Utilisateur</h1>
+<div class="container">
+    <div class="center-square">
+        <h1 class="titre ad">Ajouter Utilisateur</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             <div class="alert mt-3">
@@ -42,5 +43,7 @@
             <button type="submit" class="btn btn-primary">Ajouter</button>
         </form>
     </div>
+</div>
 </body>
 </html>
+</create_file>
