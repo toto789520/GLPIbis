@@ -17,8 +17,13 @@
         {% endwith %}
 <body>
     <section class="top-page">
-        <header>
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo">
+<div class="white-band">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo">
+    <a href="connexion" class="bouton-right">connexion</a>
+    <a href="add_user" class="bouton-right">nouveau utilisateur</a>
+</div>
+<header>
+            <!-- Removed duplicate logo -->
             <section class="bouton-left">
                 <a href="allticket">Ticket</a>
             </section>

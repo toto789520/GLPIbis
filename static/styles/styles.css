@@ -1,14 +1,11 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Freeman&display=swap');
 *{
     font-family: "Montserrat";
 }
 
-
 body{
     margin:0 auto
-
 }
 
 header {
@@ -31,13 +28,6 @@ section.top-page {
     font-size: 80px;
 }
 
-.scroll-down {
-    color: white;
-    text-decoration: none;
-    position: absolute;
-    bottom: 160px;
-}
-
 .bouton-left {
     margin-right: 30px;
     width: 700px;
@@ -51,6 +41,8 @@ section.top-page {
     width: 700px;
     font-size: 20px;
     font-weight: bold;
+    color: black;
+    text-decoration: none;
 }
 .ticket a {
     color: white; 
@@ -73,33 +65,26 @@ section.top-page {
     bottom: 0;
 }
 
-.img-container {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    justify-content: center;
-    width: 100%;
-    padding: 0 -10px;
-    
-}
-
-.img-container img{
-    margin: 10px;
-    width: 600px;
-    height: 600px;
-}
-
-
-
 @media only screen and (max-width:500px) {
     .img-container {
       flex-direction: column;
       align-items: center;
-
     }
 }
-.img-container img{
-        width: 100%;
-        max-width: none;
-        height: auto;
-    }
+/* Updated styles for the white band */
+.white-band {
+    background-color: white;
+    height: 10%; 
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Space out logo and buttons */
+    margin: 0; /* Remove margins */
+    width: 100%; /* Set width to 100% */
+    position: absolute; /* Position it absolutely */
+    top: 0; /* Align to the top */
+    left: 0; /* Align to the left */
+}
+
+.white-band img {
+    height: 100%;
+}
