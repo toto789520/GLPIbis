@@ -75,21 +75,21 @@ with alive_bar(0) as bar:
 
 
 
-def verify_password(password, email):
-    existing_user = get_db(f"SELECT hashed_password FROM USEUR WHERE email='{email}'")
-    ID_user = get_db(f"SELECT ID FROM USEUR WHERE email='{email}'")
-    print(ID_user)
-    if existing_user:
-        hashed_password = hashlib.md5((password + ID_user[0][0]).encode()).hexdigest()  # Extract ID from tuple
-        if hashed_password == existing_user[0][0]:  # Extract hashed password from tuple
-            print(ID_user)
-            return str(ID_user[0][0])  # Extract ID from tuple
+    def verify_password(password, email):
+        existing_user = get_db(f"SELECT hashed_password FROM USEUR WHERE email='{email}'")
+        ID_user = get_db(f"SELECT ID FROM USEUR WHERE email='{email}'")
+        print(ID_user)
+        if existing_user:
+            hashed_password = hashlib.md5((password + ID_user[0][0]).encode()).hexdigest()  # Extract ID from tuple
+            if hashed_password == existing_user[0][0]:  # Extract hashed password from tuple
+                print(ID_user)
+                return str(ID_user[0][0])  # Extract ID from tuple
+            else:
+                print("Tentative de connexion avec un email privé avec un mot de passe. : " + str(email))
+                return ValueError("Mot de passe ou adresse e-mail inexacte")  # Raise exception
         else:
-            print("Tentative de connexion avec un email privé avec un mot de passe. : " + str(email))
-            return ValueError("Mot de passe ou adresse e-mail inexacte")  # Raise exception
-    else:
-        print("tentative de connexion avec email :" + str(email))
-        return ValueError("l'utilisateur est introuvable")  # Raise exception
+            print("tentative de connexion avec email :" + str(email))
+            return ValueError("l'utilisateur est introuvable")  # Raise exception
 
     def delete_user(email, password):
         verify_password(password, email)
