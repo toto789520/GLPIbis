@@ -1,214 +1,199 @@
-import sqlite3
+import mysql.connector
 import hashlib
 import datetime
 import secrets
 import os
 from email_validator import validate_email, EmailNotValidError
-def adduser(by, age, tel, email, password):
-    path = os.path.dirname(os.path.abspath(__file__))
-    db = os.path.join(path, 'database.db')
-    conn = sqlite3.connect(db)
-    cursor = conn.cursor()
-    ID = str(secrets.token_urlsafe(16))
-    passw = (password + ID)
-    hashed_password = hashlib.md5(passw.encode())
-    data = {
-        'ID': ID,
-        'dete_de_creation': str(datetime.date.today()),
-        'name': by,
-        'age': age,
-        'tel': tel,
-        'email': email,
-        'hashed_password': str(hashed_password.hexdigest())
-    }
+import json
+from alive_progress import alive_bar
 
-    cursor.execute("SELECT * FROM USEUR WHERE email=?", (email,))
-    existing_user = cursor.fetchone()
-    print(existing_user)
-    if existing_user:
-        print("L'e-mail existe déjà dans la base de données.")
-        raise ValueError("L'e-mail existe déjà dans la base de données.")
-    
-    try:
-        valid = validate_email(email)
-    except EmailNotValidError:
-        raise ValueError("Email Incorrect")
+with alive_bar(0) as bar:
+
+    def get_config(parametre):
+        try:
+            # Ouvre le fichier de configuration en mode lecture
+            with open('conf.conf', 'r') as file:
+                config_data = json.load(file)  # Charge le contenu JSON dans un dictionnaire
+                return config_data.get(parametre, None)  # Retourne la valeur associée au paramètre ou None si le paramètre n'existe pas
+        except FileNotFoundError:
+            print("Le fichier de configuration n'a pas été trouvé.")
+            return None
+        except json.JSONDecodeError:
+            print("Erreur de décodage JSON dans le fichier de configuration.")
+            return None
 
 
 
-    cursor.execute("""INSERT INTO USEUR(ID, dete_de_crétion, name, age, tel, email, hashed_password)
-                    VALUES(:ID, :dete_de_creation, :name, :age, :tel, :email, :hashed_password)""", data)
-    conn.commit()
-    cursor.execute("INSERT INTO stsate(id_user, tiqué_créer, tiqué_partisipé, comm) VALUES (?, 0, 0, 0)", (ID,))
-    conn.commit()
-    conn.close()
-    print("Utilisateur ajouté avec succès!")
-    return ID
+    mydb = mysql.connector.connect(
+    host=get_config("IP_db"),
+    user=get_config("user_db"),
+    password=get_config("password_db"),
+    database=get_config("name_db"),
+    )
+
+    def get_db(requete,data="") :
+        mycursor = mydb.cursor()
+        print(requete)
+        print(data)
+        mycursor.execute(requete,data)
+        return mycursor.fetchall()
+
+
+    def adduser(by, age, tel, email, password): 
+        ID = str(secrets.token_urlsafe(16))
+        passw = (password + ID)
+        hashed_password = hashlib.md5(passw.encode())
+        data = {
+            'ID': ID,
+            'dete_de_creation': str(datetime.date.today()),
+            'name': by,
+            'age' : age,
+            'tel' : tel,
+            'email': email,
+            'hashed_password': str(hashed_password.hexdigest())
+        }
+        existing_user = get_db(f"""SELECT * FROM USEUR WHERE email='{email}'""")
+        if existing_user:
+            print("L'e-mail existe déjà dans la base de données.")
+            raise ValueError("L'e-mail existe déjà dans la base de données.")
+        
+        try:
+            valid = validate_email(email)
+        except EmailNotValidError:
+            raise ValueError("Email Incorrect")
+        
+        # Insertion dans la table USEUR
+        get_db("""INSERT INTO USEUR (ID, dete_de_creation, name, age, tel, email, hashed_password) 
+                VALUES (%(ID)s, %(dete_de_creation)s, %(name)s, %(age)s, %(tel)s, %(email)s, %(hashed_password)s)""", data)
+        
+        # Insertion dans la table state
+        get_db("""INSERT INTO state (id_user, tiqué_créer, tiqué_partisipé, comm) 
+                VALUES (%(ID)s, 0, 0, 0)""", {'ID': ID})
+        
+        print("Utilisateur ajouté avec succès!")
+        return ID  
+
 
 
 def verify_password(password, email):
-    conn = sqlite3.connect('database.db')  # Updated connection string
-    cursor = conn.cursor()
-    cursor.execute("SELECT hashed_password FROM USEUR WHERE email=?", (email,))
-    existing_user = cursor.fetchone()
-    cursor.execute("SELECT ID FROM USEUR WHERE email=?", (email,))
-    ID_user = cursor.fetchone()
+    existing_user = get_db(f"SELECT hashed_password FROM USEUR WHERE email='{email}'")
+    ID_user = get_db(f"SELECT ID FROM USEUR WHERE email='{email}'")
+    print(ID_user)
     if existing_user:
-        hashed_password = hashlib.md5((password + ID_user[0]).encode()).hexdigest()
-        if hashed_password == existing_user[0]:
-            return str(ID_user[0])
+        hashed_password = hashlib.md5((password + ID_user[0][0]).encode()).hexdigest()  # Extract ID from tuple
+        if hashed_password == existing_user[0][0]:  # Extract hashed password from tuple
+            print(ID_user)
+            return str(ID_user[0][0])  # Extract ID from tuple
         else:
-            return False
+            print("Tentative de connexion avec un email privé avec un mot de passe. : " + str(email))
+            return ValueError("Mot de passe ou adresse e-mail inexacte")  # Raise exception
     else:
-        return False
+        print("tentative de connexion avec email :" + str(email))
+        return ValueError("l'utilisateur est introuvable")  # Raise exception
+
+    def delete_user(email, password):
+        verify_password(password, email)
+        existing_user=get_db(f"SELECT * FROM USEUR WHERE email='{email}'")
 
 
-def delete_user(email, password):
-    conn = sqlite3.connect('database.db')  # Updated connection string
-    cursor = conn.cursor()
-    verify_password(password, email)
-    cursor.execute("SELECT * FROM USEUR WHERE email=?", (email,))
-    existing_user = cursor.fetchone()
-
-    if existing_user:
-        cursor.execute("DELETE FROM USEUR WHERE email=?", (email,))
-        conn.commit()
-        cursor.execute("DELETE FROM stsate WHERE id_user=?", (existing_user[0],))
-        conn.commit()
-        conn.close()
-        print("Utilisateur supprimé avec succès!")
-        return True
-    else:
-        print("Pas de compte associé à cet e-mail.")
-        return False
-
-def modify_user(ID_user, by, age, tel, old_email, now_email, old_password, now_password):
-    conn = sqlite3.connect('database.db')  # Updated connection string
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM USEUR WHERE email=?", (old_email,))
-    existing_user = cursor.fetchone()
-    print(existing_user)
-    if existing_user is None:
-        print("L'e-mail existe pas dans la base de données.")
-        raise ValueError("L'e-mail existe pas dans la base de données.")
-        return False
-
-
-    # Verify the old password and get the user ID
-    if ID_user == verify_password(old_password, old_email):
-        # Hash the new password with the user ID
-        now_password_hashed = hashlib.md5((now_password + ID_user).encode()).hexdigest()
-        
-        # Prepare data for update
-        data = (by, age, tel, now_email, now_password_hashed, ID_user)
-        
-        # Execute the update statement
-        cursor.execute("""UPDATE USEUR SET name=?, age=?, tel=?, email=?, hashed_password=? WHERE ID=?""", data)
-        
-        # Commit the transaction
-        conn.commit()
-        print("Utilisateur mis à jour avec succès!")
-        return True
-    elif ID_user != verify_password(old_password, old_email):
-        print("Mauvais mot de passe.")
-        raise ValueError("Mauvais mot de passe.")
-        return False
-    # Close the connection
-    conn.close()
-
-def who(ID):
-    conn = sqlite3.connect('database.db')  # Updated connection string
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM USEUR WHERE ID=?", (str(ID),))
-    existing_user = cursor.fetchone()
-    print(existing_user)
-    print(str(ID)+" coucou")
-    if existing_user is None:
-        print("ID existe pas dans la base de données.")
-        raise ValueError("ID existe pas dans la base de données.")
-    else:
-        return existing_user[3]
-    
-def state_add_user(type, ID_user, ID_tiqué):
-    conn = sqlite3.connect('database.db')  # Updated connection string
-    cursor = conn.cursor()
-    print("state user")
-    if type == "tiqué_créer" or "post_comm":
-        try:
-            user = who(ID_user)
-            if user is None:
-                raise ValueError("id user erreur")
-        except ValueError as e:
-            print(e)
-            return ValueError(e)
-
-        if type == "tiqué_créer":
-            cursor.execute(f"SELECT * FROM stsate WHERE id_user=?", (ID_user,))
-            user = cursor.fetchone()
-            user = list(user)
-            user[1] = int(user[1])+1
-            user = tuple(user)
-            cursor.execute("UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?", user)
-            conn.commit()
+        if existing_user:
+            get_db(f"DELETE FROM USEUR WHERE email='{email}'")
+            get_db(f"DELETE FROM stsate WHERE id_user='{existing_user[0]}'")
+            print("Utilisateur supprimé avec succès!")
             return True
-        elif type == "post_comm":
-            print("post_comm")
-            conn.close
-            conn = sqlite3.connect('comm.db')  # Updated connection string
-            cursor = conn.cursor()
-            cursor.execute(f"SELECT * FROM {ID_tiqué} WHERE ID_user=?", (ID_user,))
-            existing_tiqué = cursor.fetchone()
-            if existing_tiqué:
-                conn.close
-                conn = sqlite3.connect('database.db')  # Updated connection string
-                cursor = conn.cursor()
-                cursor.execute("SELECT * FROM stsate WHERE id_user=?", (ID_user,))
-                user = cursor.fetchone()
-                user = list(user)
-                user[3] = int(user[3]) +1
-                user = tuple(user)
-                cursor.execute("""UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?""", user)
-                conn.commit()
-                return True
-            else:
-                conn.close
-                conn = sqlite3.connect('database.db')  # Updated connection string
-                cursor = conn.cursor()
-                cursor.execute("SELECT * FROM stsate WHERE id_user=?", (ID_user,))
-                user = cursor.fetchone()
-                user = list(user)
-                user[2] = int(user[2]) +1
-                user[3] = int(user[3]) +1
-                user = tuple(user)
-                cursor.execute("""UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?""", user)
-                conn.commit()
-                return True
-    else:
-        print("Type invalide.")
-        return False
+        else:
+            print("Pas de compte associé à cet e-mail.")
+            return False
 
-    conn.close()
+    def modify_user(ID_user, by, age, tel, old_email, now_email, old_password, now_password):
+        existing_user = get_db(f"SELECT * FROM USEUR WHERE email='{old_email}'")
+        print(existing_user)
+        if existing_user is None:
+            print("L'e-mail existe pas dans la base de données.")
+            raise ValueError("L'e-mail existe pas dans la base de données.")
+            return False
+
+
+        # Verify the old password and get the user ID
+        if ID_user == verify_password(old_password, old_email):
+            # Hash the new password with the user ID
+            now_password_hashed = hashlib.md5((now_password + ID_user).encode()).hexdigest()
             
-def tiqué_type() :
-    conn = sqlite3.connect('database.db')  # Updated connection string
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tiqué_type") 
-    tickets = cursor.fetchall()
-    conn.close()
-    return tickets
+            # Prepare data for update
+            data = (by, age, tel, now_email, now_password_hashed, ID_user)
+            
+            # Execute the update statement
+            get_db("""UPDATE USEUR SET name=?, age=?, tel=?, email=?, hashed_password=? WHERE ID=?""", data)
+            
+            # Commit the transaction
+            print("Utilisateur mis à jour avec succès!")
+            return True
+        elif ID_user != verify_password(old_password, old_email):
+            print("Mauvais mot de passe.")
+            raise ValueError("Mauvais mot de passe.")
+            return False
+        # Close the connection
 
-def ader_type() :
-    conn = sqlite3.connect('database.db')  # Updated connection string
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM arder") 
-    tickets = cursor.fetchall()
-    conn.close()
-    return tickets
+    def who(ID):
+        existing_user= get_db("SELECT * FROM USEUR WHERE ID=?", (str(ID),))
+        print(existing_user)
+        print(str(ID)+" coucou")
+        if existing_user is None:
+            print("ID existe pas dans la base de données.")
+            raise ValueError("ID existe pas dans la base de données.")
+        else:
+            return existing_user[3]
+        
+    def state_add_user(type, ID_user, ID_tiqué):
+        print("state user")
+        if type == "tiqué_créer" or "post_comm":
+            try:
+                user = who(ID_user)
+                if user is None:
+                    raise ValueError("id user erreur")
+            except ValueError as e:
+                print(e)
+                return ValueError(e)
 
-print(tiqué_type())
-# Example usage:
-# adduser("coucou", 16, "0643744076", "opm852159@gmail.com", "test123")
-# print(verify_password("test123", "opm852159@gmail.com"))
-# delete_user("opm852159@gmail.com", "test123")
+            if type == "tiqué_créer":
+                user = get_db(f"SELECT * FROM stsate WHERE id_user=?", (ID_user,))
+                user = list(user)
+                user[1] = int(user[1])+1
+                user = tuple(user)
+                get_db("UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?", user)
+                return True
+            elif type == "post_comm":
+                print("post_comm")
+                existing_tiqué=get_db(f"SELECT * FROM {ID_tiqué} WHERE ID_user=?", (ID_user,))
+                if existing_tiqué:
+                    user=get_db("SELECT * FROM stsate WHERE id_user=?", (ID_user,))
+                    user = list(user)
+                    user[3] = int(user[3]) +1
+                    user = tuple(user)
+                    get_db("""UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?""", user)
+                    return True
+                else:
+                    user = get_db("SELECT * FROM stsate WHERE id_user=?", (ID_user,))
+                    user = list(user)
+                    user[2] = int(user[2]) +1
+                    user[3] = int(user[3]) +1
+                    user = tuple(user)
+                    get_db("""UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?""", user)
+                    return True
+        else:
+            print("Type invalide.")
+            return False
+                
+    def tiqué_type() :
+        tickets=get_db("SELECT * FROM tiqué_type") 
+        return tickets
+
+    def ader_type() :
+        tickets =get_db("SELECT * FROM arder") 
+        return tickets
+
+
+    # Example usage:
+    # adduser("coucou", 16, "0643744076", "opm852159@gmail.com", "test123")
+    # print(verify_password("test123", "opm852159@gmail.com"))
+    # delete_user("opm852159@gmail.com", "test123")

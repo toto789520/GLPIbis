@@ -49,13 +49,17 @@ with alive_bar(0) as bar:
         if request.method == 'POST':
             email = request.form['email']
             password = request.form['password']
+            print(f"Email: {email}, Password: {password}")  # Debugging statement
+            password = request.form['password']
             try:
                 ID = verify_password(password, email)
-                flash("Utilisateur connet avec succès!", "success")
                 response = app.make_response(redirect(url_for('connexion_route')))
-                response.set_cookie('ID', ID)  # Set the new cookie
+                response.set_cookie('ID', str(ID)) # Set the new cookie
+                flash("Utilisateur connet avec succès!", "success")
+                print("Utilisateur connet avec succès!")
+                print(ID)
                 return response
-            except ValueError as e:
+            except Exception as e:
                 flash(str(e), "error")
         return render_template('connexion.html')
 
@@ -70,7 +74,7 @@ with alive_bar(0) as bar:
             try:
                 ID = adduser(name, age, tel, email, password)
                 flash("Utilisateur ajouté avec succès!", "success")
-                response = app.make_response(redirect(url_for('add_ticket_route')))
+                response = app.make_response(redirect(url_for('index')))
                 response.set_cookie('ID', ID)  # Set the new cookie
                 return response
             except ValueError as e:
@@ -123,13 +127,15 @@ with alive_bar(0) as bar:
                 results_tickete.append(a)
 
 
-            if request.cookies.get('ID') != None:
+            if request.cookies.get('ID') is not None:
                 try:
                     commter = request.form['commer']
                     print(commter)
-                    now_comment(id_tiqué,id_user,commter)
-                except:
-                    print("no-comm")
+                    now_comment(id_tiqué,id_user,commter)  # Add the comment
+                    return redirect(url_for('web_ticket_route', ticket_id=id_tiqué))  # Redirect to the ticket page
+                except Exception as e:
+                    print("no-comm", e)
+                    return redirect(url_for('web_ticket_route', ticket_id=id_tiqué))  # Redirect to the ticket page
             else:
                 flash("Aucun compte connecté", "warning")
                 print("no-id")
@@ -255,6 +261,13 @@ with alive_bar(0) as bar:
         for route in routes:
             print(route)
         return {'routes': routes}
+    
+    @app.route('/materiel', methods=['GET', 'POST'])
+    def materil():
+        tiqué_types = tiqué_type()  # Fetch ticket types
+        ader_types = ader_type()     # Fetch hardware types
+        materiels = tiqué_types + ader_types  # Combine both lists
+        return render_template('materiel.html', materiels=materiels)
 
 if __name__ == '__main__':
 
