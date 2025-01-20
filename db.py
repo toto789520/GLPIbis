@@ -1,8 +1,8 @@
 import mysql.connector
+import mysql.connector
 import hashlib
 import datetime
 import secrets
-import os
 from email_validator import validate_email, EmailNotValidError
 import json
 from alive_progress import alive_bar
@@ -23,21 +23,63 @@ with alive_bar(0) as bar:
             return None
 
 
-
-    mydb = mysql.connector.connect(
-    host=get_config("IP_db"),
-    user=get_config("user_db"),
-    password=get_config("password_db"),
-    database=get_config("name_db"),
-    )
-
-    def get_db(requete,data="") :
+    def get_db(requete, data=""):
+        mydb = mysql.connector.connect(
+            host=get_config("IP_db"),
+            user=get_config("user_db"),
+            password=get_config("password_db"),
+            database=get_config("name_db"),
+        )
         mycursor = mydb.cursor()
         print(requete)
         print(data)
-        mycursor.execute(requete,data)
-        return mycursor.fetchall()
+        mycursor.execute(requete, data)
+        
+        if requete.strip().upper().startswith("SELECT"):
+            results = mycursor.fetchall()
+        else:
+            mydb.commit()
+            results = mycursor.rowcount
+        
+        mycursor.close()
+        mydb.close()
+        return results
 
+
+    def adduser(by, age, tel, email, password): 
+        ID = str(secrets.token_urlsafe(16))
+        passw = (password + ID)
+        hashed_password = hashlib.md5(passw.encode())
+        data = {
+            'ID': ID,
+            'dete_de_creation': str(datetime.date.today()),
+            'name': by,
+            'age' : age,
+            'tel' : tel,
+            'email': email,
+            'hashed_password': str(hashed_password.hexdigest())
+        }
+        existing_user = get_db(f"""SELECT * FROM USEUR WHERE email='{email}'""")
+        if existing_user:
+            print("L'e-mail existe déjà dans la base de données.")
+            raise ValueError("L'e-mail existe déjà dans la base de données.")
+        
+        try:
+            valid = validate_email(email)
+        except EmailNotValidError:
+            raise ValueError("Email Incorrect")
+        
+        # Insertion dans la table USEUR
+        get_db("""INSERT INTO USEUR (ID, dete_de_creation, name, age, tel, email, hashed_password) 
+                VALUES (%(ID)s, %(dete_de_creation)s, %(name)s, %(age)s, %(tel)s, %(email)s, %(hashed_password)s)""", data)
+        
+        # Insertion dans la table state
+        get_db("""INSERT INTO state (id_user, tiqué_créer, tiqué_partisipé, comm) 
+                VALUES (%(ID)s, 0, 0, 0)""", {'ID': ID})
+        
+        print("Utilisateur ajouté avec succès!")
+        return ID  
+    
 
     def adduser(by, age, tel, email, password): 
         ID = str(secrets.token_urlsafe(16))
@@ -76,20 +118,19 @@ with alive_bar(0) as bar:
 
 
     def verify_password(password, email):
-        existing_user = get_db(f"SELECT hashed_password FROM USEUR WHERE email='{email}'")
+        existing_user= get_db(f"SELECT hashed_password FROM USEUR WHERE email='{email}'")
         ID_user = get_db(f"SELECT ID FROM USEUR WHERE email='{email}'")
-        print(ID_user)
         if existing_user:
-            hashed_password = hashlib.md5((password + ID_user[0][0]).encode()).hexdigest()  # Extract ID from tuple
-            if hashed_password == existing_user[0][0]:  # Extract hashed password from tuple
-                print(ID_user)
-                return str(ID_user[0][0])  # Extract ID from tuple
+            hashed_password = hashlib.md5((password + ID_user[0][0]).encode()).hexdigest()
+            if hashed_password == existing_user[0][0]:
+                return str(ID_user[0][0])
             else:
                 print("Tentative de connexion avec un email privé avec un mot de passe. : " + str(email))
-                return ValueError("Mot de passe ou adresse e-mail inexacte")  # Raise exception
+                raise ValueError("Mot de passe ou adresse e-mail inexacte")
         else:
             print("tentative de connexion avec email :" + str(email))
-            return ValueError("l'utilisateur est introuvable")  # Raise exception
+            raise ValueError("l'utilisateur est introuvable")
+
 
     def delete_user(email, password):
         verify_password(password, email)
@@ -135,14 +176,14 @@ with alive_bar(0) as bar:
         # Close the connection
 
     def who(ID):
-        existing_user= get_db("SELECT * FROM USEUR WHERE ID=?", (str(ID),))
+        existing_user= get_db("SELECT * FROM USEUR WHERE ID=%s", (str(ID),))
         print(existing_user)
-        print(str(ID)+" coucou")
+        print(str(ID)+" aficher")
         if existing_user is None:
             print("ID existe pas dans la base de données.")
             raise ValueError("ID existe pas dans la base de données.")
         else:
-            return existing_user[3]
+            return existing_user[0][3]
         
     def state_add_user(type, ID_user, ID_tiqué):
         print("state user")
