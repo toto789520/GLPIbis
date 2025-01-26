@@ -91,32 +91,37 @@ section.top-page {
 .rectangles-container {
     display: flex;
     justify-content: space-around;
-    margin-top: 20px;
+    margin-top: 38%;
 }
 
 .rectangle {
     width: 17%;
     height: 800%;
-    background-color: black;
-    color: white;
+    background-color: white
+    color: black;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 280%;
 }
 
+
 .rectangle {
     width: 17%;
     height: 800%;
-    background-color: black;
-    color: white;
+    background-color: white;
+    color: black;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 280%;
     flex-direction: column; /* Add this line */
     text-align: center; /* Add this line */
+    box-shadow: 10px 10px 10px black;
+    border-radius: 10px;
+    box-shadow: 6px 6px 25px rgba(0, 0, 0, 0.5);
 }
+
 
 .rectangle h6 {
     margin: 0; /* Remove default margin *//
