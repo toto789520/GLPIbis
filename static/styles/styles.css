@@ -74,7 +74,7 @@ section.top-page {
 /* Updated styles for the white band */
 .white-band {
     background-color: white;
-    height: 10%; 
+    height: 70px; 
     display: flex;
     align-items: center;
     justify-content: space-between; /* Space out logo and buttons */
@@ -87,4 +87,38 @@ section.top-page {
 
 .white-band img {
     height: 100%;
+}
+.rectangles-container {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+
+.rectangle {
+    width: 17%;
+    height: 800%;
+    background-color: black;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 280%;
+}
+
+.rectangle {
+    width: 17%;
+    height: 800%;
+    background-color: black;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 280%;
+    flex-direction: column; /* Add this line */
+    text-align: center; /* Add this line */
+}
+
+.rectangle h6 {
+    margin: 0; /* Remove default margin *//
+    font-size: 20%; /* Adjust the font size as needed *//
 }
