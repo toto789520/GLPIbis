@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste des Matériels</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('ticket_created', function(data) {
+            // Update the DOM to show the new ticket
+            console.log('New ticket created:', data);
+            // Add logic to update the ticket list
+        });
+
+        socket.on('ticket_closed', function(data) {
+            // Update the DOM to reflect the closed ticket
+            console.log('Ticket closed:', data);
+            // Add logic to update the ticket list
+        });
+
+        socket.on('comment_added', function(data) {
+            // Update the DOM to show the new comment
+            console.log('New comment added:', data);
+            // Add logic to update the comments section
+        });
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Liste des Matériels Compatibles</h1>
+    </header>
+    <main>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nom</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for materiel in materiels %}
+                <tr>
+                    <td>{{ materiel[0] }}</td>
+                    <td>{{ materiel[1] }}</td>
+                    <td>{{ materiel[2] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </main>
+</body>
+</html>

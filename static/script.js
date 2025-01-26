@@ -10,7 +10,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     form.addEventListener("submit", function(event) {
-        event.preventDefault();
         const value = inputValue.value;
         // Sauvegarder la valeur dans le stockage local
         localStorage.setItem("savedValue", value);

@@ -12,7 +12,7 @@
         <form method="POST">
             <div class="form-group">
                 <label for="username">Address e-mail</label>
-                <input type="text" id="username" name="username" placeholder="Entrez votre Address e-mail">
+                <input type="text" id="email" name="email" placeholder="Entrez votre Address e-mail">
             </div>
             <div class="form-group">
                 <label for="password">Mot de passe</label>
@@ -22,6 +22,15 @@
         </form>
         <div class="help-text">
             Si vous avez un problème, contactez un de vos profs.
+            {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="alert mt-3">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
         </div>
     </div>
 </body>

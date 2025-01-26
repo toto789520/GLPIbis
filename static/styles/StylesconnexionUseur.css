@@ -74,3 +74,20 @@ button:hover {
     font-size: 14px;
     color: #777;
 }
+
+.alert {
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+.alert-error {
+    color: red;
+}
+
+.alert-success {
+    color: rgb(0, 255, 128);
+}
+
+.alert-warning {
+    color: rgb(255, 255, 0);
+}
