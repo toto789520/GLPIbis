@@ -1,6 +1,6 @@
 import mysql.connector
 import mysql.connector
-import hashlib
+from argon2 import PasswordHasher
 import datetime
 import secrets
 from email_validator import validate_email, EmailNotValidError
@@ -121,8 +121,8 @@ with alive_bar(0) as bar:
         existing_user= get_db(f"SELECT hashed_password FROM USEUR WHERE email='{email}'")
         ID_user = get_db(f"SELECT ID FROM USEUR WHERE email='{email}'")
         if existing_user:
-            hashed_password = hashlib.md5((password + ID_user[0][0]).encode()).hexdigest()
-            if hashed_password == existing_user[0][0]:
+            ph = PasswordHasher()
+            if ph.verify(existing_user[0][0], password + ID_user[0][0]):
                 return str(ID_user[0][0])
             else:
                 print("Tentative de connexion avec un email privé avec un mot de passe. : " + str(email))
@@ -158,7 +158,8 @@ with alive_bar(0) as bar:
         # Verify the old password and get the user ID
         if ID_user == verify_password(old_password, old_email):
             # Hash the new password with the user ID
-            now_password_hashed = hashlib.md5((now_password + ID_user).encode()).hexdigest()
+            ph = PasswordHasher()
+            now_password_hashed = ph.hash(now_password + ID_user)
             
             # Prepare data for update
             data = (by, age, tel, now_email, now_password_hashed, ID_user)
