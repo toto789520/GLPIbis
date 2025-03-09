@@ -1,6 +1,4 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
-import sys
-import os
 from alive_progress import alive_bar
 import time
 from flask_socketio import SocketIO
@@ -35,7 +33,7 @@ with alive_bar(0) as bar:
             password = request.form['password']
             try:
                 ID = verify_password(password, email)
-                response = app.make_response(redirect(url_for('connexion_route')))
+                response = app.make_response(redirect(url_for('create_allticket_route')))
                 response.set_cookie('ID', str(ID))
                 flash("Utilisateur connecté avec succès!", "success")
                 return response
@@ -97,10 +95,12 @@ with alive_bar(0) as bar:
                 if request.form['action'] == 'dilet':
                     try:
                         close_tiqué(id_tiqué, id_user)
+                        flash("Ticket fermé avec succès!", "success")
                     except LookupError:
                         flash("Devez d'abord interagir avec le ticket avant de le fermer (Mettre un commentaire)", "warning")
                     except ValueError:
                         flash("Le ticket doit être fermé par le Créateur. Vous devez le contacter pour fermer le ticket", "info")
+                return redirect(url_for('ticket_route', id_tique=id_tiqué))  # Redirection vers la page du ticket
 
         elif request.method == 'GET' and id_tique:
             id_user = request.cookies.get('ID')
@@ -228,6 +228,14 @@ def test_connect():
 @socketio.on('disconnect')
 def test_disconnect():
     print('Client disconnected')
+
+@socketio.on('new_comment')
+def handle_new_comment(data):
+    id_tique = data['id_tique']
+    ID_user = data['ID_user']
+    commenter = data['commenter']
+    now_comment(id_tique, ID_user, commenter)
+    socketio.emit('broadcast_comment', data)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

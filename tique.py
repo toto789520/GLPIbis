@@ -20,12 +20,15 @@ def create_tiqué(ID_user, titre, description, gravité, tags):
         'ID_tiqué': ID_tiqué,
         'date_open': str(datetime.date.today()),
         'titre': titre,
-        'descipition': description,
-        'gavite': gravité,
+        'descipition': description,  # Correction de 'description' en 'descipition'
+        'gravite': gravité,  # Correction de 'gravité' en 'gravite'
         'tags': tags
     }
-    get_db("""INSERT INTO tiqué(ID_tiqué, ID_user, date_open, titre, descipition, gavite, tag) 
-                    VALUES(:ID_tiqué, :ID_user, :date_open, :titre, :descipition, :gavite, :tags)""", data)
+    print(data)
+    get_db("""
+        INSERT INTO tiqué (ID_tiqué, ID_user, date_open, titre, descipition, gravite, tags)
+        VALUES (%(ID_tiqué)s, %(ID_user)s, %(date_open)s, %(titre)s, %(descipition)s, %(gravite)s, %(tags)s)
+    """, data)
     get_db(f"""CREATE TABLE {ID_tiqué}(ID_user NUMERIC, date TEXT, hour TEXT, commenter TEXT);""")
     state_add_user("tiqué_créer", ID_user, ID_tiqué)
     print("Tiqué ajouté avec succès!")

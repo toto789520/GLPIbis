@@ -13,3 +13,5 @@ flask==3.0.0
 mysql.connector-python==8.3.0
 pytest==8.3.4
 Flask-SocketIO==5.3.2
+
+argon2-cffi==23.1.0
