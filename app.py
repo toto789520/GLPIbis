@@ -4,6 +4,7 @@ import time
 from flask_socketio import SocketIO
 from db import adduser, who, verify_password, tiqué_type, ader_type
 from tique import create_tiqué, list_tiqué, get_info_tiqué, get_info_tiqué_comment, now_comment, close_tiqué
+from materiel import add_materiel, delete_materiel, get_categories, get_sous_categories, get_sous_sous_categories
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -33,9 +34,9 @@ with alive_bar(0) as bar:
             password = request.form['password']
             try:
                 ID = verify_password(password, email)
+                flash("Utilisateur connecté avec succès!", "success")
                 response = app.make_response(redirect(url_for('create_allticket_route')))
                 response.set_cookie('ID', str(ID))
-                flash("Utilisateur connecté avec succès!", "success")
                 return response
             except Exception as e:
                 flash(str(e), "error")
@@ -180,6 +181,31 @@ with alive_bar(0) as bar:
                 resultardercorige.append(a[0])
         return render_template('Softwer.html', soft=resultsoft, ard=resultarder, page=page, ou=tiqué_type_var)
 
+    @app.route('/add_materiel', methods=['POST'])
+    def add_materiel_route():
+        if request.method == 'POST':
+            nom = request.form['nom']
+            categorie = int(request.form['categorie'])
+            sous_categorie = int(request.form['sous_categorie'])
+            sous_sous_categorie = int(request.form['sous_sous_categorie'])
+            try:
+                add_materiel(nom, categorie, sous_categorie, sous_sous_categorie)
+                flash("Matériel ajouté avec succès!", "success")
+            except Exception as e:
+                flash(str(e), "error")
+        return redirect(url_for('materil'))
+
+    @app.route('/delete_materiel', methods=['POST'])
+    def delete_materiel_route():
+        if request.method == 'POST':
+            ID = request.form['id']
+            try:
+                delete_materiel(ID)
+                flash("Matériel supprimé avec succès!", "success")
+            except Exception as e:
+                flash(str(e), "error")
+        return redirect(url_for('materil'))
+
     with app.app_context():
         for i in tiqué_type():
             a = list(i)
@@ -216,10 +242,13 @@ with alive_bar(0) as bar:
 
     @app.route('/materiel', methods=['GET', 'POST'])
     def materil():
+        categories = get_categories()
+        sous_categories = get_sous_categories(categories[0][0]) if categories else []
+        sous_sous_categories = get_sous_sous_categories(sous_categories[0][0]) if sous_categories else []
         tiqué_types = tiqué_type()
         ader_types = ader_type()
         materiels = tiqué_types + ader_types
-        return render_template('materiel.html', materiels=materiels)
+        return render_template('materiel.html', materiels=materiels, categories=categories, sous_categories=sous_categories, sous_sous_categories=sous_sous_categories)
 
 @socketio.on('connect')
 def test_connect():

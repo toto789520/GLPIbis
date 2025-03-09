@@ -6,15 +6,6 @@
     <title>GLPI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
 </head>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div class="alert mt-3">
-              {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-              {% endfor %}
-            </div>
-          {% endif %}
-        {% endwith %}
 <body>
     <section class="top-page">
 <div class="white-band">
@@ -32,6 +23,15 @@
                 <a href="add_user">s'inscrire</a>
             </section>
         </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="alert mt-3">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
         <div class="landing-page">
             <h1 class="gros-titre">GLPI saint-gab</h1>
             <div class="rectangles-container">

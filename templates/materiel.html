@@ -6,27 +6,6 @@
     <title>Liste des Matériels</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
-    <script>
-        const socket = io();
-
-        socket.on('ticket_created', function(data) {
-            // Update the DOM to show the new ticket
-            console.log('New ticket created:', data);
-            // Add logic to update the ticket list
-        });
-
-        socket.on('ticket_closed', function(data) {
-            // Update the DOM to reflect the closed ticket
-            console.log('Ticket closed:', data);
-            // Add logic to update the ticket list
-        });
-
-        socket.on('comment_added', function(data) {
-            // Update the DOM to show the new comment
-            console.log('New comment added:', data);
-            // Add logic to update the comments section
-        });
-    </script>
 </head>
 <body>
     <header>
@@ -51,6 +30,38 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        <h2>Ajouter du Matériel</h2>
+        <form method="POST" action="/add_materiel">
+            <label for="nom">Nom:</label>
+            <input type="text" id="nom" name="nom" required>
+            <label for="categorie">Catégorie:</label>
+            <select id="categorie" name="categorie" required>
+                {% for categorie in categories %}
+                <option value="{{ categorie[0] }}">{{ categorie[1] }}</option>
+                {% endfor %}
+            </select>
+            <label for="sous_categorie">Sous-catégorie:</label>
+            <select id="sous_categorie" name="sous_categorie" required>
+                {% for sous_categorie in sous_categories %}
+                <option value="{{ sous_categorie[0] }}">{{ sous_categorie[1] }}</option>
+                {% endfor %}
+            </select>
+            <label for="sous_sous_categorie">Sous-sous-catégorie:</label>
+            <select id="sous_sous_categorie" name="sous_sous_categorie" required>
+                {% for sous_sous_categorie in sous_sous_categories %}
+                <option value="{{ sous_sous_categorie[0] }}">{{ sous_sous_categorie[1] }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Ajouter</button>
+        </form>
+
+        <h2>Supprimer du Matériel</h2>
+        <form method="POST" action="/delete_materiel">
+            <label for="id">ID du Matériel:</label>
+            <input type="text" id="id" name="id" required>
+            <button type="submit">Supprimer</button>
+        </form>
     </main>
 </body>
 </html>

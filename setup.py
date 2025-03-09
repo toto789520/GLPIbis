@@ -30,7 +30,7 @@ def set_up_database():
     print(get_db('''
         CREATE TABLE `tiqué` (
         `ID_tiqué` TEXT NOT NULL,
-        `ID_user` NUMERIC NOT NULL,
+        `ID_user` TEXT NOT NULL,
         `date_open` TEXT NOT NULL,
         `date_close` TEXT,
         `descipition` TEXT NOT NULL,
