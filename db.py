@@ -2,6 +2,7 @@ import mysql.connector
 import mysql.connector
 from argon2 import PasswordHasher
 import datetime
+import argon2
 import secrets
 from email_validator import validate_email, EmailNotValidError
 import json
@@ -45,11 +46,11 @@ with alive_bar(0) as bar:
         mydb.close()
         return results
 
-
     def adduser(by, age, tel, email, password): 
         ID = str(secrets.token_urlsafe(16))
         passw = (password + ID)
-        hashed_password = hashlib.md5(passw.encode())
+        ph = PasswordHasher()
+        hashed_password = ph.hash(passw)
         data = {
             'ID': ID,
             'dete_de_creation': str(datetime.date.today()),
@@ -57,42 +58,7 @@ with alive_bar(0) as bar:
             'age' : age,
             'tel' : tel,
             'email': email,
-            'hashed_password': str(hashed_password.hexdigest())
-        }
-        existing_user = get_db(f"""SELECT * FROM USEUR WHERE email='{email}'""")
-        if existing_user:
-            print("L'e-mail existe déjà dans la base de données.")
-            raise ValueError("L'e-mail existe déjà dans la base de données.")
-        
-        try:
-            valid = validate_email(email)
-        except EmailNotValidError:
-            raise ValueError("Email Incorrect")
-        
-        # Insertion dans la table USEUR
-        get_db("""INSERT INTO USEUR (ID, dete_de_creation, name, age, tel, email, hashed_password) 
-                VALUES (%(ID)s, %(dete_de_creation)s, %(name)s, %(age)s, %(tel)s, %(email)s, %(hashed_password)s)""", data)
-        
-        # Insertion dans la table state
-        get_db("""INSERT INTO state (id_user, tiqué_créer, tiqué_partisipé, comm) 
-                VALUES (%(ID)s, 0, 0, 0)""", {'ID': ID})
-        
-        print("Utilisateur ajouté avec succès!")
-        return ID  
-    
-
-    def adduser(by, age, tel, email, password): 
-        ID = str(secrets.token_urlsafe(16))
-        passw = (password + ID)
-        hashed_password = hashlib.md5(passw.encode())
-        data = {
-            'ID': ID,
-            'dete_de_creation': str(datetime.date.today()),
-            'name': by,
-            'age' : age,
-            'tel' : tel,
-            'email': email,
-            'hashed_password': str(hashed_password.hexdigest())
+            'hashed_password': hashed_password
         }
         existing_user = get_db(f"""SELECT * FROM USEUR WHERE email='{email}'""")
         if existing_user:
@@ -118,15 +84,19 @@ with alive_bar(0) as bar:
 
 
     def verify_password(password, email):
-        existing_user= get_db(f"SELECT hashed_password FROM USEUR WHERE email='{email}'")
+        existing_user = get_db(f"SELECT hashed_password FROM USEUR WHERE email='{email}'")
         ID_user = get_db(f"SELECT ID FROM USEUR WHERE email='{email}'")
         if existing_user:
             ph = PasswordHasher()
-            if ph.verify(existing_user[0][0], password + ID_user[0][0]):
-                return str(ID_user[0][0])
-            else:
-                print("Tentative de connexion avec un email privé avec un mot de passe. : " + str(email))
-                raise ValueError("Mot de passe ou adresse e-mail inexacte")
+            try:
+                if ph.verify(existing_user[0][0], password + ID_user[0][0]):
+                    return str(ID_user[0][0])
+                else:
+                    print("Tentative de connexion avec un email privé avec un mot de passe. : " + str(email))
+                    raise ValueError("Mot de passe ou adresse e-mail inexacte")
+            except argon2.exceptions.VerifyMismatchError:
+                print("Mot de passe incorrect.")
+                raise ValueError("Mot de passe incorrect.")
         else:
             print("tentative de connexion avec email :" + str(email))
             raise ValueError("l'utilisateur est introuvable")
@@ -139,7 +109,7 @@ with alive_bar(0) as bar:
 
         if existing_user:
             get_db(f"DELETE FROM USEUR WHERE email='{email}'")
-            get_db(f"DELETE FROM stsate WHERE id_user='{existing_user[0]}'")
+            get_db(f"DELETE FROM state WHERE id_user='{existing_user[0]}'")
             print("Utilisateur supprimé avec succès!")
             return True
         else:
@@ -165,7 +135,7 @@ with alive_bar(0) as bar:
             data = (by, age, tel, now_email, now_password_hashed, ID_user)
             
             # Execute the update statement
-            get_db("""UPDATE USEUR SET name=?, age=?, tel=?, email=?, hashed_password=? WHERE ID=?""", data)
+            get_db("""UPDATE USEUR SET name=%s, age=%s, tel=%s, email=%s, hashed_password=%s WHERE ID=%s""", data)
             
             # Commit the transaction
             print("Utilisateur mis à jour avec succès!")
@@ -188,7 +158,7 @@ with alive_bar(0) as bar:
         
     def state_add_user(type, ID_user, ID_tiqué):
         print("state user")
-        if type == "tiqué_créer" or "post_comm":
+        if type == "tiqué_créer" or type == "post_comm":
             try:
                 user = who(ID_user)
                 if user is None:
@@ -198,29 +168,29 @@ with alive_bar(0) as bar:
                 return ValueError(e)
 
             if type == "tiqué_créer":
-                user = get_db(f"SELECT * FROM stsate WHERE id_user=?", (ID_user,))
-                user = list(user)
-                user[1] = int(user[1])+1
+                user = get_db("SELECT * FROM state WHERE id_user=%s", (ID_user,))
+                user = list(user[0])  # Accéder au premier élément du tuple
+                user[1] = int(user[1]) + 1  # Modifier l'élément correct
                 user = tuple(user)
-                get_db("UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?", user)
+                get_db("UPDATE state SET id_user=%s, tiqué_créer=%s, tiqué_partisipé=%s, comm=%s", user)
                 return True
             elif type == "post_comm":
                 print("post_comm")
-                existing_tiqué=get_db(f"SELECT * FROM {ID_tiqué} WHERE ID_user=?", (ID_user,))
+                existing_tiqué = get_db("SELECT * FROM tiqué WHERE ID_user=%s", (ID_user,))
                 if existing_tiqué:
-                    user=get_db("SELECT * FROM stsate WHERE id_user=?", (ID_user,))
-                    user = list(user)
-                    user[3] = int(user[3]) +1
+                    user = get_db("SELECT * FROM state WHERE id_user=%s", (ID_user,))
+                    user = list(user[0])  # Accéder au premier élément du tuple
+                    user[3] = int(user[3]) + 1  # Modifier l'élément correct
                     user = tuple(user)
-                    get_db("""UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?""", user)
+                    get_db("UPDATE state SET id_user=%s, tiqué_créer=%s, tiqué_partisipé=%s, comm=%s", user)
                     return True
                 else:
-                    user = get_db("SELECT * FROM stsate WHERE id_user=?", (ID_user,))
-                    user = list(user)
-                    user[2] = int(user[2]) +1
-                    user[3] = int(user[3]) +1
+                    user = get_db("SELECT * FROM state WHERE id_user=%s", (ID_user,))
+                    user = list(user[0])  # Accéder au premier élément du tuple
+                    user[2] = int(user[2]) + 1  # Modifier l'élément correct
+                    user[3] = int(user[3]) + 1  # Modifier l'élément correct
                     user = tuple(user)
-                    get_db("""UPDATE stsate SET id_user=?, tiqué_créer=?, tiqué_partisipé=?, comm=?""", user)
+                    get_db("UPDATE state SET id_user=%s, tiqué_créer=%s, tiqué_partisipé=%s, comm=%s", user)
                     return True
         else:
             print("Type invalide.")
