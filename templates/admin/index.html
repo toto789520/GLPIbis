@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Administration du système{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cog me-2"></i> Administration du système</h1>
+            <p class="lead">Gérez les paramètres et les utilisateurs du système GLPI depuis cette interface.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Carte pour la gestion des utilisateurs -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i> Gestion des Utilisateurs</h5>
+                </div>
+                <div class="card-body">
+                    <p>Gérez les utilisateurs, leurs rôles et leurs permissions d'accès au système.</p>
+                    <ul>
+                        <li>Modifier les informations des utilisateurs</li>
+                        <li>Attribuer des rôles (admin, technicien, utilisateur)</li>
+                        <li>Gérer les permissions spécifiques</li>
+                        <li>Activer/Désactiver des comptes</li>
+                    </ul>
+                </div>
+                <div class="card-footer bg-light">
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-primary">
+                        <i class="fas fa-user-cog"></i> Gérer les Utilisateurs
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carte pour les paramètres système -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i> Paramètres Système</h5>
+                </div>
+                <div class="card-body">
+                    <p>Configurez les paramètres généraux du système GLPI.</p>
+                    <ul>
+                        <li>Paramètres d'inscription des utilisateurs</li>
+                        <li>Configuration des notifications</li>
+                        <li>Personnalisation de l'interface</li>
+                        <li>Paramètres de sécurité</li>
+                    </ul>
+                </div>
+                <div class="card-footer bg-light">
+                    <a href="{{ url_for('admin.settings') }}" class="btn btn-success">
+                        <i class="fas fa-cogs"></i> Configurer les Paramètres
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carte pour les journaux d'activité -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i> Journaux d'Activité</h5>
+                </div>
+                <div class="card-body">
+                    <p>Consultez les journaux d'activité du système pour surveiller et auditer les actions.</p>
+                    <ul>
+                        <li>Journaux de connexion utilisateur</li>
+                        <li>Actions sur les tickets</li>
+                        <li>Modifications de l'inventaire</li>
+                        <li>Actions administratives</li>
+                    </ul>
+                </div>
+                <div class="card-footer bg-light">
+                    <a href="{{ url_for('admin.logs') }}" class="btn btn-info">
+                        <i class="fas fa-search"></i> Consulter les Journaux
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <!-- Statistiques du système -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i> Statistiques du Système</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="stat-item">
+                                <h4>Utilisateurs</h4>
+                                <div class="display-4">{{ get_db("SELECT COUNT(*) FROM USEUR")[0][0] }}</div>
+                                <small class="text-muted">Comptes enregistrés</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-item">
+                                <h4>Tickets</h4>
+                                <div class="display-4">{{ get_db("SELECT COUNT(*) FROM tiqué")[0][0] }}</div>
+                                <small class="text-muted">Tickets créés</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-item">
+                                <h4>Matériel</h4>
+                                <div class="display-4">{{ get_db("SELECT COUNT(*) FROM materiel")[0][0] }}</div>
+                                <small class="text-muted">Éléments d'inventaire</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-item">
+                                <h4>Activités</h4>
+                                <div class="display-4">{{ get_db("SELECT COUNT(*) FROM activity_logs")[0][0] }}</div>
+                                <small class="text-muted">Actions enregistrées</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

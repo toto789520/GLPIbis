@@ -1,0 +1,223 @@
+{% extends "dashboard.html" %}
+
+{% block title %}Ajouter du Matériel{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Ajouter du Matériel</h1>
+            <p class="lead">Enregistrez un nouvel équipement dans l'inventaire</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('inventory.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour à l'inventaire
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Informations du matériel</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('inventory.add_hardware') }}">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="nom" class="form-label">Nom de l'équipement*</label>
+                        <input type="text" class="form-control" id="nom" name="nom" required
+                               placeholder="Ex: Ordinateur portable Dell XPS 13">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="categorie" class="form-label">Catégorie*</label>
+                        <select class="form-select" id="categorie" name="categorie" required>
+                            <option value="" selected disabled>Sélectionner une catégorie</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat[0] }}">{{ cat[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="sous_categorie" class="form-label">Sous-catégorie*</label>
+                        <select class="form-select" id="sous_categorie" name="sous_categorie" required disabled>
+                            <option value="" selected disabled>Sélectionner d'abord une catégorie</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="sous_sous_categorie" class="form-label">Sous-sous-catégorie*</label>
+                        <select class="form-select" id="sous_sous_categorie" name="sous_sous_categorie" required disabled>
+                            <option value="" selected disabled>Sélectionner d'abord une sous-catégorie</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="qr_code" class="form-label">Code QR (optionnel)</label>
+                        <input type="text" class="form-control" id="qr_code" name="qr_code" 
+                               placeholder="Laisser vide pour générer automatiquement">
+                        <div class="form-text">Si laissé vide, un code QR sera généré automatiquement</div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="date_creation" class="form-label">Date d'ajout*</label>
+                        <input type="date" class="form-control" id="date_creation" name="date_creation" 
+                               value="{{ today }}" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description (optionnel)</label>
+                    <textarea class="form-control" id="description" name="description" rows="3"
+                              placeholder="Informations supplémentaires sur cet équipement..."></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Caractéristiques (optionnel)</label>
+                    <div id="caracteristiques" class="border rounded p-3 bg-light">
+                        <div class="row mb-2 caracteristique-row">
+                            <div class="col-md-5">
+                                <input type="text" class="form-control" name="caracteristiques_cles[]" 
+                                       placeholder="Nom (ex: Processeur)">
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" name="caracteristiques_valeurs[]" 
+                                       placeholder="Valeur (ex: Intel i7 11th Gen)">
+                            </div>
+                            <div class="col-md-1">
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-caracteristique" disabled>
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-caracteristique">
+                        <i class="fas fa-plus"></i> Ajouter une caractéristique
+                    </button>
+                </div>
+
+                <hr>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="reset" class="btn btn-outline-secondary">Réinitialiser</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="card-footer bg-light">
+            <small class="text-muted">Les champs marqués d'un * sont obligatoires</small>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion dynamique des sous-catégories et sous-sous-catégories
+    const categorieSelect = document.getElementById('categorie');
+    const sousCategoriSelect = document.getElementById('sous_categorie');
+    const sousSousCategoriSelect = document.getElementById('sous_sous_categorie');
+    
+    // Données des sous-catégories par catégorie
+    const sousCategories = {{ sous_categories|tojson|safe }};
+    // Données des sous-sous-catégories par sous-catégorie
+    const sousSousCategories = {{ sous_sous_categories|tojson|safe }};
+    
+    // Mise à jour des sous-catégories lorsqu'une catégorie est sélectionnée
+    categorieSelect.addEventListener('change', function() {
+        const categorieId = this.value;
+        
+        // Réinitialiser et activer le select des sous-catégories
+        sousCategoriSelect.innerHTML = '<option value="" selected disabled>Sélectionner une sous-catégorie</option>';
+        sousCategoriSelect.disabled = !categorieId;
+        
+        // Réinitialiser et désactiver le select des sous-sous-catégories
+        sousSousCategoriSelect.innerHTML = '<option value="" selected disabled>Sélectionner d\'abord une sous-catégorie</option>';
+        sousSousCategoriSelect.disabled = true;
+        
+        if (categorieId && sousCategories[categorieId]) {
+            // Ajouter les sous-catégories correspondantes
+            sousCategories[categorieId].forEach(function(sousCat) {
+                const option = document.createElement('option');
+                option.value = sousCat[0];
+                option.textContent = sousCat[1];
+                sousCategoriSelect.appendChild(option);
+            });
+        }
+    });
+    
+    // Mise à jour des sous-sous-catégories lorsqu'une sous-catégorie est sélectionnée
+    sousCategoriSelect.addEventListener('change', function() {
+        const sousCategorieId = this.value;
+        
+        // Réinitialiser et activer le select des sous-sous-catégories
+        sousSousCategoriSelect.innerHTML = '<option value="" selected disabled>Sélectionner une sous-sous-catégorie</option>';
+        sousSousCategoriSelect.disabled = !sousCategorieId;
+        
+        if (sousCategorieId && sousSousCategories[sousCategorieId]) {
+            // Ajouter les sous-sous-catégories correspondantes
+            sousSousCategories[sousCategorieId].forEach(function(sousSousCat) {
+                const option = document.createElement('option');
+                option.value = sousSousCat[0];
+                option.textContent = sousSousCat[1];
+                sousSousCategoriSelect.appendChild(option);
+            });
+        }
+    });
+    
+    // Gestion des caractéristiques dynamiques
+    const caracteristiquesContainer = document.getElementById('caracteristiques');
+    const addCaracteristiqueBtn = document.getElementById('add-caracteristique');
+    
+    addCaracteristiqueBtn.addEventListener('click', function() {
+        const newRow = document.createElement('div');
+        newRow.className = 'row mb-2 caracteristique-row';
+        newRow.innerHTML = `
+            <div class="col-md-5">
+                <input type="text" class="form-control" name="caracteristiques_cles[]" 
+                       placeholder="Nom (ex: Processeur)">
+            </div>
+            <div class="col-md-6">
+                <input type="text" class="form-control" name="caracteristiques_valeurs[]" 
+                       placeholder="Valeur (ex: Intel i7 11th Gen)">
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-outline-danger btn-sm remove-caracteristique">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        
+        caracteristiquesContainer.appendChild(newRow);
+        
+        // Activer le bouton de suppression pour la première ligne si c'est la deuxième ligne ajoutée
+        if (caracteristiquesContainer.querySelectorAll('.caracteristique-row').length === 2) {
+            const firstRowBtn = caracteristiquesContainer.querySelector('.caracteristique-row:first-child .remove-caracteristique');
+            if (firstRowBtn) {
+                firstRowBtn.disabled = false;
+            }
+        }
+        
+        // Ajouter l'événement de suppression au nouveau bouton
+        const removeBtn = newRow.querySelector('.remove-caracteristique');
+        removeBtn.addEventListener('click', function() {
+            newRow.remove();
+            
+            // Désactiver le bouton de suppression s'il ne reste qu'une seule ligne
+            if (caracteristiquesContainer.querySelectorAll('.caracteristique-row').length === 1) {
+                const lastRowBtn = caracteristiquesContainer.querySelector('.caracteristique-row:first-child .remove-caracteristique');
+                if (lastRowBtn) {
+                    lastRowBtn.disabled = true;
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

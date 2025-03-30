@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier l'Utilisateur{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-user-edit me-2"></i> Modifier l'Utilisateur</h1>
+            <p class="lead">Modifier les informations et les permissions de l'utilisateur.</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <!-- Informations de l'utilisateur -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i> Informations personnelles</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('admin.edit_user', user_id=user[0]) }}" method="post">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nom complet</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ user_dict.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Adresse email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user_dict.email }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Rôle</label>
+                            <select class="form-select" id="role" name="role">
+                                <option value="user" {% if user_dict.role == 'user' %}selected{% endif %}>Utilisateur</option>
+                                <option value="tech" {% if user_dict.role == 'tech' %}selected{% endif %}>Technicien</option>
+                                <option value="admin" {% if user_dict.role == 'admin' %}selected{% endif %}>Administrateur</option>
+                            </select>
+                            <div class="form-text">
+                                <strong>Attention:</strong> Les administrateurs ont un accès complet au système.
+                            </div>
+                        </div>
+
+                        <h5 class="mt-4 mb-3">Permissions</h5>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> Les administrateurs ont automatiquement toutes les permissions.
+                        </div>
+                        
+                        {% for perm in all_permissions %}
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="{{ perm.id }}" name="permissions" value="{{ perm.id }}" 
+                                   {% if perm.id in permissions %}checked{% endif %}>
+                            <label class="form-check-label" for="{{ perm.id }}">
+                                <strong>{{ perm.name }}</strong>
+                                <div class="text-muted small">{{ perm.description }}</div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="mt-4 d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i> Enregistrer les modifications
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                                <i class="fas fa-key me-2"></i> Réinitialiser le mot de passe
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <!-- Statistiques et activités de l'utilisateur -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i> Activités de l'utilisateur</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        {% set stats = get_db("SELECT * FROM state WHERE id_user = %s", (user[0],)) %}
+                        
+                        <div class="col-md-4">
+                            <div class="stat-box">
+                                <h3>{{ stats[0][1] if stats and stats[0][1] else 0 }}</h3>
+                                <p>Tickets créés</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-box">
+                                <h3>{{ stats[0][2] if stats and stats[0][2] else 0 }}</h3>
+                                <p>Tickets participés</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-box">
+                                <h3>{{ stats[0][3] if stats and stats[0][3] else 0 }}</h3>
+                                <p>Commentaires</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h5 class="mt-4">Dernières activités</h5>
+                    {% set logs = get_db("SELECT action_type, module, description, timestamp FROM activity_logs WHERE user_id = %s ORDER BY timestamp DESC LIMIT 5", (user[0],)) %}
+                    
+                    <div class="list-group">
+                        {% if logs %}
+                            {% for log in logs %}
+                            <div class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ log[0]|capitalize }} - {{ log[1]|capitalize }}</h6>
+                                    <small>{{ log[3] }}</small>
+                                </div>
+                                <p class="mb-1">{{ log[2] }}</p>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-light">
+                                Aucune activité enregistrée pour cet utilisateur.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour la réinitialisation du mot de passe -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="resetPasswordModalLabel">Réinitialiser le mot de passe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('admin.reset_password', user_id=user[0]) }}" method="post">
+                <div class="modal-body">
+                    <p>Vous êtes sur le point de réinitialiser le mot de passe de cet utilisateur.</p>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">Nouveau mot de passe</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirmer le mot de passe</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning">Réinitialiser</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-box {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.stat-box h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+</style>
+{% endblock %}

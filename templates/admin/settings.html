@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Paramètres du Système{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cogs me-2"></i> Paramètres du Système</h1>
+            <p class="lead">Configurez les paramètres globaux du système GLPI.</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour à l'administration
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i> Configuration Générale</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('admin.update_settings') }}" method="post">
+                <div class="row">
+                    <!-- Paramètres généraux -->
+                    <div class="col-md-6 mb-4">
+                        <h5>Paramètres Généraux</h5>
+                        <hr>
+                        
+                        <div class="mb-3">
+                            <label for="system_name" class="form-label">Nom du Système</label>
+                            <input type="text" class="form-control" id="system_name" name="system_name" 
+                                   value="{{ settings.get('system_name', 'GLPI') }}">
+                        </div>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="allow_registration" name="allow_registration" value="1"
+                                   {% if settings.get('allow_registration') == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="allow_registration">
+                                Autoriser l'inscription des nouveaux utilisateurs
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Paramètres des tickets -->
+                    <div class="col-md-6 mb-4">
+                        <h5>Paramètres des Tickets</h5>
+                        <hr>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="allow_ticket_creation" name="allow_ticket_creation" value="1"
+                                   {% if settings.get('allow_ticket_creation') == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="allow_ticket_creation">
+                                Autoriser tous les utilisateurs à créer des tickets
+                            </label>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="default_user_role" class="form-label">Rôle par défaut des nouveaux utilisateurs</label>
+                            <select class="form-select" id="default_user_role" name="default_user_role">
+                                <option value="user" {% if settings.get('default_user_role') == 'user' %}selected{% endif %}>
+                                    Utilisateur standard
+                                </option>
+                                <option value="tech" {% if settings.get('default_user_role') == 'tech' %}selected{% endif %}>
+                                    Technicien
+                                </option>
+                                <option value="readonly" {% if settings.get('default_user_role') == 'readonly' %}selected{% endif %}>
+                                    Lecture seule
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Paramètres d'email -->
+                    <div class="col-md-6 mb-4">
+                        <h5>Paramètres de Notification</h5>
+                        <hr>
+                        
+                        <div class="mb-3">
+                            <label for="smtp_server" class="form-label">Serveur SMTP</label>
+                            <input type="text" class="form-control" id="smtp_server" name="smtp_server"
+                                   value="{{ settings.get('smtp_server', '') }}">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="smtp_port" class="form-label">Port SMTP</label>
+                                    <input type="number" class="form-control" id="smtp_port" name="smtp_port"
+                                           value="{{ settings.get('smtp_port', '587') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="smtp_security" class="form-label">Sécurité</label>
+                                    <select class="form-select" id="smtp_security" name="smtp_security">
+                                        <option value="none" {% if settings.get('smtp_security') == 'none' %}selected{% endif %}>Aucune</option>
+                                        <option value="tls" {% if settings.get('smtp_security') == 'tls' %}selected{% endif %}>TLS</option>
+                                        <option value="ssl" {% if settings.get('smtp_security') == 'ssl' %}selected{% endif %}>SSL</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="smtp_username" class="form-label">Nom d'utilisateur SMTP</label>
+                            <input type="text" class="form-control" id="smtp_username" name="smtp_username"
+                                   value="{{ settings.get('smtp_username', '') }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="smtp_password" class="form-label">Mot de passe SMTP</label>
+                            <input type="password" class="form-control" id="smtp_password" name="smtp_password"
+                                   value="{{ settings.get('smtp_password', '') }}" placeholder="••••••••">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="sender_email" class="form-label">Email d'expédition</label>
+                            <input type="email" class="form-control" id="sender_email" name="sender_email"
+                                   value="{{ settings.get('sender_email', '') }}" placeholder="noreply@exemple.com">
+                        </div>
+                    </div>
+                    
+                    <!-- Paramètres d'apparence -->
+                    <div class="col-md-6 mb-4">
+                        <h5>Apparence</h5>
+                        <hr>
+                        
+                        <div class="mb-3">
+                            <label for="primary_color" class="form-label">Couleur principale</label>
+                            <input type="color" class="form-control form-control-color" id="primary_color" name="primary_color"
+                                   value="{{ settings.get('primary_color', '#007bff') }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="secondary_color" class="form-label">Couleur secondaire</label>
+                            <input type="color" class="form-control form-control-color" id="secondary_color" name="secondary_color"
+                                   value="{{ settings.get('secondary_color', '#6c757d') }}">
+                        </div>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="dark_mode" name="dark_mode" value="1"
+                                   {% if settings.get('dark_mode') == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="dark_mode">
+                                Activer le mode sombre par défaut
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-save me-2"></i> Enregistrer les paramètres
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
