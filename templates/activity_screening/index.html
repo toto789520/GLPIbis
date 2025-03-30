@@ -1,0 +1,387 @@
+{% extends "dashboard.html" %}
+
+{% block title %}Suivi des Activités{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Suivi des Activités</h1>
+            <p class="lead">Visualisez en temps réel les activités et performances du système</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-primary" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i> Actualiser
+                </button>
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-filter"></i> Filtres
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><h6 class="dropdown-header">Type d'activité</h6></li>
+                    <li><a class="dropdown-item" href="#" data-filter="all">Toutes les activités</a></li>
+                    <li><a class="dropdown-item" href="#" data-filter="auth">Authentification</a></li>
+                    <li><a class="dropdown-item" href="#" data-filter="ticket">Tickets</a></li>
+                    <li><a class="dropdown-item" href="#" data-filter="inventory">Inventaire</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><h6 class="dropdown-header">Période</h6></li>
+                    <li><a class="dropdown-item" href="#" data-period="day">Aujourd'hui</a></li>
+                    <li><a class="dropdown-item" href="#" data-period="week">Cette semaine</a></li>
+                    <li><a class="dropdown-item" href="#" data-period="month">Ce mois</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques globales -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-primary h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Utilisateurs actifs</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.active_users }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-success h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Tickets ouverts</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.open_tickets }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-ticket-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-info h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Temps de résolution moyen</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.avg_resolution_time }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-warning h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Matériel inventorié</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_hardware }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-server fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques d'activité -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Activité sur les tickets</h5>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-secondary" data-chart-period="day">Jour</button>
+                            <button type="button" class="btn btn-outline-secondary active" data-chart-period="week">Semaine</button>
+                            <button type="button" class="btn btn-outline-secondary" data-chart-period="month">Mois</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="ticketActivityChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Distribution des tickets</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="ticketDistributionChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Journal d'activité -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Journal d'activité</h5>
+                <button class="btn btn-sm btn-outline-secondary" type="button" id="exportBtn">
+                    <i class="fas fa-download"></i> Exporter
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="activityTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Utilisateur</th>
+                            <th>Action</th>
+                            <th>Module</th>
+                            <th>Description</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr class="activity-row" data-module="{{ log[2] }}" data-timestamp="{{ log[5] }}">
+                            <td>{{ log[1] }}</td>
+                            <td>
+                                {% if log[2] == 'auth' %}
+                                <span class="badge bg-primary">{{ log[3] }}</span>
+                                {% elif log[2] == 'ticket' %}
+                                <span class="badge bg-success">{{ log[3] }}</span>
+                                {% elif log[2] == 'inventory' %}
+                                <span class="badge bg-warning">{{ log[3] }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ log[3] }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ log[2] }}</td>
+                            <td>{{ log[4] }}</td>
+                            <td>{{ log[5] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light text-center">
+            <button class="btn btn-outline-primary btn-sm" id="loadMoreBtn">Charger plus</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Données des graphiques
+    const ticketActivityData = {{ ticket_activity_data|tojson|safe }};
+    const ticketDistributionData = {{ ticket_distribution_data|tojson|safe }};
+    
+    // Configuration du graphique d'activité des tickets
+    const ticketActivityChart = new Chart(
+        document.getElementById('ticketActivityChart'),
+        {
+            type: 'line',
+            data: {
+                labels: ticketActivityData.labels,
+                datasets: [
+                    {
+                        label: 'Tickets créés',
+                        data: ticketActivityData.created,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Tickets fermés',
+                        data: ticketActivityData.closed,
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        }
+    );
+    
+    // Configuration du graphique de distribution des tickets
+    const ticketDistributionChart = new Chart(
+        document.getElementById('ticketDistributionChart'),
+        {
+            type: 'doughnut',
+            data: {
+                labels: ticketDistributionData.labels,
+                datasets: [{
+                    data: ticketDistributionData.data,
+                    backgroundColor: [
+                        'rgb(255, 99, 132)',
+                        'rgb(54, 162, 235)',
+                        'rgb(255, 205, 86)',
+                        'rgb(75, 192, 192)',
+                        'rgb(153, 102, 255)'
+                    ],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        }
+    );
+    
+    // Gestionnaire pour le bouton de rafraîchissement
+    document.getElementById('refreshBtn').addEventListener('click', function() {
+        location.reload();
+    });
+    
+    // Gestionnaire pour les filtres de type d'activité
+    document.querySelectorAll('[data-filter]').forEach(function(element) {
+        element.addEventListener('click', function(e) {
+            e.preventDefault();
+            const filter = this.getAttribute('data-filter');
+            const rows = document.querySelectorAll('.activity-row');
+            
+            rows.forEach(function(row) {
+                if (filter === 'all' || row.getAttribute('data-module') === filter) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    // Gestionnaire pour les filtres de période
+    document.querySelectorAll('[data-period]').forEach(function(element) {
+        element.addEventListener('click', function(e) {
+            e.preventDefault();
+            const period = this.getAttribute('data-period');
+            const now = new Date();
+            let cutoffDate;
+            
+            if (period === 'day') {
+                cutoffDate = new Date(now.setHours(0, 0, 0, 0));
+            } else if (period === 'week') {
+                cutoffDate = new Date(now.setDate(now.getDate() - 7));
+            } else if (period === 'month') {
+                cutoffDate = new Date(now.setMonth(now.getMonth() - 1));
+            }
+            
+            const rows = document.querySelectorAll('.activity-row');
+            rows.forEach(function(row) {
+                const timestamp = new Date(row.getAttribute('data-timestamp'));
+                if (timestamp >= cutoffDate) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    // Gestionnaire pour les boutons de période des graphiques
+    document.querySelectorAll('[data-chart-period]').forEach(function(button) {
+        button.addEventListener('click', function() {
+            // Gérer l'état actif des boutons
+            document.querySelectorAll('[data-chart-period]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            this.classList.add('active');
+            
+            // Ici, on ferait une requête AJAX pour actualiser les données du graphique
+            // Pour cet exemple, on simule juste un changement de données
+            const period = this.getAttribute('data-chart-period');
+            fetch(`/activity/api/chart-data?period=${period}`)
+                .then(response => response.json())
+                .then(data => {
+                    ticketActivityChart.data.labels = data.ticket_activity.labels;
+                    ticketActivityChart.data.datasets[0].data = data.ticket_activity.created;
+                    ticketActivityChart.data.datasets[1].data = data.ticket_activity.closed;
+                    ticketActivityChart.update();
+                })
+                .catch(error => console.error('Erreur lors de la récupération des données:', error));
+        });
+    });
+    
+    // Gestionnaire pour le bouton d'export
+    document.getElementById('exportBtn').addEventListener('click', function() {
+        window.location.href = "{{ url_for('activity.export_logs') }}";
+    });
+    
+    // Gestionnaire pour le bouton "Charger plus"
+    document.getElementById('loadMoreBtn').addEventListener('click', function() {
+        const lastTimestamp = document.querySelector('.activity-row:last-child').getAttribute('data-timestamp');
+        
+        // Ici, on ferait une requête AJAX pour charger plus de logs
+        fetch(`/activity/api/more-logs?before=${lastTimestamp}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.logs.length > 0) {
+                    const tbody = document.querySelector('#activityTable tbody');
+                    data.logs.forEach(log => {
+                        const row = document.createElement('tr');
+                        row.className = 'activity-row';
+                        row.setAttribute('data-module', log[2]);
+                        row.setAttribute('data-timestamp', log[5]);
+                        
+                        // Construire le contenu de la ligne
+                        let badgeClass = 'secondary';
+                        if (log[2] === 'auth') badgeClass = 'primary';
+                        else if (log[2] === 'ticket') badgeClass = 'success';
+                        else if (log[2] === 'inventory') badgeClass = 'warning';
+                        
+                        row.innerHTML = `
+                            <td>${log[1]}</td>
+                            <td><span class="badge bg-${badgeClass}">${log[3]}</span></td>
+                            <td>${log[2]}</td>
+                            <td>${log[4]}</td>
+                            <td>${log[5]}</td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                    
+                    if (data.logs.length < 20) { // Supposons que nous chargeons 20 logs à la fois
+                        this.disabled = true;
+                        this.textContent = "Tous les logs sont chargés";
+                    }
+                } else {
+                    this.disabled = true;
+                    this.textContent = "Tous les logs sont chargés";
+                }
+            })
+            .catch(error => console.error('Erreur lors du chargement des logs:', error));
+    });
+});
+</script>
+{% endblock %}

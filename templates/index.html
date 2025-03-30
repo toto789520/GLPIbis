@@ -3,51 +3,450 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GLPI</title>
+    <title>GLPI - Accueil</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Styles pour la page d'accueil */
+        .hero {
+            background-image: url("{{ url_for('static', filename='images/fond.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            height: 500px;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .hero-content {
+            position: relative;
+            color: white;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 0 20px;
+        }
+        
+        .hero h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        
+        .hero p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+            border: 2px solid #007bff;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary:hover {
+            background-color: #0069d9;
+            border-color: #0069d9;
+        }
+        
+        .btn-outline:hover {
+            background-color: white;
+            color: #333;
+        }
+        
+        .features {
+            padding: 80px 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .features-title {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .feature-card {
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .feature-icon {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+        }
+        
+        .feature-icon.tickets { color: #007bff; background-color: rgba(0, 123, 255, 0.1); }
+        .feature-icon.inventory { color: #28a745; background-color: rgba(40, 167, 69, 0.1); }
+        .feature-icon.activity { color: #6f42c1; background-color: rgba(111, 66, 193, 0.1); }
+        .feature-icon.onekey { color: #fd7e14; background-color: rgba(253, 126, 20, 0.1); }
+        
+        .feature-content {
+            padding: 20px;
+        }
+        
+        .feature-title {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        
+        .testimonials {
+            padding: 80px 20px;
+        }
+        
+        .testimonials-title {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .testimonial-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .testimonial-card::before {
+            content: " ";
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            font-size: 5em;
+            color: #f8f9fa;
+            z-index: 0;
+            line-height: 1;
+        }
+        
+        .testimonial-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .testimonial-text {
+            font-style: italic;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+        }
+        
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+            background-color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .author-avatar i {
+            font-size: 1.5em;
+            color: #888;
+        }
+        
+        .author-info h4 {
+            margin: 0;
+            font-size: 1.1em;
+        }
+        
+        .author-info p {
+            margin: 5px 0 0;
+            color: #777;
+        }
+        
+        .cta-section {
+            padding: 80px 20px;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+        }
+        
+        .cta-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .cta-content h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        
+        .cta-content p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .cta-btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background-color: white;
+            color: #007bff;
+            font-size: 1.2em;
+            font-weight: 600;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .cta-btn:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5em;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
 </head>
 <body>
-    <section class="top-page">
-<div class="white-band">
-    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo">
-    <a href="connexion" class="bouton-right">connexion</a>
-    <a href="add_user" class="bouton-right">nouveau utilisateur</a>
-</div>
-<header>
-            <!-- Removed duplicate logo -->
-            <section class="bouton-left">
-                <a href="allticket">Ticket</a>
-            </section>
-            <section class="bouton-right">
-                <a href="connexion">se conecter</a>
-                <a href="add_user">s'inscrire</a>
-            </section>
-        </header>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="alert mt-3">
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
+    <header>
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
+            <h1>GLPI</h1>
+        </div>
+        <div class="user-nav">
+            <a href="{{ url_for('login') }}" class="btn-login"><i class="fas fa-sign-in-alt"></i> Connexion</a>
+            <a href="{{ url_for('register') }}" class="btn-register"><i class="fas fa-user-plus"></i> Inscription</a>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Un système unique pour tous vos besoins</h1>
+            <p>GLPI est une solution complète qui intègre gestion de tickets, inventaire et suivi d'activité pour vous aider à optimiser votre IT.</p>
+            <div class="cta-buttons">
+                <a href="{{ url_for('login') }}" class="btn btn-primary">Se connecter</a>
+                <a href="{{ url_for('register') }}" class="btn btn-outline">Créer un compte</a>
             </div>
-        {% endif %}
-        {% endwith %}
-        <div class="landing-page">
-            <h1 class="gros-titre">GLPI saint-gab</h1>
-            <div class="rectangles-container">
-                <div class="rectangle">GLPI
-                  <h6>GLPI (Gestionnaire Libre de Parc Informatique) est un logiciel open source destiné à la gestion des services informatiques d’une grande entreprise. GLPI permet de gérer les tickets ainsi que les ressources informatiques</h6>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="features-title">
+            <h2>Nos services intégrés</h2>
+            <p>Une suite complète d'outils pour optimiser votre gestion IT</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon tickets">
+                    <i class="fas fa-ticket-alt"></i>
                 </div>
-                <div class="rectangle">hébergement
-                  <h6>Pour l’hébergement de GLPI, cela se fait sur les serveurs du professeur en U300, sous Linux Debian.</h6>
+                <div class="feature-content">
+                    <h3 class="feature-title">Gestion de tickets</h3>
+                    <p>Créez, suivez et résolvez les demandes d'assistance de manière efficace avec notre système de tickets complet.</p>
+                    <ul>
+                        <li>Catégorisation des demandes</li>
+                        <li>Suivi des conversations</li>
+                        <li>Historique des interventions</li>
+                        <li>Système de priorité</li>
+                    </ul>
                 </div>
-                <div class="rectangle">Codage
-                  <h6>Pour GLPI, nous avons choisi de créer un site web en codant en HTML, CSS, Python, et en utilisant une base de données SQL. Cela nous permet de contrôler totalement le site dans les moindres détails. Cela nous offre également l’opportunité d’acquérir de nouvelles compétences en codage</h6>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon inventory">
+                    <i class="fas fa-boxes"></i>
                 </div>
-                <div class="rectangle">Open Source
-                  <h6>GLPI sera un logiciel open source, ce qui signifie que tout le monde pourra le modifier, par exemple pour ajouter de nouvelles fonctionnalités ou changer le style graphique.</h6>
+                <div class="feature-content">
+                    <h3 class="feature-title">Gestion d'inventaire</h3>
+                    <p>Gardez une trace précise de tout votre matériel informatique avec notre système d'inventaire performant.</p>
+                    <ul>
+                        <li>Catégorisation hiérarchique</li>
+                        <li>Codes QR pour identification rapide</li>
+                        <li>Historique du matériel</li>
+                        <li>Association avec les tickets</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon activity">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="feature-content">
+                    <h3 class="feature-title">Suivi d'activités</h3>
+                    <p>Suivez en temps réel les activités de votre équipe et obtenez des statistiques détaillées sur leur performance.</p>
+                    <ul>
+                        <li>Vue en temps réel</li>
+                        <li>Assignation de tâches</li>
+                        <li>Suivi de progression</li>
+                        <li>Rapports d'activité</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon onekey">
+                    <i class="fas fa-key"></i>
+                </div>
+                <div class="feature-content">
+                    <h3 class="feature-title">OneKey</h3>
+                    <p>Un système d'authentification unique pour accéder à tous nos services sans multiple connexion.</p>
+                    <ul>
+                        <li>Un seul compte pour tout</li>
+                        <li>Authentification sécurisée</li>
+                        <li>Gestion centralisée des utilisateurs</li>
+                        <li>Statistiques personnelles</li>
+                    </ul>
                 </div>
             </div>
         </div>
-    </body>
+    </section>
+
+    <section class="testimonials">
+        <div class="testimonials-title">
+            <h2>Ce que disent nos utilisateurs</h2>
+            <p>Découvrez comment notre solution a transformé l'IT de nos clients</p>
+        </div>
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p class="testimonial-text">"Depuis que nous utilisons GLPI, la gestion de notre parc informatique est devenue tellement plus simple. Tout est centralisé et accessible en un clic."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="author-info">
+                            <h4>Marie Dupont</h4>
+                            <p>Responsable IT, Entreprise ABC</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p class="testimonial-text">"Le système OneKey est une révolution. Mes équipes n'ont plus besoin de jongler entre plusieurs identifiants et mots de passe pour accéder aux différents outils."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="author-info">
+                            <h4>Jean Martin</h4>
+                            <p>Directeur SI, Groupe XYZ</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p class="testimonial-text">"Le module de suivi d'activités nous a permis d'identifier les goulots d'étranglement dans nos processus et d'améliorer considérablement notre efficacité."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="author-info">
+                            <h4>Sophie Dubois</h4>
+                            <p>Chef de projet, 123 Consulting</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="cta-content">
+            <h2>Prêt à optimiser votre gestion IT?</h2>
+            <p>Rejoignez des milliers d'utilisateurs qui font confiance à GLPI pour gérer leur infrastructure informatique efficacement.</p>
+            <a href="{{ url_for('register') }}" class="cta-btn">Commencer maintenant</a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; {{ now.year }} GLPI - Tous droits réservés</p>
+            <nav class="footer-nav">
+                <a href="#">Aide</a>
+                <a href="#">Contact</a>
+                <a href="#">Mentions légales</a>
+            </nav>
+        </div>
+    </footer>
+
+    <script>
+        // Ajouter la date actuelle au footer
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const year = now.getFullYear();
+            document.querySelector('footer .footer-content p').innerHTML = 
+                `&copy; ${year} GLPI - Tous droits réservés`;
+        });
+    </script>
+</body>
 </html>

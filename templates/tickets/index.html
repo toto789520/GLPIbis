@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des Tickets{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Liste des Tickets</h1>
+            <p class="lead">Gérez tous vos tickets de support depuis cette interface.</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('tickets.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouveau Ticket
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Filtres</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-2">
+                    <a href="{{ url_for('tickets.filter_tickets', filter_type='all') }}" 
+                       class="btn btn-outline-secondary btn-sm w-100 {% if filter == 'all' %}active{% endif %}">
+                        Tous les tickets
+                    </a>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <a href="{{ url_for('tickets.filter_tickets', filter_type='open') }}" 
+                       class="btn btn-outline-success btn-sm w-100 {% if filter == 'open' %}active{% endif %}">
+                        Tickets ouverts
+                    </a>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <a href="{{ url_for('tickets.filter_tickets', filter_type='closed') }}" 
+                       class="btn btn-outline-danger btn-sm w-100 {% if filter == 'closed' %}active{% endif %}">
+                        Tickets fermés
+                    </a>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <a href="{{ url_for('tickets.filter_tickets', filter_type='my') }}" 
+                       class="btn btn-outline-primary btn-sm w-100 {% if filter == 'my' %}active{% endif %}">
+                        Mes tickets
+                    </a>
+                </div>
+            </div>
+            <hr>
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Par catégorie logicielle:</label>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for category in software_categories %}
+                        <a href="{{ url_for('tickets.filter_tickets', filter_type='software_' + category) }}" 
+                           class="badge bg-info text-decoration-none">
+                            {{ category.replace('_', ' ') }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Par catégorie matérielle:</label>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for category in hardware_categories %}
+                        <a href="{{ url_for('tickets.filter_tickets', filter_type='hardware_' + category) }}" 
+                           class="badge bg-warning text-dark text-decoration-none">
+                            {{ category.replace('_', ' ') }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Par gravité:</label>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for i in range(1, 6) %}
+                        <a href="{{ url_for('tickets.filter_tickets', filter_type='gravity_' + i|string) }}" 
+                           class="badge bg-danger text-decoration-none">
+                            {{ i }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <form action="{{ url_for('tickets.index') }}" method="get">
+                        <div class="input-group input-group-sm">
+                            <input type="text" name="search" class="form-control" placeholder="Rechercher...">
+                            <button class="btn btn-outline-secondary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des tickets -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">Tickets</h5>
+                </div>
+                <div class="col-auto">
+                    {% if tickets|length > 0 %}
+                    <span class="badge bg-secondary">{{ tickets|length }} ticket(s)</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if tickets and tickets|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Titre</th>
+                            <th>Date d'ouverture</th>
+                            <th>Gravité</th>
+                            <th>État</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr>
+                            <td>{{ ticket[0]|truncate(8, True) }}</td>
+                            <td>{{ ticket[5] }}</td>
+                            <td>{{ ticket[2] }}</td>
+                            <td>
+                                {% set gravity = ticket[6]|int %}
+                                <div class="d-flex align-items-center">
+                                    {% for i in range(1, 6) %}
+                                        {% if i <= gravity %}
+                                        <i class="fas fa-circle text-danger mx-1"></i>
+                                        {% else %}
+                                        <i class="far fa-circle text-secondary mx-1"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if ticket[8] == 1 %}
+                                <span class="badge bg-success">Ouvert</span>
+                                {% else %}
+                                <span class="badge bg-danger">Fermé</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('tickets.view', ticket_id=ticket[0]) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> Voir
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center p-5">
+                <div class="mb-3">
+                    <i class="fas fa-ticket-alt fa-5x text-muted"></i>
+                </div>
+                <p class="lead mt-3">Aucun ticket ne correspond à votre recherche.</p>
+                <a href="{{ url_for('tickets.create') }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus"></i> Créer un nouveau ticket
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

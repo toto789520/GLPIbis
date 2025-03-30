@@ -1,270 +1,255 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
-from alive_progress import alive_bar
-import time
-from flask_socketio import SocketIO
-from db import adduser, who, verify_password, tiqué_type, ader_type
-from tique import create_tiqué, list_tiqué, get_info_tiqué, get_info_tiqué_comment, now_comment, close_tiqué
-from materiel import add_materiel, delete_materiel, get_categories, get_sous_categories, get_sous_sous_categories
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+import os
+import json
+from datetime import timedelta, datetime
+from setup import set_up_database
+from onekey.auth import register_user, login_user, validate_session, logout_user
+from tickets.routes import tickets_bp
+from inventory.routes import inventory_bp
+from activity_screening.routes import activity_bp
+from admin.routes import admin_bp
+from utils.db import get_db
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
-socketio = SocketIO(app)
+app.secret_key = os.urandom(24)  # Génération d'une clé secrète aléatoire
+app.permanent_session_lifetime = timedelta(hours=8)  # Session de 8 heures
 
-with alive_bar(0) as bar:
-    @app.route('/', methods=['GET', 'POST'])
-    def index():
-        result = None
-        if request.method == 'POST':
-            input_value = request.form['input_value']
-            result = list_tiqué(input_value)
-        else:
-            results = []
-            result = list_tiqué()
-            for i in result:
-                a = list(i)
-                a[1] = str(who(i[1]))
-                a = tuple(a)
-                results.append(a)
-            return render_template('index.html', result=results)
+# Enregistrement des blueprints
+app.register_blueprint(tickets_bp, url_prefix='/tickets')
+app.register_blueprint(inventory_bp, url_prefix='/inventory')
+app.register_blueprint(activity_bp, url_prefix='/activity')
+app.register_blueprint(admin_bp, url_prefix='/admin')
 
-    @app.route('/connexion', methods=['GET', 'POST'])
-    def connexion_route():
-        if request.method == 'POST':
-            email = request.form['email']
-            password = request.form['password']
-            try:
-                ID = verify_password(password, email)
-                flash("Utilisateur connecté avec succès!", "success")
-                response = app.make_response(redirect(url_for('create_allticket_route')))
-                response.set_cookie('ID', str(ID))
-                return response
-            except Exception as e:
-                flash(str(e), "error")
-        return render_template('connexion.html')
+# Rendre get_db disponible dans tous les templates
+@app.context_processor
+def utility_processor():
+    return dict(get_db=get_db)
 
-    @app.route('/add_user', methods=['GET', 'POST'])
-    def add_user_route():
-        if request.method == 'POST':
-            name = request.form['name']
-            age = request.form['age']
-            tel = request.form['tel']
-            email = request.form['email']
-            password = request.form['password']
-            try:
-                ID = adduser(name, age, tel, email, password)
-                flash("Utilisateur ajouté avec succès!", "success")
-                response = app.make_response(redirect(url_for('index')))
-                response.set_cookie('ID', ID)
-                return response
-            except ValueError as e:
-                flash(str(e), "error")
-        return render_template('creation_conte.html')
+# Configuration de la session
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
 
-    @app.route('/new-ticket', methods=['POST'])
-    def add_ticket_route():
-        if request.method == 'POST':
-            IDs = request.cookies.get('ID')
-            titre = request.form['titre']
-            description = request.form['description']
-            gravité = request.form['gravité']
-            tags = request.form['tags']
-            try:
-                create_tiqué(IDs, titre, description, gravité, tags)
-                flash("Le ticket a été ajouté avec succès!", "success")
-                response = app.make_response(redirect(url_for('add_ticket_route')))
-                return response
-            except ValueError as e:
-                flash(str(e), "error")
-        return response
+# Middleware pour vérifier l'authentification
+@app.before_request
+def check_auth():
+    # Liste des routes qui ne nécessitent pas d'authentification
+    public_routes = ['index', 'login', 'register', 'static', 'check_session']
+    
+    # Si la route actuelle ne nécessite pas d'authentification, on passe
+    if request.endpoint in public_routes or request.path.startswith('/static/'):
+        return
+    
+    # Vérification de la session
+    user_id = session.get('user_id')
+    token = session.get('token')
+    
+    print(f"Vérification d'authentification pour {request.endpoint}: user_id={user_id}, token présent: {'oui' if token else 'non'}")
+    
+    # Vérification stricte de l'authentification
+    if not user_id or not token:
+        print(f"Session incomplète: user_id={user_id}, token présent: {'oui' if token else 'non'}")
+        session.clear()  # On efface complètement la session invalide
+        flash("Votre session a expiré ou vous n'êtes pas connecté. Veuillez vous reconnecter.", "warning")
+        return redirect(url_for('login'))
+        
+    # Vérifier si la session est valide
+    try:
+        is_valid = validate_session(token)
+        if not is_valid:
+            print(f"Session invalide pour l'utilisateur {user_id}")
+            session.clear()
+            flash("Votre session a expiré. Veuillez vous reconnecter.", "warning")
+            return redirect(url_for('login'))
+    except Exception as e:
+        print(f"Erreur dans la validation de session: {str(e)}")
+        # En cas d'erreur de validation, on demande quand même à l'utilisateur de se reconnecter
+        session.clear()
+        flash("Une erreur s'est produite avec votre session. Veuillez vous reconnecter.", "warning")
+        return redirect(url_for('login'))
+    
+    # Prolonger la durée de la session à chaque requête
+    session.modified = True
 
-    @app.route('/ticket', methods=['GET', 'POST'])
-    @app.route('/ticket/<id_tique>', methods=['GET', 'POST'])
-    def ticket_route(id_tique=None):
-        if request.method == 'POST':
-            if id_tique:
-                ID_user = request.cookies.get('ID')
-                commenter = request.form['commenter']
-                now_comment(id_tique, ID_user, commenter)
-                flash("Commentaire ajouté avec succès!", "success")
+@app.route('/')
+def index():
+    return render_template('index.html', now=datetime.now())
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        if not email or not password:
+            flash("Veuillez remplir tous les champs", "error")
+            return render_template('login.html')
+        
+        try:
+            result = login_user(email, password)
+            if result['status'] == 'success':
+                # Stocker les infos utilisateur dans la session
+                session['user_id'] = result['user_id']
+                session['username'] = result['username']
+                session['token'] = result['token']
+                session['role'] = result.get('role', 'user')
+                session.permanent = True
+                
+                # Redirection vers le tableau de bord
+                flash("Connexion réussie !", "success")
+                return redirect(url_for('dashboard'))
             else:
-                id_tiqué = request.form.get('ticket_id')
-                id_user = request.cookies.get('ID')
-                tickete = get_info_tiqué(id_tiqué)
-                if not tickete:
-                    flash("Ticket non trouvé.", "error")
-                    return redirect(url_for('index'))
-                if request.form['action'] == 'dilet':
-                    try:
-                        close_tiqué(id_tiqué, id_user)
-                        flash("Ticket fermé avec succès!", "success")
-                    except LookupError:
-                        flash("Devez d'abord interagir avec le ticket avant de le fermer (Mettre un commentaire)", "warning")
-                    except ValueError:
-                        flash("Le ticket doit être fermé par le Créateur. Vous devez le contacter pour fermer le ticket", "info")
-                return redirect(url_for('ticket_route', id_tique=id_tiqué))  # Redirection vers la page du ticket
+                flash(result['message'], "error")
+        except Exception as e:
+            flash(f"Erreur de connexion: {str(e)}", "error")
+        
+    return render_template('login.html')
 
-        elif request.method == 'GET' and id_tique:
-            id_user = request.cookies.get('ID')
-            if id_user is not None:
-                tickete = get_info_tiqué(id_tique)
-                comm = get_info_tiqué_comment(id_tique)
-                results_comm = []
-                for i in comm:
-                    a = list(i)
-                    a[0] = str(who(i[0]))
-                    a = tuple(a)
-                    results_comm.append(a)
-                return render_template('ticket.html', ticket=tickete, comments=results_comm)
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not all([username, email, password, confirm_password]):
+            flash("Veuillez remplir tous les champs", "error")
+            return render_template('register.html')
+        
+        if password != confirm_password:
+            flash("Les mots de passe ne correspondent pas", "error")
+            return render_template('register.html')
+        
+        try:
+            result = register_user(username, email, password)
+            if result['status'] == 'success':
+                flash("Compte créé avec succès! Vous pouvez maintenant vous connecter.", "success")
+                return redirect(url_for('login'))
             else:
-                flash("Aucun compte connecté", "warning")
-                return redirect(url_for('index'))
+                flash(result['message'], "error")
+        except Exception as e:
+            flash(f"Erreur d'inscription: {str(e)}", "error")
+    
+    return render_template('register.html')
 
-        return redirect(url_for('index'))
-
-    def all_tiqué(tiqué_type_var="all"):
-        results = []
-        result = list_tiqué(tiqué_type_var)
-        for i in result:
-            a = list(i)
-            a[1] = str(who(i[1]))
-            a = tuple(a)
-            results.append(a)
-        return results
-
-    @app.route('/allticket', methods=['GET', 'POST'])
-    def create_allticket_route(tiqué_type_var="all"):
-        retone = 0
-        if request.method == 'POST':
-            IDs = request.cookies.get('ID')
-            titre = request.form['titre']
-            description = request.form['description']
-            gravité = request.form['gravité']
-            tags = request.form['tags']
-            if request.cookies.get('ID'):
+@app.route('/dashboard')
+def dashboard():
+    # Vérification explicite de l'authentification pour le dashboard
+    user_id = session.get('user_id')
+    username = session.get('username')
+    token = session.get('token')
+    
+    print(f"Accès au dashboard - user_id: {user_id}, username: {username}, token présent: {'oui' if token else 'non'}")
+    
+    # Double vérification pour le dashboard
+    if not user_id or not token:
+        print("Tentative d'accès au dashboard sans authentification")
+        session.clear()
+        flash("Veuillez vous connecter pour accéder à votre tableau de bord", "warning")
+        return redirect(url_for('login'))
+    
+    # Créer un objet user pour le template avec toutes les informations nécessaires
+    user = {
+        'id': user_id,
+        'name': username or 'Utilisateur',  # Valeur par défaut si username n'existe pas
+        'email': '',
+        'role': session.get('role', 'user'),
+        'creation_date': '',
+        'stats': {
+            'tickets_created': 0,
+            'tickets_participated': 0,
+            'comments': 0
+        }
+    }
+    
+    # Récupérer les détails utilisateur depuis la base de données
+    try:
+        user_data = get_db("SELECT * FROM USEUR WHERE ID = %s", (user_id,))
+        if user_data and len(user_data) > 0:
+            user_row = user_data[0]
+            # Déterminer les indices de manière sécurisée
+            # Vérifier le nombre de colonnes dans user_row pour adapter l'accès aux données
+            col_count = len(user_row)
+            
+            # L'ID est normalement à l'indice 0
+            # Le nom est normalement à l'indice 1 ou 3 selon la structure
+            if col_count > 1:
+                user['name'] = username or user_row[1] if len(user_row) > 1 else username
+            
+            # L'email est à l'indice 5 dans setup.py ou 2 dans db.py
+            if col_count > 5:
+                user['email'] = user_row[5]
+            elif col_count > 2:
+                user['email'] = user_row[2]
+                
+            # La date de création est à l'indice 6 ou 1 ou 5 selon la structure
+            creation_date = None
+            if col_count > 6 and user_row[6]:
+                creation_date = user_row[6]
+            elif col_count > 1 and user_row[1] and 'dete_de_creation' in get_db("DESCRIBE USEUR", ())[1][0]:
+                creation_date = user_row[1]
+            
+            # Formater la date si elle existe
+            if creation_date:
                 try:
-                    create_tiqué(IDs, titre, description, gravité, tags)
-                    flash("Le ticket a été ajouté avec succès!", "success")
-                    time.sleep(0.5)
-                    page = all_tiqué(tiqué_type_var)
-                except ValueError as e:
-                    flash(str(e), "error")
-                    page = all_tiqué(tiqué_type_var)
-            else:
-                flash("Avant de commencer, il est nécessaire de créer un compte.", "error")
-                page = []
-        if request.method == 'GET':
-            if request.cookies.get('ID'):
-                page = all_tiqué(tiqué_type_var)
-            else:
-                flash("Avant de commencer, il est nécessaire de créer un compte.", "warning")
-                retone = 1
-                page = []
+                    if isinstance(creation_date, str):
+                        # Si c'est une chaîne de caractères, essayer de la parser
+                        creation_date = datetime.strptime(creation_date, '%Y-%m-%d %H:%M:%S')
+                    user['creation_date'] = creation_date.strftime('%d/%m/%Y')
+                except (ValueError, AttributeError):
+                    # En cas d'erreur de parsing, garder la chaîne telle quelle
+                    user['creation_date'] = str(creation_date)
+        
+        # Récupérer les statistiques de l'utilisateur
+        stats_data = get_db("SELECT * FROM state WHERE id_user = %s", (user_id,))
+        if stats_data and len(stats_data) > 0:
+            stats_row = stats_data[0]
+            if len(stats_row) > 1:
+                user['stats']['tickets_created'] = stats_row[1] if stats_row[1] is not None else 0
+            if len(stats_row) > 2:
+                user['stats']['tickets_participated'] = stats_row[2] if stats_row[2] is not None else 0
+            if len(stats_row) > 3:
+                user['stats']['comments'] = stats_row[3] if stats_row[3] is not None else 0
+    
+    except Exception as e:
+        print(f"Erreur lors de la récupération des données utilisateur: {str(e)}")
+        # L'objet user minimal est déjà créé avec des valeurs par défaut
+    
+    return render_template('dashboard.html', user=user, now=datetime.now())
 
-        if retone == 1:
-            return redirect(url_for('index'))
-        else:
-            resultsoftcorige = []
-            resultardercorige = []
-            resultsoft = tiqué_type()
+@app.route('/logout')
+def logout():
+    token = session.get('token')
+    print(f"Déconnexion demandée - token présent: {'oui' if token else 'non'}")
+    
+    if token:
+        try:
+            logout_user(token)
+        except Exception as e:
+            print(f"Erreur lors de la déconnexion: {str(e)}")
+    
+    # Vider la session dans tous les cas
+    session.clear()
+    flash("Vous avez été déconnecté avec succès", "success")
+    return redirect(url_for('index'))
 
-            for i in resultsoft:
-                a = list(i)
-                a[0] = str(a[0]).replace(" ", "_")
-                a = tuple(a)
-                resultsoftcorige.append(a[0])
+# Route pour tester l'état de la session
+@app.route('/check-session')
+def check_session():
+    if 'user_id' in session and 'token' in session:
+        return json.dumps({
+            'status': 'logged_in',
+            'user_id': session['user_id'],
+            'username': session.get('username', 'Utilisateur')
+        })
+    else:
+        return json.dumps({'status': 'logged_out'})
 
-            resultarder = ader_type()
-            for i in resultsoft:
-                a = list(i)
-                a[0] = str(a[0]).replace(" ", "_")
-                a = tuple(a)
-                resultardercorige.append(a[0])
-        return render_template('Softwer.html', soft=resultsoft, ard=resultarder, page=page, ou=tiqué_type_var)
-
-    @app.route('/add_materiel', methods=['POST'])
-    def add_materiel_route():
-        if request.method == 'POST':
-            nom = request.form['nom']
-            categorie = int(request.form['categorie'])
-            sous_categorie = int(request.form['sous_categorie'])
-            sous_sous_categorie = int(request.form['sous_sous_categorie'])
-            try:
-                add_materiel(nom, categorie, sous_categorie, sous_sous_categorie)
-                flash("Matériel ajouté avec succès!", "success")
-            except Exception as e:
-                flash(str(e), "error")
-        return redirect(url_for('materil'))
-
-    @app.route('/delete_materiel', methods=['POST'])
-    def delete_materiel_route():
-        if request.method == 'POST':
-            ID = request.form['id']
-            try:
-                delete_materiel(ID)
-                flash("Matériel supprimé avec succès!", "success")
-            except Exception as e:
-                flash(str(e), "error")
-        return redirect(url_for('materil'))
-
-    with app.app_context():
-        for i in tiqué_type():
-            a = list(i)
-            a[0] = str(a[0]).replace(" ", "_")
-            a[0] = str(a[0]).lower()
-            a = tuple(a)
-            route_name = f'/software/{a[0]}'
-            endpoint_name = f'software_{a[0]}'
-            app.route(route_name, methods=['GET', 'POST'], endpoint=endpoint_name)(lambda tiqué_type_var=a[0]: create_allticket_route(tiqué_type_var))
-
-        for i in ader_type():
-            a = list(i)
-            a[0] = str(a[0]).replace(" ", "_")
-            a[0] = str(a[0]).lower()
-            a = tuple(a)
-            route_name = f'/hardware/{a[0]}'
-            endpoint_name = f'hardware_{a[0]}'
-            app.route(route_name, methods=['GET', 'POST'], endpoint=endpoint_name)(lambda tiqué_type_var=a[0]: create_allticket_route(tiqué_type_var))
-
-    def list_routes():
-        routes = []
-        for rule in app.url_map.iter_rules():
-            if "GET" in rule.methods and rule.endpoint != 'static':
-                url = url_for(rule.endpoint, **(rule.defaults or {}))
-                routes.append((url, rule.endpoint))
-        return routes
-
-    @app.route('/site-map')
-    def site_map():
-        routes = list_routes()
-        for route in routes:
-            print(route)
-        return {'routes': routes}
-
-    @app.route('/materiel', methods=['GET', 'POST'])
-    def materil():
-        categories = get_categories()
-        sous_categories = get_sous_categories(categories[0][0]) if categories else []
-        sous_sous_categories = get_sous_sous_categories(sous_categories[0][0]) if sous_categories else []
-        tiqué_types = tiqué_type()
-        ader_types = ader_type()
-        materiels = tiqué_types + ader_types
-        return render_template('materiel.html', materiels=materiels, categories=categories, sous_categories=sous_categories, sous_sous_categories=sous_sous_categories)
-
-@socketio.on('connect')
-def test_connect():
-    print('Client connected')
-
-@socketio.on('disconnect')
-def test_disconnect():
-    print('Client disconnected')
-
-@socketio.on('new_comment')
-def handle_new_comment(data):
-    id_tique = data['id_tique']
-    ID_user = data['ID_user']
-    commenter = data['commenter']
-    now_comment(id_tique, ID_user, commenter)
-    socketio.emit('broadcast_comment', data)
-
+# Point d'entrée principal
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    # S'assurer que la base de données est configurée
+    set_up_database()
+    
+    # Démarrer l'application Flask
+    app.run(debug=True)
