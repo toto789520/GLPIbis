@@ -2,6 +2,7 @@ import string
 import secrets
 import datetime
 from utils.db import get_db, log_activity
+from flask import session
 
 def generate_ticket_id(length=16):
     """
@@ -63,21 +64,66 @@ def list_tickets(filter_value=None):
     Liste tous les tickets selon un filtre optionnel
     
     Args:
-        filter_value (str, optional): Valeur pour filtrer les tickets par tag
+        filter_value (str, optional): Valeur pour filtrer les tickets
+            - 'all': tous les tickets
+            - 'open': tickets ouverts
+            - 'closed': tickets fermés
+            - 'my': tickets créés par l'utilisateur actuel
+            - 'software_X': tickets liés au logiciel X
+            - 'hardware_X': tickets liés au matériel X
+            - 'gravity_X': tickets avec gravité X
+            - autre: filtrage par tag
     
     Returns:
         list: Liste des tickets correspondant au filtre
     """
+    user_id = session.get('user_id')
+    query = "SELECT * FROM tiqué "
+    params = []
+    
     if filter_value == "all" or not filter_value:
-        tickets = get_db("SELECT * FROM tiqué ORDER BY date_open DESC")
+        # Pas de condition WHERE, récupérer tous les tickets
+        pass
+    elif filter_value == "open":
+        query += "WHERE open = 1 "
+    elif filter_value == "closed":
+        query += "WHERE open = 0 "
+    elif filter_value == "my" and user_id:
+        query += "WHERE ID_user = %s "
+        params.append(user_id)
+    elif filter_value.startswith("gravity_"):
+        # Extraire le niveau de gravité du filtre (gravity_1, gravity_2, etc.)
+        try:
+            gravity_level = int(filter_value.split("_")[1])
+            query += "WHERE gravite = %s "
+            params.append(gravity_level)
+        except (IndexError, ValueError):
+            # En cas d'erreur de format, ne pas appliquer de filtre
+            pass
+    elif filter_value.startswith("software_") or filter_value.startswith("hardware_"):
+        # Extraire la catégorie (remplacer les underscores par des espaces)
+        category_type = filter_value.split("_")[0]  # software ou hardware
+        category = filter_value[len(category_type)+1:].replace("_", " ")
+        
+        # Filtrer par tag contenant la catégorie (recherche partielle)
+        query += "WHERE tag LIKE %s "
+        params.append(f"%{category}%")
     else:
-        tickets = get_db(f"SELECT * FROM tiqué WHERE tag = '{filter_value}' ORDER BY date_open DESC")
+        # Filtrer par tag (recherche exacte ou partielle)
+        query += "WHERE tag LIKE %s "
+        params.append(f"%{filter_value}%")
+    
+    # Ajouter l'ordre de tri
+    query += "ORDER BY date_open DESC"
+    
+    # Exécuter la requête avec les paramètres
+    tickets = get_db(query, tuple(params)) if params else get_db(query)
     
     # Formater les tickets avec les noms d'utilisateurs
     formatted_tickets = []
     for ticket in tickets:
         try:
-            user_info = get_db(f"SELECT name FROM USEUR WHERE ID = '{ticket[1]}'")
+            user_info = get_db("SELECT name FROM USEUR WHERE ID = %s", (ticket[1],))
             user_name = user_info[0][0] if user_info else "Utilisateur inconnu"
             
             ticket_data = list(ticket)

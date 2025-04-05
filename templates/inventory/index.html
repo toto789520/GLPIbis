@@ -1,31 +1,56 @@
-{% extends "dashboard.html" %}
+{% extends "base.html" %}
 
 {% block title %}Inventaire du Matériel{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="inventory-container mt-4">
     <div class="row mb-4">
         <div class="col">
             <h1>Inventaire du Matériel</h1>
             <p class="lead">Gestion de tout le matériel de l'organisation</p>
         </div>
         <div class="col-auto">
-            <a href="{{ url_for('inventory.add_hardware') }}" class="btn btn-primary">
+            <div class="btn-group me-2">
+                <button type="button" class="btn-inventory outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fas fa-file-export"></i> Exporter
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('inventory.export_inventory', format='csv') }}">
+                            <i class="fas fa-file-csv"></i> Format CSV
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('inventory.export_inventory', format='json') }}">
+                            <i class="fas fa-file-code"></i> Format JSON
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <button type="button" class="btn-inventory outline-success me-2" onclick="document.getElementById('importFile').click()">
+                <i class="fas fa-file-import"></i> Importer
+            </button>
+            <a href="{{ url_for('inventory.add_hardware') }}" class="btn-inventory primary me-2">
                 <i class="fas fa-plus"></i> Ajouter du matériel
             </a>
-            <a href="{{ url_for('inventory.generate_qr_codes') }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('inventory.generate_qr_codes') }}" class="btn-inventory outline-secondary">
                 <i class="fas fa-qrcode"></i> Générer QR codes
             </a>
         </div>
     </div>
 
+    <!-- Formulaire d'import caché -->
+    <form id="importForm" action="{{ url_for('inventory.import_inventory') }}" method="post" enctype="multipart/form-data" style="display: none;">
+        <input type="file" id="importFile" name="file" accept=".csv" onchange="this.form.submit()">
+    </form>
+
     <!-- Filtres -->
-    <div class="card mb-4">
-        <div class="card-header bg-light">
+    <div class="inventory-card mb-4">
+        <div class="card-header">
             <h5 class="mb-0">Filtrer l'inventaire</h5>
         </div>
         <div class="card-body">
-            <form action="{{ url_for('inventory.index') }}" method="get">
+            <form action="{{ url_for('inventory.index') }}" method="get" class="inventory-form">
                 <div class="row">
                     <div class="col-md-3 mb-3">
                         <label for="categorie" class="form-label">Catégorie</label>
@@ -51,7 +76,7 @@
                                value="{{ request.args.get('search', '') }}" placeholder="Nom, code QR...">
                     </div>
                     <div class="col-md-2 d-flex align-items-end mb-3">
-                        <button type="submit" class="btn btn-primary w-100">
+                        <button type="submit" class="btn-inventory primary w-100">
                             <i class="fas fa-search"></i> Filtrer
                         </button>
                     </div>
@@ -61,22 +86,22 @@
     </div>
 
     <!-- Liste du matériel -->
-    <div class="card">
-        <div class="card-header bg-light">
+    <div class="inventory-card">
+        <div class="card-header">
             <div class="row align-items-center">
                 <div class="col">
                     <h5 class="mb-0">Matériel</h5>
                 </div>
                 <div class="col-auto">
-                    <span class="badge bg-secondary">{{ hardware|length }} élément(s)</span>
+                    <span class="badge-qr secondary">{{ hardware|length }} élément(s)</span>
                 </div>
             </div>
         </div>
         <div class="card-body p-0">
-            {% if hardware|length > 0 %}
+            {% if hardware and hardware|length > 0 %}
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
+                <table class="inventory-table">
+                    <thead>
                         <tr>
                             <th>ID</th>
                             <th>Nom</th>
@@ -97,23 +122,27 @@
                             <td>{{ item[5] }}</td>
                             <td>
                                 {% if item[6] %}
-                                <span class="badge bg-success">{{ item[6] }}</span>
+                                <span class="badge-qr success">{{ item[6] }}</span>
                                 {% else %}
-                                <span class="badge bg-secondary">Non défini</span>
+                                <span class="badge-qr secondary">Non défini</span>
                                 {% endif %}
                             </td>
                             <td>
                                 <div class="btn-group">
-                                    <a href="{{ url_for('inventory.view_hardware', hardware_id=item[0]) }}" class="btn btn-sm btn-outline-primary">
+                                    <a href="{{ url_for('inventory.view_hardware', hardware_id=item[0]) }}" class="btn-inventory outline-primary sm">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{{ url_for('inventory.edit_hardware', hardware_id=item[0]) }}" class="btn btn-sm btn-outline-secondary">
+                                    <a href="{{ url_for('inventory.edit_hardware', hardware_id=item[0]) }}" class="btn-inventory outline-warning sm">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                                            onclick="confirmDelete('{{ item[0] }}', '{{ item[1] }}')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    <a href="{{ url_for('inventory.download_qr_code', qr_code=item[6]) }}" class="btn-inventory outline-info sm">
+                                        <i class="fas fa-qrcode"></i>
+                                    </a>
+                                    <form action="{{ url_for('inventory.delete_hardware', hardware_id=item[0]) }}" method="post" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet élément ?');">
+                                        <button type="submit" class="btn-inventory outline-danger sm">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -122,10 +151,11 @@
                 </table>
             </div>
             {% else %}
-            <div class="text-center p-5">
-                <img src="{{ url_for('static', filename='images/empty.svg') }}" alt="Aucun matériel" style="max-width: 150px;">
-                <p class="lead mt-3">Aucun matériel ne correspond à votre recherche.</p>
-                <a href="{{ url_for('inventory.add_hardware') }}" class="btn btn-primary mt-2">
+            <div class="text-center py-5">
+                <img src="{{ url_for('static', filename='images/empty.svg') }}" alt="Aucun matériel" class="img-fluid mb-3" style="max-width: 200px;">
+                <h5>Aucun matériel trouvé</h5>
+                <p class="text-muted">Commencez par ajouter du matériel à l'inventaire.</p>
+                <a href="{{ url_for('inventory.add_hardware') }}" class="btn-inventory primary">
                     <i class="fas fa-plus"></i> Ajouter du matériel
                 </a>
             </div>
@@ -134,64 +164,29 @@
     </div>
 </div>
 
-<!-- Modal de confirmation de suppression -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Confirmer la suppression</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-            </div>
-            <div class="modal-body">
-                <p>Êtes-vous sûr de vouloir supprimer le matériel <strong id="deleteItemName"></strong>?</p>
-                <p class="text-danger">Cette action est irréversible.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <form id="deleteForm" method="post" action="">
-                    <button type="submit" class="btn btn-danger">Supprimer</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
+<!-- JavaScript pour la gestion dynamique des sous-catégories -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Gestion dynamique des sous-catégories
-    const categorieSelect = document.getElementById('categorie');
-    const sousCategoriSelect = document.getElementById('sous_categorie');
+document.getElementById('categorie').addEventListener('change', function() {
+    const categorieId = this.value;
+    const sousCategorie = document.getElementById('sous_categorie');
     
-    // Données des sous-catégories par catégorie
-    const sousCategories = {{ sous_categories|tojson|safe }};
+    // Vider les options actuelles
+    sousCategorie.innerHTML = '<option value="">Toutes les sous-catégories</option>';
     
-    categorieSelect.addEventListener('change', function() {
-        // Vider les options actuelles
-        sousCategoriSelect.innerHTML = '<option value="">Toutes les sous-catégories</option>';
-        
-        const categorieId = this.value;
-        if (categorieId && sousCategories[categorieId]) {
-            // Ajouter les sous-catégories correspondantes
-            sousCategories[categorieId].forEach(function(sousCat) {
-                const option = document.createElement('option');
-                option.value = sousCat[0];
-                option.textContent = sousCat[1];
-                sousCategoriSelect.appendChild(option);
-            });
-        }
-    });
-    
-    // Déclencher l'événement change pour charger les sous-catégories initiales
-    const event = new Event('change');
-    categorieSelect.dispatchEvent(event);
+    if (categorieId) {
+        // Faire une requête AJAX pour obtenir les sous-catégories
+        fetch(`/inventory/api/sous_categories/${categorieId}`)
+            .then(response => response.json())
+            .then(data => {
+                data.sous_categories.forEach(sc => {
+                    const option = document.createElement('option');
+                    option.value = sc[0];
+                    option.textContent = sc[1];
+                    sousCategorie.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Erreur:', error));
+    }
 });
-
-function confirmDelete(id, name) {
-    document.getElementById('deleteItemName').textContent = name;
-    document.getElementById('deleteForm').action = "{{ url_for('inventory.delete_hardware', hardware_id=0) }}".replace('0', id);
-    
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    deleteModal.show();
-}
 </script>
 {% endblock %}

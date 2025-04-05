@@ -117,7 +117,7 @@
                     
                     <hr class="my-4">
                     
-                    <form method="post" action="{{ url_for('tickets.add_comment', ticket_id=ticket_id) }}">
+                    <form method="post" action="{{ url_for('tickets.comment', ticket_id=ticket_id) }}">
                         <div class="mb-3">
                             <label for="comment" class="form-label">Ajouter un commentaire :</label>
                             <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>

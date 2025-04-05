@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier un ticket{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h1 class="mb-3">Modifier un ticket</h1>
+            <a href="{{ url_for('tickets.view', ticket_id=ticket_id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour au ticket
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('tickets.update', ticket_id=ticket_id) }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="titre" class="form-label">Titre*</label>
+                            <input type="text" class="form-control" id="titre" name="titre" value="{{ ticket[1] }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description*</label>
+                            <textarea class="form-control" id="description" name="description" rows="5" required>{{ ticket[3] }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="gravite" class="form-label">Gravité*</label>
+                            <select class="form-select" id="gravite" name="gravite" required>
+                                <option value="1" {% if ticket[7] == 1 %}selected{% endif %}>1 - Basse</option>
+                                <option value="2" {% if ticket[7] == 2 %}selected{% endif %}>2 - Moyenne</option>
+                                <option value="3" {% if ticket[7] == 3 %}selected{% endif %}>3 - Haute</option>
+                                <option value="4" {% if ticket[7] == 4 %}selected{% endif %}>4 - Urgente</option>
+                                <option value="5" {% if ticket[7] == 5 %}selected{% endif %}>5 - Critique</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Tags</label>
+                            <input type="text" class="form-control" id="tags" name="tags" value="{{ ticket[10] if ticket[10] else '' }}" placeholder="Séparez les tags par des virgules">
+                            <div class="form-text">Les tags aident à catégoriser les tickets (ex: imprimante, wifi, réseau)</div>
+                        </div>
+                        
+                        <div class="text-end">
+                            <a href="{{ url_for('tickets.view', ticket_id=ticket_id) }}" class="btn btn-outline-secondary me-2">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Mettre à jour le ticket</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 col-md-10 mt-4 mt-lg-0">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Informations</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Créé le :</strong> {{ ticket[5] }}</p>
+                    <p class="mb-1"><strong>Statut :</strong> 
+                        {% if ticket[8] == 0 %}
+                        <span class="badge bg-success">Ouvert</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Fermé</span>
+                        {% endif %}
+                    </p>
+                    <p class="mb-1"><strong>ID :</strong> {{ ticket_id }}</p>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Légende des gravités</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><span class="badge bg-info">1</span> Basse - Problème mineur</p>
+                    <p class="mb-1"><span class="badge bg-success">2</span> Moyenne - Impact limité</p>
+                    <p class="mb-1"><span class="badge bg-warning">3</span> Haute - Impact significatif</p>
+                    <p class="mb-1"><span class="badge bg-danger">4</span> Urgente - Impact majeur</p>
+                    <p class="mb-1"><span class="badge bg-dark">5</span> Critique - Système inutilisable</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

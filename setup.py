@@ -3,7 +3,20 @@ from utils.db import get_db
 # créer la base de donner depuis la connettion exstanse pour la database
 
 def set_up_database():
-    # arder
+    # Supprimer d'abord les tables avec des contraintes de clé étrangère dans le bon ordre
+    try:
+        print(get_db('DROP TABLE IF EXISTS `intervention`;'))
+        print(get_db('DROP TABLE IF EXISTS `pret`;'))
+        print(get_db('DROP TABLE IF EXISTS `ticket_materiel`;'))
+        print(get_db('DROP TABLE IF EXISTS `materiel`;'))
+        print(get_db('DROP TABLE IF EXISTS `sous_sous_categorie`;'))
+        print(get_db('DROP TABLE IF EXISTS `sous_categorie`;'))
+        print(get_db('DROP TABLE IF EXISTS `categorie`;'))
+        print(get_db('DROP TABLE IF EXISTS `localisation`;'))
+    except Exception as e:
+        print(f"Erreur lors de la suppression des tables: {str(e)}")
+
+    # Création des tables de base
     print(get_db('''
         CREATE TABLE IF NOT EXISTS `arder` (
         `name` TEXT NOT NULL,
@@ -57,12 +70,60 @@ def set_up_database():
         hashed_password VARCHAR(255) NOT NULL
         );
     '''))
+    
+    # Recréation des tables d'inventaire dans le bon ordre
+    
+    # Tables de catégories pour l'inventaire
     print(get_db('''
-        CREATE TABLE IF NOT EXISTS `materiel`( 
-	    `Nom` Text NULL,
-	    `catégorie` Text NULL,
-	    `ID` Float NULL )
-        ENGINE = InnoDB;
+        CREATE TABLE IF NOT EXISTS `categorie` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `nom` VARCHAR(255) NOT NULL,
+        `description` TEXT
+        );
+    '''))
+    
+    print(get_db('''
+        CREATE TABLE IF NOT EXISTS `sous_categorie` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `nom` VARCHAR(255) NOT NULL,
+        `description` TEXT,
+        `id_categorie` INT NOT NULL,
+        FOREIGN KEY (`id_categorie`) REFERENCES `categorie`(`id`) ON DELETE CASCADE
+        );
+    '''))
+    
+    print(get_db('''
+        CREATE TABLE IF NOT EXISTS `sous_sous_categorie` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `nom` VARCHAR(255) NOT NULL,
+        `description` TEXT,
+        `id_sous_categorie` INT NOT NULL,
+        FOREIGN KEY (`id_sous_categorie`) REFERENCES `sous_categorie`(`id`) ON DELETE CASCADE
+        );
+    '''))
+    
+    # Table materiel avec la structure attendue
+    print(get_db('''
+        CREATE TABLE IF NOT EXISTS `materiel` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `nom` TEXT NOT NULL,
+        `categorie` INT NOT NULL,
+        `sous_categorie` INT NOT NULL,
+        `sous_sous_categorie` INT NOT NULL,
+        `date_creation` DATE NOT NULL,
+        `qr_code` VARCHAR(50) UNIQUE NOT NULL
+        );
+    '''))
+    
+    # Table d'association entre tickets et matériel
+    print(get_db('''
+        CREATE TABLE IF NOT EXISTS `ticket_materiel` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `id_ticket` TEXT NOT NULL,
+        `id_materiel` INT NOT NULL,
+        `date_association` DATE NOT NULL,
+        FOREIGN KEY (`id_materiel`) REFERENCES `materiel`(`id`) ON DELETE CASCADE
+        );
     '''))
     
     # Créer la table sessions pour la gestion des sessions utilisateurs
@@ -77,8 +138,53 @@ def set_up_database():
         INDEX `idx_token` (`token`)
         );
     '''))
+    
+    # Table pour la localisation
+    print(get_db('''
+        CREATE TABLE IF NOT EXISTS `localisation` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `batiment` VARCHAR(255) NOT NULL,
+        `etage` VARCHAR(50),
+        `salle` VARCHAR(255),
+        `description` TEXT
+        );
+    '''))
 
-if __name__ == '__main__':
-    print("Setting up database...")
-    set_up_database()
-    print("Database setup complete.")
+    # Ajout de la colonne localisation dans la table materiel
+    print(get_db('''
+        ALTER TABLE `materiel`
+        ADD COLUMN `id_localisation` INT,
+        ADD FOREIGN KEY (`id_localisation`) REFERENCES `localisation`(`id`);
+    '''))
+
+    # Table pour les prêts
+    print(get_db('''
+        CREATE TABLE IF NOT EXISTS `pret` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `id_materiel` INT NOT NULL,
+        `id_emprunteur` VARCHAR(255) NOT NULL,
+        `date_emprunt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+        `date_retour_prevue` DATETIME NOT NULL,
+        `date_retour` DATETIME,
+        `notes` TEXT,
+        `statut` ENUM('en_cours', 'retourne', 'en_retard') DEFAULT 'en_cours',
+        FOREIGN KEY (`id_materiel`) REFERENCES `materiel`(`id`),
+        FOREIGN KEY (`id_emprunteur`) REFERENCES `USEUR`(`ID`)
+        );
+    '''))
+
+    # Table pour les interventions
+    print(get_db('''
+        CREATE TABLE IF NOT EXISTS `intervention` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `id_materiel` INT NOT NULL,
+        `id_technicien` VARCHAR(255) NOT NULL,
+        `type` VARCHAR(50) NOT NULL,
+        `description` TEXT NOT NULL,
+        `date_debut` DATETIME DEFAULT CURRENT_TIMESTAMP,
+        `date_fin` DATETIME,
+        `statut` ENUM('en_cours', 'termine') DEFAULT 'en_cours',
+        FOREIGN KEY (`id_materiel`) REFERENCES `materiel`(`id`),
+        FOREIGN KEY (`id_technicien`) REFERENCES `USEUR`(`ID`)
+        );
+    '''))

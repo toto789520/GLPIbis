@@ -1,0 +1,348 @@
+/* Styles spécifiques pour le module d'inventaire */
+
+/* Styles généraux pour les conteneurs */
+.inventory-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Styles pour les cartes */
+.inventory-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    background-color: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.inventory-card .card-header {
+    background-color: #f5f5f5;
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 7px 7px 0 0;
+}
+
+.inventory-card .card-body {
+    padding: 20px;
+}
+
+.inventory-card .card-footer {
+    background-color: #f9f9f9;
+    padding: 12px 20px;
+    border-top: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 0 0 7px 7px;
+}
+
+/* Styles pour les tableaux de matériel */
+.inventory-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.inventory-table th {
+    background-color: #f1f1f1;
+    text-align: left;
+    padding: 12px;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+}
+
+.inventory-table td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.inventory-table tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Badges pour statuts et codes QR */
+.badge-qr {
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.85em;
+}
+
+.badge-qr.success {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge-qr.secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* Styles pour les boutons */
+.btn-inventory {
+    display: inline-block;
+    font-weight: 500;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    border: 1px solid transparent;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-inventory.primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.btn-inventory.primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+}
+
+.btn-inventory.secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+.btn-inventory.secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+}
+
+.btn-inventory.danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.btn-inventory.danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.btn-inventory.outline {
+    background-color: transparent;
+}
+
+.btn-inventory.outline-primary {
+    color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-inventory.outline-primary:hover {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-inventory.outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-inventory.outline-secondary:hover {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-inventory.outline-danger {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-inventory.outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-inventory.sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.765rem;
+}
+
+/* Styles pour les formulaires */
+.inventory-form label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.inventory-form input,
+.inventory-form select,
+.inventory-form textarea {
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.inventory-form input:focus,
+.inventory-form select:focus,
+.inventory-form textarea:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* État d'erreur pour les formulaires */
+.inventory-form .is-invalid {
+    border-color: #dc3545;
+}
+
+.inventory-form .is-invalid:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.inventory-form .invalid-feedback {
+    color: #dc3545;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+/* Détails du matériel */
+.hardware-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.hardware-details .detail-item {
+    flex: 1 1 200px;
+    margin-bottom: 15px;
+}
+
+.hardware-details .detail-label {
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.hardware-details .detail-value {
+    font-size: 1rem;
+}
+
+/* QR code display */
+.qr-code-container {
+    margin-top: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.qr-code-image {
+    max-width: 150px;
+    border: 1px solid #ddd;
+    padding: 5px;
+    background-color: white;
+}
+
+/* Messages d'état */
+.inventory-message {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+}
+
+.inventory-message.success {
+    background-color: rgba(40, 167, 69, 0.1);
+    border-left: 4px solid #28a745;
+    color: #155724;
+}
+
+.inventory-message.info {
+    background-color: rgba(23, 162, 184, 0.1);
+    border-left: 4px solid #17a2b8;
+    color: #0c5460;
+}
+
+.inventory-message.warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    border-left: 4px solid #ffc107;
+    color: #856404;
+}
+
+.inventory-message.error {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-left: 4px solid #dc3545;
+    color: #721c24;
+}
+
+/* Vue vide (pas de matériel trouvé) */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.empty-state img {
+    max-width: 150px;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: #6c757d;
+}
+
+.empty-state p {
+    color: #6c757d;
+    margin-bottom: 20px;
+}
+
+/* Filtres */
+.filter-section {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+/* Caractéristiques techniques */
+.specs-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.specs-table th,
+.specs-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.specs-table th {
+    text-align: left;
+    font-weight: 500;
+    width: 40%;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .inventory-container {
+        padding: 10px;
+    }
+    
+    .hardware-details {
+        flex-direction: column;
+    }
+    
+    .hardware-details .detail-item {
+        flex: 1 1 100%;
+    }
+    
+    .inventory-form .form-row {
+        flex-direction: column;
+    }
+}

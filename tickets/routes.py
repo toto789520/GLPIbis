@@ -3,7 +3,8 @@ from utils.db import get_db, log_activity
 from onekey.user import get_user_info
 from .ticket_service import (
     create_ticket, list_tickets, get_ticket_info, get_ticket_comments, 
-    add_comment, close_ticket, associate_hardware_to_ticket, 
+    add_comment as add_ticket_comment,  # Renommer l'import pour éviter le conflit
+    close_ticket, associate_hardware_to_ticket, 
     disassociate_hardware_from_ticket, get_associated_hardware, get_available_hardware
 )
 from datetime import datetime
@@ -76,6 +77,19 @@ def view(ticket_id):
         ticket = get_ticket_info(ticket_id)
         comments = get_ticket_comments(ticket_id)
         
+        # Récupérer le nom de l'utilisateur qui a créé le ticket
+        creator_name = ticket[-1] if ticket else "Utilisateur inconnu"  # Le nom est ajouté à la fin du tuple par get_ticket_info
+        
+        # Récupérer la liste des utilisateurs pour l'assignation
+        users = get_db("SELECT ID, name FROM USEUR WHERE active = 1")
+        
+        # Calculer la date de dernière mise à jour
+        last_update = ticket[2]  # Par défaut, date de création
+        if comments:
+            # Prendre la date du commentaire le plus récent
+            last_comment_date = comments[-1][1]  # Date du dernier commentaire
+            last_update = last_comment_date
+        
         # Remplacer les IDs utilisateurs par les noms d'utilisateurs
         formatted_comments = []
         for comment in comments:
@@ -95,6 +109,9 @@ def view(ticket_id):
                               ticket_id=ticket_id,
                               associated_hardware=associated_hardware,
                               available_hardware=available_hardware,
+                              creator_name=creator_name,
+                              last_update=last_update,
+                              users=users,
                               now=datetime.now())
     except Exception as e:
         flash(f"Erreur lors de l'accès au ticket: {str(e)}", "error")
@@ -115,13 +132,18 @@ def comment(ticket_id):
         return redirect(url_for('tickets.view', ticket_id=ticket_id))
     
     try:
-        add_comment(ticket_id, user_id, comment_text, gravite)
+        add_ticket_comment(ticket_id, user_id, comment_text, gravite)  # Utiliser le nom renommé
         log_activity(user_id, 'comment', 'ticket', f"Commentaire ajouté au ticket {ticket_id}")
         flash("Commentaire ajouté avec succès", "success")
     except Exception as e:
         flash(f"Erreur lors de l'ajout du commentaire: {str(e)}", "error")
     
     return redirect(url_for('tickets.view', ticket_id=ticket_id))
+
+@tickets_bp.route('/add_comment/<ticket_id>', methods=['POST'])
+def add_comment(ticket_id):
+    """Alias pour la route comment - pour compatibilité"""
+    return comment(ticket_id)
 
 @tickets_bp.route('/close/<ticket_id>', methods=['POST'])
 def close(ticket_id):
@@ -233,3 +255,104 @@ def api_ticket_hardware(ticket_id):
         return jsonify({'hardware': associated_hardware})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@tickets_bp.route('/update/<ticket_id>', methods=['GET', 'POST'])
+def update(ticket_id):
+    """Mettre à jour un ticket existant"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+    
+    try:
+        ticket = get_ticket_info(ticket_id)
+        
+        if request.method == 'POST':
+            titre = request.form.get('titre')
+            description = request.form.get('description')
+            gravite = request.form.get('gravite')
+            tags = request.form.get('tags')
+            
+            if not all([titre, description, gravite]):
+                flash("Tous les champs obligatoires doivent être remplis", "error")
+                return render_template('tickets/update.html', ticket=ticket, ticket_id=ticket_id, now=datetime.now())
+            
+            try:
+                # Mettre à jour le ticket dans la base de données
+                conn = get_db('connect')
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE tiqué
+                    SET titre = ?, description = ?, gravite = ?, tags = ?
+                    WHERE ticket_id = ?
+                """, (titre, description, gravite, tags, ticket_id))
+                conn.commit()
+                conn.close()
+                
+                log_activity(user_id, 'update', 'ticket', f"Ticket {ticket_id} mis à jour")
+                flash("Le ticket a été mis à jour avec succès!", "success")
+                return redirect(url_for('tickets.view', ticket_id=ticket_id))
+            except Exception as e:
+                flash(f"Erreur lors de la mise à jour du ticket: {str(e)}", "error")
+                return render_template('tickets/update.html', ticket=ticket, ticket_id=ticket_id, now=datetime.now())
+        
+        return render_template('tickets/update.html', ticket=ticket, ticket_id=ticket_id, now=datetime.now())
+    except Exception as e:
+        flash(f"Erreur lors de l'accès au ticket: {str(e)}", "error")
+        return redirect(url_for('tickets.index'))
+
+@tickets_bp.route('/assign/<ticket_id>', methods=['POST'])
+def assign(ticket_id):
+    """Assigner un ticket à un utilisateur"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+    
+    assigned_user_id = request.form.get('assigned_user_id')
+    if not assigned_user_id:
+        flash("ID d'utilisateur non fourni", "error")
+        return redirect(url_for('tickets.view', ticket_id=ticket_id))
+    
+    try:
+        # Mettre à jour le ticket dans la base de données pour l'assigner à l'utilisateur
+        conn = get_db('connect')
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE tiqué
+            SET assigned_user_id = ?
+            WHERE ticket_id = ?
+        """, (assigned_user_id, ticket_id))
+        conn.commit()
+        conn.close()
+        
+        log_activity(user_id, 'assign', 'ticket', f"Ticket {ticket_id} assigné à l'utilisateur {assigned_user_id}")
+        flash("Le ticket a été assigné avec succès", "success")
+    except Exception as e:
+        flash(f"Erreur lors de l'assignation du ticket: {str(e)}", "error")
+    
+    return redirect(url_for('tickets.view', ticket_id=ticket_id))
+
+@tickets_bp.route('/reopen/<ticket_id>', methods=['POST'])
+def reopen(ticket_id):
+    """Réouvrir un ticket fermé"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+    
+    try:
+        # Mettre à jour le statut du ticket dans la base de données
+        conn = get_db('connect')
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE tiqué
+            SET status = 0
+            WHERE ticket_id = ?
+        """, (ticket_id,))
+        conn.commit()
+        conn.close()
+        
+        log_activity(user_id, 'reopen', 'ticket', f"Ticket {ticket_id} réouvert")
+        flash("Le ticket a été réouvert avec succès", "success")
+    except Exception as e:
+        flash(f"Erreur lors de la réouverture du ticket: {str(e)}", "error")
+    
+    return redirect(url_for('tickets.view', ticket_id=ticket_id))

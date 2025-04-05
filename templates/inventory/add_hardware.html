@@ -1,27 +1,32 @@
-{% extends "dashboard.html" %}
+{% extends "base.html" %}
 
 {% block title %}Ajouter du Matériel{% endblock %}
 
+{% block styles %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+{{ super() }}
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
+<div class="inventory-container mt-4">
     <div class="row mb-4">
         <div class="col">
             <h1>Ajouter du Matériel</h1>
             <p class="lead">Enregistrez un nouvel équipement dans l'inventaire</p>
         </div>
         <div class="col-auto">
-            <a href="{{ url_for('inventory.index') }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('inventory.index') }}" class="btn-inventory outline-secondary">
                 <i class="fas fa-arrow-left"></i> Retour à l'inventaire
             </a>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header bg-light">
+    <div class="inventory-card">
+        <div class="card-header">
             <h5 class="mb-0">Informations du matériel</h5>
         </div>
         <div class="card-body">
-            <form method="post" action="{{ url_for('inventory.add_hardware') }}">
+            <form method="post" action="{{ url_for('inventory.add_hardware') }}" class="inventory-form">
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="nom" class="form-label">Nom de l'équipement*</label>
@@ -90,13 +95,13 @@
                                        placeholder="Valeur (ex: Intel i7 11th Gen)">
                             </div>
                             <div class="col-md-1">
-                                <button type="button" class="btn btn-outline-danger btn-sm remove-caracteristique" disabled>
+                                <button type="button" class="btn-inventory outline-danger sm remove-caracteristique" disabled>
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-caracteristique">
+                    <button type="button" class="btn-inventory outline-secondary sm mt-2" id="add-caracteristique">
                         <i class="fas fa-plus"></i> Ajouter une caractéristique
                     </button>
                 </div>
@@ -104,19 +109,22 @@
                 <hr>
 
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <button type="reset" class="btn btn-outline-secondary">Réinitialiser</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="reset" class="btn-inventory outline-secondary">Réinitialiser</button>
+                    <button type="submit" class="btn-inventory primary">
                         <i class="fas fa-save"></i> Enregistrer
                     </button>
                 </div>
             </form>
         </div>
-        <div class="card-footer bg-light">
+        <div class="card-footer">
             <small class="text-muted">Les champs marqués d'un * sont obligatoires</small>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Gestion dynamique des sous-catégories et sous-sous-catégories
@@ -188,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
                        placeholder="Valeur (ex: Intel i7 11th Gen)">
             </div>
             <div class="col-md-1">
-                <button type="button" class="btn btn-outline-danger btn-sm remove-caracteristique">
+                <button type="button" class="btn-inventory outline-danger sm remove-caracteristique">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>

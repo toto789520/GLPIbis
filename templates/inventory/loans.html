@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des Prêts{% endblock %}
+
+{% block content %}
+<div class="inventory-container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Gestion des Prêts</h1>
+            <p class="lead">Suivi des prêts de matériel</p>
+        </div>
+    </div>
+
+    <!-- Liste des prêts en cours -->
+    <div class="inventory-card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Prêts en cours</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if loans %}
+            <div class="table-responsive">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Matériel</th>
+                            <th>Emprunteur</th>
+                            <th>Date d'emprunt</th>
+                            <th>Retour prévu</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in loans %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('inventory.view_hardware', hardware_id=loan[1]) }}">
+                                    {{ loan.materiel_nom }}
+                                </a>
+                            </td>
+                            <td>{{ loan.emprunteur_nom }}</td>
+                            <td>{{ loan.date_emprunt.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ loan.date_retour_prevue.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% if loan.statut == 'en_cours' %}
+                                <span class="badge bg-primary">En cours</span>
+                                {% elif loan.statut == 'en_retard' %}
+                                <span class="badge bg-danger">En retard</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn-inventory outline-primary sm"
+                                            onclick="returnLoan('{{ loan.id }}')">
+                                        <i class="fas fa-check"></i> Retourner
+                                    </button>
+                                    <button type="button" class="btn-inventory outline-secondary sm"
+                                            onclick="extendLoan('{{ loan.id }}')">
+                                        <i class="fas fa-clock"></i> Prolonger
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <p class="text-muted mb-0">Aucun prêt en cours</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de retour -->
+<div class="modal fade" id="returnModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer le retour</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Confirmez-vous le retour de ce matériel ?</p>
+                <form id="returnForm" method="post">
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (optionnel)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2"
+                                  placeholder="État du matériel, commentaires..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-inventory secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn-inventory primary" onclick="confirmReturn()">
+                    Confirmer le retour
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de prolongation -->
+<div class="modal fade" id="extendModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Prolonger le prêt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="extendForm" method="post">
+                    <div class="mb-3">
+                        <label for="new_return_date" class="form-label">Nouvelle date de retour*</label>
+                        <input type="date" class="form-control" id="new_return_date" name="new_return_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="extend_reason" class="form-label">Raison de la prolongation</label>
+                        <textarea class="form-control" id="extend_reason" name="extend_reason" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-inventory secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn-inventory primary" onclick="confirmExtend()">
+                    Prolonger le prêt
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+let currentLoanId = null;
+
+function returnLoan(loanId) {
+    currentLoanId = loanId;
+    const modal = new bootstrap.Modal(document.getElementById('returnModal'));
+    modal.show();
+}
+
+function confirmReturn() {
+    const form = document.getElementById('returnForm');
+    form.action = `/inventory/loan/${currentLoanId}/return`;
+    form.submit();
+}
+
+function extendLoan(loanId) {
+    currentLoanId = loanId;
+    const modal = new bootstrap.Modal(document.getElementById('extendModal'));
+    // Définir la date minimum à aujourd'hui
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('new_return_date').min = today;
+    modal.show();
+}
+
+function confirmExtend() {
+    const form = document.getElementById('extendForm');
+    form.action = `/inventory/loan/${currentLoanId}/extend`;
+    form.submit();
+}
+</script>
+{% endblock %}

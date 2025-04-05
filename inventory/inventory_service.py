@@ -1,8 +1,11 @@
 import datetime
 import secrets
+import csv
+import json
+from io import StringIO
 from utils.db import get_db, log_activity
 
-def add_item(nom, categorie_id, sous_categorie_id, sous_sous_categorie_id):
+def add_item(nom, categorie_id, sous_categorie_id, sous_sous_categorie_id, date_creation=None, qr_code=None):
     """
     Ajoute un nouvel élément à l'inventaire
     
@@ -11,6 +14,8 @@ def add_item(nom, categorie_id, sous_categorie_id, sous_sous_categorie_id):
         categorie_id (int): ID de la catégorie
         sous_categorie_id (int): ID de la sous-catégorie
         sous_sous_categorie_id (int): ID de la sous-sous-catégorie
+        date_creation (str, optional): Date de création au format YYYY-MM-DD
+        qr_code (str, optional): Code QR personnalisé
     
     Returns:
         int: ID de l'élément ajouté
@@ -28,8 +33,13 @@ def add_item(nom, categorie_id, sous_categorie_id, sous_sous_categorie_id):
     if not sous_sous_categorie:
         raise ValueError(f"La sous-sous-catégorie avec l'ID {sous_sous_categorie_id} n'existe pas")
     
-    # Générer un ID unique pour le QR code
-    qr_id = secrets.token_hex(4).upper()
+    # Utiliser la date fournie ou la date actuelle
+    if not date_creation:
+        date_creation = datetime.date.today().isoformat()
+    
+    # Générer un ID unique pour le QR code si non fourni
+    if not qr_code:
+        qr_code = secrets.token_hex(4).upper()
     
     # Insérer le matériel dans la base de données
     data = {
@@ -37,8 +47,8 @@ def add_item(nom, categorie_id, sous_categorie_id, sous_sous_categorie_id):
         'categorie': categorie_id,
         'sous_categorie': sous_categorie_id,
         'sous_sous_categorie': sous_sous_categorie_id,
-        'date_creation': datetime.date.today().isoformat(),
-        'qr_code': qr_id
+        'date_creation': date_creation,
+        'qr_code': qr_code
     }
     
     get_db("""
@@ -167,73 +177,303 @@ def get_sous_sous_categories(sous_categorie_id):
     """
     return get_db("SELECT * FROM sous_sous_categorie WHERE id_sous_categorie = %s", (sous_categorie_id,))
 
-def link_item_to_ticket(item_id, ticket_id):
+def link_item_to_ticket(item_id, ticket):
     """
-    Associe un élément à un ticket
+    Lie un élément à un ticket
     
     Args:
         item_id (int): ID de l'élément
-        ticket_id (str): ID du ticket
+        ticket (int): ID du ticket
     
     Returns:
         bool: True si l'association a été créée avec succès
     """
-    # Vérifier que l'élément existe
-    item = get_db("SELECT * FROM materiel WHERE id = %s", (item_id,))
-    if not item:
-        raise ValueError(f"Le matériel avec l'ID {item_id} n'existe pas")
-    
-    # Vérifier que le ticket existe
-    ticket = get_db("SELECT * FROM tiqué WHERE ID_tiqué = %s", (ticket_id,))
-    if not ticket:
-        raise ValueError(f"Le ticket avec l'ID {ticket_id} n'existe pas")
-    
-    # Vérifier si l'association existe déjà
-    existing = get_db("SELECT * FROM ticket_materiel WHERE id_ticket = %s AND id_materiel = %s", 
-                     (ticket_id, item_id))
-    if existing:
-        return True  # L'association existe déjà, rien à faire
-    
-    # Créer l'association
-    get_db("INSERT INTO ticket_materiel (id_ticket, id_materiel, date_association) VALUES (%s, %s, %s)", 
-           (ticket_id, item_id, datetime.date.today().isoformat()))
-    
+    get_db("INSERT INTO ticket_materiel (id_materiel, id_ticket) VALUES (%s, %s)", (item_id, ticket))
     return True
 
-def unlink_item_from_ticket(item_id, ticket_id):
+# Fonctions d'import/export
+def export_inventory_csv():
     """
-    Dissocie un élément d'un ticket
-    
-    Args:
-        item_id (int): ID de l'élément
-        ticket_id (str): ID du ticket
-    
-    Returns:
-        bool: True si l'association a été supprimée avec succès
+    Exporte l'inventaire au format CSV
     """
-    get_db("DELETE FROM ticket_materiel WHERE id_ticket = %s AND id_materiel = %s", 
-           (ticket_id, item_id))
+    output = StringIO()
+    writer = csv.writer(output)
     
-    return True
-
-def get_items_by_ticket(ticket_id):
-    """
-    Récupère tous les éléments associés à un ticket
+    # En-têtes
+    writer.writerow(['ID', 'Nom', 'Catégorie', 'Sous-catégorie', 'Sous-sous-catégorie', 
+                    'Date création', 'Code QR', 'Bâtiment', 'Étage', 'Salle', 'Description'])
     
-    Args:
-        ticket_id (str): ID du ticket
-    
-    Returns:
-        list: Liste des éléments associés au ticket
-    """
+    # Récupérer les données
     items = get_db("""
-        SELECT m.*, c.nom AS categorie_nom, sc.nom AS sous_categorie_nom, ssc.nom AS sous_sous_categorie_nom 
+        SELECT m.*, c.nom as cat_nom, sc.nom as scat_nom, ssc.nom as sscat_nom,
+               l.batiment, l.etage, l.salle, l.description
         FROM materiel m
-        JOIN ticket_materiel tm ON m.id = tm.id_materiel
         JOIN categorie c ON m.categorie = c.id
         JOIN sous_categorie sc ON m.sous_categorie = sc.id
         JOIN sous_sous_categorie ssc ON m.sous_sous_categorie = ssc.id
-        WHERE tm.id_ticket = %s
-    """, (ticket_id,))
+        LEFT JOIN localisation l ON m.id_localisation = l.id
+    """)
     
-    return items
+    # Écrire les données
+    for item in items:
+        writer.writerow([
+            item[0],  # ID
+            item[1],  # Nom
+            item['cat_nom'],
+            item['scat_nom'],
+            item['sscat_nom'],
+            item[5],  # Date création
+            item[6],  # QR Code
+            item['batiment'] or '',
+            item['etage'] or '',
+            item['salle'] or '',
+            item['description'] or ''
+        ])
+    
+    return output.getvalue()
+
+def export_inventory_json():
+    """
+    Exporte l'inventaire au format JSON
+    """
+    # Récupérer les données avec la même requête que pour le CSV
+    items = get_db("""
+        SELECT m.*, c.nom as cat_nom, sc.nom as scat_nom, ssc.nom as sscat_nom,
+               l.batiment, l.etage, l.salle, l.description
+        FROM materiel m
+        JOIN categorie c ON m.categorie = c.id
+        JOIN sous_categorie sc ON m.sous_categorie = sc.id
+        JOIN sous_sous_categorie ssc ON m.sous_sous_categorie = ssc.id
+        LEFT JOIN localisation l ON m.id_localisation = l.id
+    """)
+    
+    # Convertir en format JSON
+    inventory_data = []
+    for item in items:
+        inventory_data.append({
+            'id': item[0],
+            'nom': item[1],
+            'categorie': item['cat_nom'],
+            'sous_categorie': item['scat_nom'],
+            'sous_sous_categorie': item['sscat_nom'],
+            'date_creation': item[5].isoformat(),
+            'qr_code': item[6],
+            'localisation': {
+                'batiment': item['batiment'],
+                'etage': item['etage'],
+                'salle': item['salle'],
+                'description': item['description']
+            } if item['batiment'] else None
+        })
+    
+    return json.dumps(inventory_data, ensure_ascii=False, indent=2)
+
+def import_inventory_csv(file_content):
+    """
+    Importe l'inventaire depuis un fichier CSV
+    """
+    reader = csv.DictReader(StringIO(file_content))
+    imported_count = 0
+    errors = []
+    
+    for row in reader:
+        try:
+            # Récupérer ou créer les catégories
+            cat_id = get_or_create_category(row['Catégorie'])
+            scat_id = get_or_create_subcategory(row['Sous-catégorie'], cat_id)
+            sscat_id = get_or_create_subsubcategory(row['Sous-sous-catégorie'], scat_id)
+            
+            # Créer ou mettre à jour la localisation si présente
+            location_id = None
+            if row['Bâtiment']:
+                location_id = add_location(
+                    row['Bâtiment'],
+                    row['Étage'],
+                    row['Salle'],
+                    row['Description']
+                )
+            
+            # Ajouter ou mettre à jour le matériel
+            if row.get('ID'):
+                # Mise à jour
+                update_item(
+                    int(row['ID']),
+                    row['Nom'],
+                    cat_id,
+                    scat_id,
+                    sscat_id,
+                    row['Date création'],
+                    row['Code QR'],
+                    location_id
+                )
+            else:
+                # Création
+                add_item(
+                    row['Nom'],
+                    cat_id,
+                    scat_id,
+                    sscat_id,
+                    row['Date création'],
+                    row['Code QR']
+                )
+            
+            imported_count += 1
+            
+        except Exception as e:
+            errors.append(f"Erreur ligne {reader.line_num}: {str(e)}")
+    
+    return imported_count, errors
+
+def get_or_create_category(name):
+    """Récupère ou crée une catégorie"""
+    cats = get_db("SELECT id FROM categorie WHERE nom = %s", (name,))
+    if cats:
+        return cats[0][0]
+    
+    get_db("INSERT INTO categorie (nom) VALUES (%s)", (name,))
+    return get_db("SELECT LAST_INSERT_ID()")[0][0]
+
+def get_or_create_subcategory(name, category_id):
+    """Récupère ou crée une sous-catégorie"""
+    scats = get_db("SELECT id FROM sous_categorie WHERE nom = %s AND id_categorie = %s", 
+                   (name, category_id))
+    if scats:
+        return scats[0][0]
+    
+    get_db("INSERT INTO sous_categorie (nom, id_categorie) VALUES (%s, %s)", 
+           (name, category_id))
+    return get_db("SELECT LAST_INSERT_ID()")[0][0]
+
+def get_or_create_subsubcategory(name, subcategory_id):
+    """Récupère ou crée une sous-sous-catégorie"""
+    sscats = get_db("SELECT id FROM sous_sous_categorie WHERE nom = %s AND id_sous_categorie = %s", 
+                    (name, subcategory_id))
+    if sscats:
+        return sscats[0][0]
+    
+    get_db("INSERT INTO sous_sous_categorie (nom, id_sous_categorie) VALUES (%s, %s)", 
+           (name, subcategory_id))
+    return get_db("SELECT LAST_INSERT_ID()")[0][0]
+
+# Fonctions pour la gestion des localisations
+def add_location(batiment, etage=None, salle=None, description=None):
+    """Ajoute une nouvelle localisation"""
+    sql = """
+        INSERT INTO localisation (batiment, etage, salle, description)
+        VALUES (%s, %s, %s, %s)
+    """
+    get_db(sql, (batiment, etage, salle, description))
+    return get_db("SELECT LAST_INSERT_ID()")[0][0]
+
+def get_locations():
+    """Récupère toutes les localisations"""
+    return get_db("SELECT * FROM localisation ORDER BY batiment, etage, salle")
+
+def get_location(location_id):
+    """Récupère une localisation par son ID"""
+    locations = get_db("SELECT * FROM localisation WHERE id = %s", (location_id,))
+    return locations[0] if locations else None
+
+def update_item_location(item_id, location_id):
+    """Met à jour la localisation d'un matériel"""
+    sql = "UPDATE materiel SET id_localisation = %s WHERE id = %s"
+    get_db(sql, (location_id, item_id))
+
+def get_item_location(item_id):
+    """Récupère la localisation d'un matériel"""
+    sql = """
+        SELECT l.* FROM localisation l
+        JOIN materiel m ON m.id_localisation = l.id
+        WHERE m.id = %s
+    """
+    locations = get_db(sql, (item_id,))
+    return locations[0] if locations else None
+
+# Fonctions pour la gestion des prêts
+def create_loan(item_id, user_id, return_date, notes=None):
+    """Crée un nouveau prêt"""
+    # Vérifier si l'item est déjà emprunté
+    existing_loan = get_db("""
+        SELECT id FROM pret 
+        WHERE id_materiel = %s AND statut = 'en_cours'
+    """, (item_id,))
+    
+    if existing_loan:
+        raise ValueError("Ce matériel est déjà emprunté")
+    
+    sql = """
+        INSERT INTO pret (id_materiel, id_emprunteur, date_retour_prevue, notes)
+        VALUES (%s, %s, %s, %s)
+    """
+    get_db(sql, (item_id, user_id, return_date, notes))
+    return get_db("SELECT LAST_INSERT_ID()")[0][0]
+
+def return_item(loan_id):
+    """Enregistre le retour d'un matériel"""
+    sql = """
+        UPDATE pret 
+        SET date_retour = NOW(), statut = 'retourne'
+        WHERE id = %s
+    """
+    get_db(sql, (loan_id,))
+
+def extend_loan(loan_id, new_return_date, reason=None):
+    """Prolonge un prêt"""
+    sql = """
+        UPDATE pret 
+        SET date_retour_prevue = %s,
+            notes = CONCAT(IFNULL(notes, ''), '\nProlongation jusqu''au ', %s, ': ', %s)
+        WHERE id = %s
+    """
+    get_db(sql, (new_return_date, new_return_date, reason or 'Aucune raison spécifiée', loan_id))
+
+def get_active_loans():
+    """Récupère tous les prêts en cours"""
+    sql = """
+        SELECT p.*, m.nom as materiel_nom, u.name as emprunteur_nom
+        FROM pret p
+        JOIN materiel m ON p.id_materiel = m.id
+        JOIN USEUR u ON p.id_emprunteur = u.ID
+        WHERE p.statut IN ('en_cours', 'en_retard')
+    """
+    return get_db(sql)
+
+def get_item_loan_history(item_id):
+    """Récupère l'historique des prêts d'un matériel"""
+    sql = """
+        SELECT p.*, u.name as emprunteur_nom
+        FROM pret p
+        JOIN USEUR u ON p.id_emprunteur = u.ID
+        WHERE p.id_materiel = %s
+        ORDER BY p.date_pret DESC
+    """
+    return get_db(sql, (item_id,))
+
+def add_intervention(item_id, user_id, type_intervention, description):
+    """Ajoute une intervention sur un matériel"""
+    sql = """
+        INSERT INTO intervention (id_materiel, id_technicien, type, description, date_debut)
+        VALUES (%s, %s, %s, %s, NOW())
+    """
+    get_db(sql, (item_id, user_id, type_intervention, description))
+    return get_db("SELECT LAST_INSERT_ID()")[0][0]
+
+def get_item_interventions(item_id):
+    """Récupère l'historique des interventions d'un matériel"""
+    sql = """
+        SELECT i.*, u.name as technicien_nom
+        FROM intervention i
+        JOIN USEUR u ON i.id_technicien = u.ID
+        WHERE i.id_materiel = %s
+        ORDER BY i.date_debut DESC
+    """
+    return get_db(sql, (item_id,))
+
+def close_intervention(intervention_id):
+    """Termine une intervention"""
+    sql = """
+        UPDATE intervention
+        SET date_fin = NOW(), statut = 'termine'
+        WHERE id = %s
+    """
+    get_db(sql, (intervention_id,))

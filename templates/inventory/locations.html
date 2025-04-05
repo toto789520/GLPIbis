@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des Localisations{% endblock %}
+
+{% block content %}
+<div class="inventory-container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Gestion des Localisations</h1>
+            <p class="lead">Gérez les emplacements physiques du matériel</p>
+        </div>
+    </div>
+
+    <!-- Formulaire d'ajout -->
+    <div class="inventory-card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Ajouter une localisation</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('inventory.locations') }}">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="batiment" class="form-label">Bâtiment*</label>
+                        <input type="text" class="form-control" id="batiment" name="batiment" required
+                               placeholder="Ex: Bâtiment A">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="etage" class="form-label">Étage</label>
+                        <input type="text" class="form-control" id="etage" name="etage"
+                               placeholder="Ex: 1er étage">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="salle" class="form-label">Salle</label>
+                        <input type="text" class="form-control" id="salle" name="salle"
+                               placeholder="Ex: B101">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="2"
+                              placeholder="Informations supplémentaires sur cet emplacement..."></textarea>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn-inventory primary">
+                        <i class="fas fa-plus"></i> Ajouter la localisation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des localisations -->
+    <div class="inventory-card">
+        <div class="card-header">
+            <h5 class="mb-0">Liste des localisations</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if locations %}
+            <div class="table-responsive">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Bâtiment</th>
+                            <th>Étage</th>
+                            <th>Salle</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loc in locations %}
+                        <tr>
+                            <td>{{ loc[1] }}</td>
+                            <td>{{ loc[2] or '-' }}</td>
+                            <td>{{ loc[3] or '-' }}</td>
+                            <td>{{ loc[4] or '-' }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn-inventory outline-primary sm"
+                                            onclick="viewLocation('{{ loc[0] }}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn-inventory outline-secondary sm"
+                                            onclick="editLocation('{{ loc[0] }}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn-inventory outline-danger sm"
+                                            onclick="deleteLocation('{{ loc[0] }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <p class="text-muted mb-0">Aucune localisation enregistrée</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer cette localisation ?</p>
+                <p class="text-danger">Cette action est irréversible.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-inventory secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteForm" method="post" action="">
+                    <button type="submit" class="btn-inventory danger">Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function viewLocation(id) {
+    // TODO: Implémenter la vue détaillée
+}
+
+function editLocation(id) {
+    // TODO: Implémenter l'édition
+}
+
+function deleteLocation(id) {
+    // TODO: Implémenter la suppression
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

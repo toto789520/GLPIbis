@@ -108,26 +108,30 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form.get('username')
+        name = request.form.get('name')
+        age = request.form.get('age')
+        tel = request.form.get('tel')
         email = request.form.get('email')
         password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
+        password_confirm = request.form.get('password_confirm')
         
-        if not all([username, email, password, confirm_password]):
+        if not all([name, age, tel, email, password, password_confirm]):
             flash("Veuillez remplir tous les champs", "error")
             return render_template('register.html')
         
-        if password != confirm_password:
+        if password != password_confirm:
             flash("Les mots de passe ne correspondent pas", "error")
             return render_template('register.html')
         
         try:
-            result = register_user(username, email, password)
-            if result['status'] == 'success':
+            user_id = register_user(name, age, tel, email, password)
+            if user_id:
                 flash("Compte créé avec succès! Vous pouvez maintenant vous connecter.", "success")
                 return redirect(url_for('login'))
             else:
-                flash(result['message'], "error")
+                flash("Une erreur s'est produite lors de la création du compte", "error")
+        except ValueError as e:
+            flash(str(e), "error")
         except Exception as e:
             flash(f"Erreur d'inscription: {str(e)}", "error")
     
@@ -165,41 +169,58 @@ def dashboard():
     
     # Récupérer les détails utilisateur depuis la base de données
     try:
+        # Récupérer directement la date de création en utilisant le nom de colonne
+        date_creation_query = """
+            SELECT dete_de_creation 
+            FROM USEUR 
+            WHERE ID = %s
+        """
+        creation_date_result = get_db(date_creation_query, (user_id,))
+        
+        if creation_date_result and len(creation_date_result) > 0 and creation_date_result[0][0]:
+            try:
+                creation_date = creation_date_result[0][0]
+                # Si c'est une chaîne, essayer de la parser
+                if isinstance(creation_date, str):
+                    # Essayer d'abord le format complet avec heures
+                    try:
+                        parsed_date = datetime.strptime(creation_date, '%Y-%m-%d %H:%M:%S')
+                        user['creation_date'] = parsed_date.strftime('%d/%m/%Y %H:%M')
+                    except ValueError:
+                        # Essayer juste la date
+                        try:
+                            parsed_date = datetime.strptime(creation_date, '%Y-%m-%d')
+                            user['creation_date'] = parsed_date.strftime('%d/%m/%Y')
+                        except ValueError:
+                            # Si aucun format ne correspond, utiliser tel quel
+                            user['creation_date'] = creation_date
+                elif isinstance(creation_date, datetime):
+                    # Si c'est déjà un objet datetime
+                    user['creation_date'] = creation_date.strftime('%d/%m/%Y %H:%M')
+                else:
+                    # Autre type, convertir en string
+                    user['creation_date'] = str(creation_date)
+            except Exception as e:
+                print(f"Erreur lors du formatage de la date: {str(e)}")
+                user['creation_date'] = str(creation_date_result[0][0])
+        
+        # Récupérer les autres informations utilisateur
         user_data = get_db("SELECT * FROM USEUR WHERE ID = %s", (user_id,))
         if user_data and len(user_data) > 0:
             user_row = user_data[0]
-            # Déterminer les indices de manière sécurisée
-            # Vérifier le nombre de colonnes dans user_row pour adapter l'accès aux données
             col_count = len(user_row)
             
-            # L'ID est normalement à l'indice 0
-            # Le nom est normalement à l'indice 1 ou 3 selon la structure
-            if col_count > 1:
-                user['name'] = username or user_row[1] if len(user_row) > 1 else username
+            # Récupérer le nom d'utilisateur
+            if col_count > 3:  # Si format est (ID, name, age, tel, ...)
+                user['name'] = username or user_row[1]
+            elif col_count > 1:  # Si format est (ID, name, ...)
+                user['name'] = username or user_row[1]
             
-            # L'email est à l'indice 5 dans setup.py ou 2 dans db.py
-            if col_count > 5:
+            # Récupérer l'email
+            if col_count > 5:  # Si format est (ID, name, age, tel, hashed_password, email, ...)
                 user['email'] = user_row[5]
-            elif col_count > 2:
+            elif col_count > 2:  # Si format est (ID, name, email, ...)
                 user['email'] = user_row[2]
-                
-            # La date de création est à l'indice 6 ou 1 ou 5 selon la structure
-            creation_date = None
-            if col_count > 6 and user_row[6]:
-                creation_date = user_row[6]
-            elif col_count > 1 and user_row[1] and 'dete_de_creation' in get_db("DESCRIBE USEUR", ())[1][0]:
-                creation_date = user_row[1]
-            
-            # Formater la date si elle existe
-            if creation_date:
-                try:
-                    if isinstance(creation_date, str):
-                        # Si c'est une chaîne de caractères, essayer de la parser
-                        creation_date = datetime.strptime(creation_date, '%Y-%m-%d %H:%M:%S')
-                    user['creation_date'] = creation_date.strftime('%d/%m/%Y')
-                except (ValueError, AttributeError):
-                    # En cas d'erreur de parsing, garder la chaîne telle quelle
-                    user['creation_date'] = str(creation_date)
         
         # Récupérer les statistiques de l'utilisateur
         stats_data = get_db("SELECT * FROM state WHERE id_user = %s", (user_id,))

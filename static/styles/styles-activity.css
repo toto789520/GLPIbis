@@ -1,0 +1,138 @@
+/* Styles spécifiques pour le module d'activités */
+
+/* Styles généraux pour les pages d'activités */
+.activity-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Styles pour les cartes statistiques */
+.card.border-left-primary {
+    border-left: 4px solid #007bff;
+}
+
+.card.border-left-success {
+    border-left: 4px solid #28a745;
+}
+
+.card.border-left-info {
+    border-left: 4px solid #17a2b8;
+}
+
+.card.border-left-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.card h5 {
+    margin: 0;
+    font-weight: 600;
+}
+
+/* Styles pour le tableau d'activités */
+#activityTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#activityTable thead th {
+    background-color: #f8f9fa;
+    padding: 12px;
+    font-weight: 600;
+    border-bottom: 2px solid #ddd;
+}
+
+#activityTable tbody td {
+    padding: 12px;
+    border-top: 1px solid #eee;
+    vertical-align: middle;
+}
+
+#activityTable tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Styles pour les badges d'activités */
+.badge {
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.bg-primary {
+    background-color: #007bff !important;
+}
+
+.bg-success {
+    background-color: #28a745 !important;
+}
+
+.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Styles pour les graphiques */
+#ticketActivityChart, 
+#ticketDistributionChart {
+    width: 100%;
+    height: 300px;
+}
+
+/* Styles pour les boutons de période */
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.2rem;
+}
+
+.btn-group-sm .btn.active {
+    background-color: #007bff;
+    color: white;
+}
+
+/* Styles pour les filtres */
+.dropdown-menu {
+    padding: 8px 0;
+    border-radius: 4px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.dropdown-header {
+    padding: 8px 16px;
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.dropdown-item {
+    padding: 8px 16px;
+}
+
+.dropdown-item:hover, 
+.dropdown-item:focus {
+    background-color: #f8f9fa;
+}
+
+.dropdown-divider {
+    margin: 8px 0;
+}
+
+/* Styles responsives */
+@media (max-width: 768px) {
+    .col-md-3.mb-3 {
+        margin-bottom: 15px;
+    }
+    
+    .card h5 {
+        font-size: 1rem;
+    }
+    
+    #ticketActivityChart, 
+    #ticketDistributionChart {
+        height: 220px;
+    }
+}

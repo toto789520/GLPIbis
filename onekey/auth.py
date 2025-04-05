@@ -11,15 +11,18 @@ TOKEN_LENGTH = 64
 ID_LENGTH = 24
 JWT_SECRET = "glpibis_secret_key"  # À remplacer par une clé sécurisée en production
 
-def generate_id():
+def generate_id(length=36):
     """
-    Génère un identifiant unique pour les utilisateurs
+    Génère un identifiant unique aléatoire
+    
+    Args:
+        length (int): Longueur de l'identifiant (par défaut 36 caractères)
     
     Returns:
-        str: Identifiant unique
+        str: Identifiant généré
     """
-    valid_chars = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(valid_chars) for _ in range(ID_LENGTH))
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 def generate_token():
     """
@@ -46,15 +49,15 @@ def validate_password(password):
         return False
     
     # Au moins une lettre majuscule
-    if not re.search(r'[A-Z]', password):
+    if not any(c.isupper() for c in password):
         return False
     
     # Au moins une lettre minuscule
-    if not re.search(r'[a-z]', password):
+    if not any(c.islower() for c in password):
         return False
     
     # Au moins un chiffre
-    if not re.search(r'[0-9]', password):
+    if not any(c.isdigit() for c in password):
         return False
     
     # Au moins un caractère spécial
@@ -96,22 +99,24 @@ def register_user(name, age, tel, email, password):
     ph = argon2.PasswordHasher()
     password_hash = ph.hash(password)
     
-    # Préparer les données
+    # Préparer les données avec la date d'inscription
+    current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
     data = {
         'ID': user_id,
         'name': name,
         'age': int(age),
         'tel': tel,
-        'password': password_hash,
+        'hashed_password': password_hash,
         'email': email,
-        'compte_date': datetime.now().strftime('%Y-%m-%d')
+        'dete_de_creation': current_date
     }
     
     # Insérer l'utilisateur dans la base de données
     try:
         get_db("""
-            INSERT INTO USEUR (ID, name, age, tel, password, email, compte_date)
-            VALUES (%(ID)s, %(name)s, %(age)s, %(tel)s, %(password)s, %(email)s, %(compte_date)s)
+            INSERT INTO USEUR (ID, name, age, tel, hashed_password, email, dete_de_creation)
+            VALUES (%(ID)s, %(name)s, %(age)s, %(tel)s, %(hashed_password)s, %(email)s, %(dete_de_creation)s)
         """, data)
         
         # Initialiser les statistiques de l'utilisateur
@@ -137,18 +142,19 @@ def login_user(email, password):
         dict: Dictionnaire avec les infos de l'utilisateur et le status de l'authentification
     """
     # Récupérer l'utilisateur
-    users = get_db("SELECT * FROM USEUR WHERE email = %s", (email,))
+    users = get_db("SELECT ID, name, email, tel, hashed_password FROM USEUR WHERE email = %s", (email,))
     if not users:
         return {'status': 'error', 'message': 'Email ou mot de passe incorrect'}
     
     user = users[0]
     user_id = user[0]
     username = user[1]
+    hashed_pw = user[4]  # Récupérer le mot de passe hashé directement par son nom de colonne
     
     # Vérifier le mot de passe
     ph = argon2.PasswordHasher()
     try:
-        ph.verify(user[4], password)
+        ph.verify(hashed_pw, password)
     except argon2.exceptions.VerifyMismatchError:
         log_activity(user_id, 'login_failed', 'auth', f"Tentative de connexion échouée pour {email}")
         return {'status': 'error', 'message': 'Email ou mot de passe incorrect'}
@@ -169,9 +175,25 @@ def login_user(email, password):
     """, (user_id, token, expiry_date))
     
     # Vérifier si l'utilisateur a des rôles spéciaux
-    is_admin = bool(get_db("SELECT * FROM admin WHERE id_user = %s", (user_id,)))
-    is_tech = bool(get_db("SELECT * FROM technicien WHERE id_user = %s", (user_id,)))
-    role = 'admin' if is_admin else 'technician' if is_tech else 'user'
+    is_admin = False
+    is_tech = False
+    role = 'user'
+    
+    try:
+        # Vérifier si la table admin existe
+        admin_check = get_db("SHOW TABLES LIKE 'admin'", ())
+        if admin_check:
+            is_admin = bool(get_db("SELECT * FROM admin WHERE id_user = %s", (user_id,)))
+        
+        # Vérifier si la table technicien existe
+        tech_check = get_db("SHOW TABLES LIKE 'technicien'", ())
+        if tech_check:
+            is_tech = bool(get_db("SELECT * FROM technicien WHERE id_user = %s", (user_id,)))
+        
+        role = 'admin' if is_admin else 'technician' if is_tech else 'user'
+    except Exception as e:
+        print(f"Erreur lors de la vérification des rôles: {e}")
+        # Continuer avec le rôle par défaut 'user'
     
     log_activity(user_id, 'login', 'auth', f"Connexion réussie pour {email}")
     
@@ -303,16 +325,32 @@ def generate_jwt_token(user_id):
     
     user = users[0]
     
-    # Récupérer le rôle
-    is_admin = bool(get_db("SELECT * FROM admin WHERE id_user = %s", (user_id,)))
-    is_tech = bool(get_db("SELECT * FROM technicien WHERE id_user = %s", (user_id,)))
-    role = 'admin' if is_admin else 'technician' if is_tech else 'user'
+    # Récupérer le rôle avec gestion des tables inexistantes
+    is_admin = False
+    is_tech = False
+    role = 'user'
+    
+    try:
+        # Vérifier si la table admin existe
+        admin_check = get_db("SHOW TABLES LIKE 'admin'", ())
+        if admin_check:
+            is_admin = bool(get_db("SELECT * FROM admin WHERE id_user = %s", (user_id,)))
+        
+        # Vérifier si la table technicien existe
+        tech_check = get_db("SHOW TABLES LIKE 'technicien'", ())
+        if tech_check:
+            is_tech = bool(get_db("SELECT * FROM technicien WHERE id_user = %s", (user_id,)))
+        
+        role = 'admin' if is_admin else 'technician' if is_tech else 'user'
+    except Exception as e:
+        print(f"Erreur lors de la récupération du rôle pour JWT: {e}")
+        # Continuer avec le rôle par défaut 'user'
     
     # Créer le payload
     payload = {
         'sub': user_id,
         'name': user[1],
-        'email': user[5],
+        'email': user[5] if len(user) > 5 else None,
         'role': role,
         'iat': datetime.utcnow(),
         'exp': datetime.utcnow() + timedelta(days=1)
