@@ -5,295 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GLPI - Accueil</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles-page-de-garde.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        /* Styles pour la page d'accueil */
-        .hero {
-            background-image: url("{{ url_for('static', filename='images/fond.jpg') }}");
-            background-size: cover;
-            background-position: center;
-            height: 500px;
-            display: flex;
-            align-items: center;
-            position: relative;
-        }
-        
-        .hero::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-        
-        .hero-content {
-            position: relative;
-            color: white;
-            max-width: 800px;
-            margin: 0 auto;
-            text-align: center;
-            padding: 0 20px;
-        }
-        
-        .hero h1 {
-            font-size: 3em;
-            margin-bottom: 20px;
-        }
-        
-        .hero p {
-            font-size: 1.2em;
-            margin-bottom: 30px;
-        }
-        
-        .cta-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 12px 30px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
-            border: 2px solid #007bff;
-        }
-        
-        .btn-outline {
-            background-color: transparent;
-            color: white;
-            border: 2px solid white;
-        }
-        
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-        
-        .btn-primary:hover {
-            background-color: #0069d9;
-            border-color: #0069d9;
-        }
-        
-        .btn-outline:hover {
-            background-color: white;
-            color: #333;
-        }
-        
-        .features {
-            padding: 80px 20px;
-            background-color: #f8f9fa;
-        }
-        
-        .features-title {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-        
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .feature-card {
-            background-color: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .feature-card:hover {
-            transform: translateY(-10px);
-        }
-        
-        .feature-icon {
-            height: 100px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3em;
-        }
-        
-        .feature-icon.tickets { color: #007bff; background-color: rgba(0, 123, 255, 0.1); }
-        .feature-icon.inventory { color: #28a745; background-color: rgba(40, 167, 69, 0.1); }
-        .feature-icon.activity { color: #6f42c1; background-color: rgba(111, 66, 193, 0.1); }
-        .feature-icon.onekey { color: #fd7e14; background-color: rgba(253, 126, 20, 0.1); }
-        
-        .feature-content {
-            padding: 20px;
-        }
-        
-        .feature-title {
-            font-size: 1.5em;
-            margin-bottom: 10px;
-        }
-        
-        .testimonials {
-            padding: 80px 20px;
-        }
-        
-        .testimonials-title {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-        
-        .testimonials-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .testimonial-card {
-            background-color: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        
-        .testimonial-card::before {
-            content: " ";
-            position: absolute;
-            top: 10px;
-            left: 20px;
-            font-size: 5em;
-            color: #f8f9fa;
-            z-index: 0;
-            line-height: 1;
-        }
-        
-        .testimonial-content {
-            position: relative;
-            z-index: 1;
-        }
-        
-        .testimonial-text {
-            font-style: italic;
-            margin-bottom: 20px;
-            font-size: 1.1em;
-        }
-        
-        .testimonial-author {
-            display: flex;
-            align-items: center;
-        }
-        
-        .author-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            margin-right: 15px;
-            background-color: #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .author-avatar i {
-            font-size: 1.5em;
-            color: #888;
-        }
-        
-        .author-info h4 {
-            margin: 0;
-            font-size: 1.1em;
-        }
-        
-        .author-info p {
-            margin: 5px 0 0;
-            color: #777;
-        }
-        
-        .cta-section {
-            padding: 80px 20px;
-            background-color: #007bff;
-            color: white;
-            text-align: center;
-        }
-        
-        .cta-content {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        .cta-content h2 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-        }
-        
-        .cta-content p {
-            font-size: 1.2em;
-            margin-bottom: 30px;
-            opacity: 0.9;
-        }
-        
-        .cta-btn {
-            display: inline-block;
-            padding: 15px 40px;
-            background-color: white;
-            color: #007bff;
-            font-size: 1.2em;
-            font-weight: 600;
-            border-radius: 5px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        
-        .cta-btn:hover {
-            background-color: #f8f9fa;
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-        
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5em;
-            }
-            
-            .cta-buttons {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .btn {
-                width: 100%;
-                text-align: center;
-            }
-        }
-    </style>
 </head>
 <body>
-    <header>
-        <div class="logo-container">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
-            <h1>GLPI</h1>
-        </div>
-        <div class="user-nav">
-            <a href="{{ url_for('login') }}" class="btn-login"><i class="fas fa-sign-in-alt"></i> Connexion</a>
-            <a href="{{ url_for('register') }}" class="btn-register"><i class="fas fa-user-plus"></i> Inscription</a>
-        </div>
-    </header>
-
-    <section class="hero">
+    <section class="hero" style="background-image: url('{{ url_for('static', filename='images/fond.jpg') }}');">
         <div class="hero-content">
-            <h1>Un système unique pour tous vos besoins</h1>
-            <p>GLPI est une solution complète qui intègre gestion de tickets, inventaire et suivi d'activité pour vous aider à optimiser votre IT.</p>
-            <div class="cta-buttons">
+            <h1>GLPI-Saint gab</h1>
+            <p>Une solution libre de gestion et d'inventaire de parc informatique</p>
+            <div class="cta-buttons" style="justify-content: center;">
                 <a href="{{ url_for('login') }}" class="btn btn-primary">Se connecter</a>
                 <a href="{{ url_for('register') }}" class="btn btn-outline">Créer un compte</a>
             </div>
@@ -302,8 +22,8 @@
 
     <section class="features">
         <div class="features-title">
-            <h2>Nos services intégrés</h2>
-            <p>Une suite complète d'outils pour optimiser votre gestion IT</p>
+            <h2>A quoi sa sert ?</h2>
+            <p>Présentation en 4 points de ce que c'est un GLPI</p>
         </div>
         <div class="features-grid">
             <div class="feature-card">
@@ -311,12 +31,10 @@
                     <i class="fas fa-ticket-alt"></i>
                 </div>
                 <div class="feature-content">
-                    <h3 class="feature-title">Gestion de tickets</h3>
-                    <p>Créez, suivez et résolvez les demandes d'assistance de manière efficace avec notre système de tickets complet.</p>
+                    <h3 class="feature-title">GLPI</h3>
+                    <p>un GLPI permet de faire des demandes d'assistance (ticket). Par exemple, si une prise RJ45 fonctionne mal, une demande peut être faite et quelqu'un peut la régler</p>
                     <ul>
-                        <li>Catégorisation des demandes</li>
-                        <li>Suivi des conversations</li>
-                        <li>Historique des interventions</li>
+                        <li>plusieurs catégories</li>
                         <li>Système de priorité</li>
                     </ul>
                 </div>
@@ -327,12 +45,10 @@
                 </div>
                 <div class="feature-content">
                     <h3 class="feature-title">Gestion d'inventaire</h3>
-                    <p>Gardez une trace précise de tout votre matériel informatique avec notre système d'inventaire performant.</p>
+                    <p>Un GLPI permet de gérer un inventaire. Cela est très pratique pour savoir le nombre d'un certain type de matériel (ex : PC) et de voir aussi leur référence</p>
                     <ul>
-                        <li>Catégorisation hiérarchique</li>
-                        <li>Codes QR pour identification rapide</li>
-                        <li>Historique du matériel</li>
-                        <li>Association avec les tickets</li>
+                        <li>Trier par catégorie</li>
+                        <li>Savoir la référence du matériel</li>
                     </ul>
                 </div>
             </div>
@@ -342,27 +58,10 @@
                 </div>
                 <div class="feature-content">
                     <h3 class="feature-title">Suivi d'activités</h3>
-                    <p>Suivez en temps réel les activités de votre équipe et obtenez des statistiques détaillées sur leur performance.</p>
+                    <p>ce GLPI permet de voir les activités en temps réel sur un écran qui sera dans le couloirs U300 sur cet écran on pourra voir les tâches qu'il y a à faire</p>
                     <ul>
-                        <li>Vue en temps réel</li>
-                        <li>Assignation de tâches</li>
+                        <li>Assignation de tâches par util</li>
                         <li>Suivi de progression</li>
-                        <li>Rapports d'activité</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon onekey">
-                    <i class="fas fa-key"></i>
-                </div>
-                <div class="feature-content">
-                    <h3 class="feature-title">OneKey</h3>
-                    <p>Un système d'authentification unique pour accéder à tous nos services sans multiple connexion.</p>
-                    <ul>
-                        <li>Un seul compte pour tout</li>
-                        <li>Authentification sécurisée</li>
-                        <li>Gestion centralisée des utilisateurs</li>
-                        <li>Statistiques personnelles</li>
                     </ul>
                 </div>
             </div>
@@ -371,8 +70,8 @@
 
     <section class="testimonials">
         <div class="testimonials-title">
-            <h2>Ce que disent nos utilisateurs</h2>
-            <p>Découvrez comment notre solution a transformé l'IT de nos clients</p>
+            <h2>Informations sur le projet</h2>
+            <p>Des informations plus techniques ci-dessous</p>
         </div>
         <div class="testimonials-grid">
             <div class="testimonial-card">
