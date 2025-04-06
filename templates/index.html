@@ -23,7 +23,7 @@
     <section class="features">
         <div class="features-title">
             <h2>A quoi sa sert ?</h2>
-            <p>Présentation en 4 points de ce que c'est un GLPI</p>
+            <p>Présentation en 3 points de ce que c'est un GLPI</p>
         </div>
         <div class="features-grid">
             <div class="feature-card">
@@ -32,9 +32,9 @@
                 </div>
                 <div class="feature-content">
                     <h3 class="feature-title">GLPI</h3>
-                    <p>un GLPI permet de faire des demandes d'assistance (ticket). Par exemple, si une prise RJ45 fonctionne mal, une demande peut être faite et quelqu'un peut la régler</p>
+                    <p>Un GLPI permet de faire des demandes d'assistance (ticket). Par exemple, si une prise RJ45 fonctionne mal, une demande peut être faite et quelqu'un peut la régler</p>
                     <ul>
-                        <li>plusieurs catégories</li>
+                        <li>Plusieurs catégories</li>
                         <li>Système de priorité</li>
                     </ul>
                 </div>
@@ -58,7 +58,7 @@
                 </div>
                 <div class="feature-content">
                     <h3 class="feature-title">Suivi d'activités</h3>
-                    <p>ce GLPI permet de voir les activités en temps réel sur un écran qui sera dans le couloirs U300 sur cet écran on pourra voir les tâches qu'il y a à faire</p>
+                    <p>Ce GLPI permet de voir les activités en temps réel sur un écran qui sera dans le couloirs U300 sur cet écran on pourra voir les tâches qu'il y a à faire</p>
                     <ul>
                         <li>Assignation de tâches par util</li>
                         <li>Suivi de progression</li>
@@ -73,47 +73,32 @@
             <h2>Informations sur le projet</h2>
             <p>Des informations plus techniques ci-dessous</p>
         </div>
-        <div class="testimonials-grid">
-            <div class="testimonial-card">
-                <div class="testimonial-content">
-                    <p class="testimonial-text">"Depuis que nous utilisons GLPI, la gestion de notre parc informatique est devenue tellement plus simple. Tout est centralisé et accessible en un clic."</p>
-                    <div class="testimonial-author">
-                        <div class="author-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="author-info">
-                            <h4>Marie Dupont</h4>
-                            <p>Responsable IT, Entreprise ABC</p>
-                        </div>
-                    </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon onekey">
+                    <i class="fas fa-server"></i> 
+                </div>
+                <div class="feature-content">
+                    <h3 class="feature-title">Serveur</h3>
+                    <p>Pour l’hébergement de GLPI, cela se fait sur les serveurs prof en U300, sous Linux.</p>
                 </div>
             </div>
-            <div class="testimonial-card">
-                <div class="testimonial-content">
-                    <p class="testimonial-text">"Le système OneKey est une révolution. Mes équipes n'ont plus besoin de jongler entre plusieurs identifiants et mots de passe pour accéder aux différents outils."</p>
-                    <div class="testimonial-author">
-                        <div class="author-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="author-info">
-                            <h4>Jean Martin</h4>
-                            <p>Directeur SI, Groupe XYZ</p>
-                        </div>
-                    </div>
+            <div class="feature-card">
+                <div class="feature-icon lightblue">
+                    <i class="fas fa-code"></i> 
+                </div>
+                <div class="feature-content">
+                    <h3 class="feature-title">Code</h3>
+                    <p>Pour GLPI, nous avons choisi de créer un site web en codant en HTML, CSS, Python, et en utilisant une base de données SQL. Cela nous permet de contrôler totalement le site dans les moindres détails.</p>
                 </div>
             </div>
-            <div class="testimonial-card">
-                <div class="testimonial-content">
-                    <p class="testimonial-text">"Le module de suivi d'activités nous a permis d'identifier les goulots d'étranglement dans nos processus et d'améliorer considérablement notre efficacité."</p>
-                    <div class="testimonial-author">
-                        <div class="author-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="author-info">
-                            <h4>Sophie Dubois</h4>
-                            <p>Chef de projet, 123 Consulting</p>
-                        </div>
-                    </div>
+            <div class="feature-card">
+                <div class="feature-icon red">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="feature-content">
+                    <h3 class="feature-title">communauté (élèves)</h3>
+                    <p>Le code est totalement modifiable, donc cela signifie que de nouvelles fonctionnalités peuvent être ajoutées ou modifiées. Cela permet à n'importe quel élève de modifier le code.<br><strong>Les profs doivent approuver le code avant d'être ajouté.</strong></p>
                 </div>
             </div>
         </div>
@@ -121,31 +106,10 @@
 
     <section class="cta-section">
         <div class="cta-content">
-            <h2>Prêt à optimiser votre gestion IT?</h2>
-            <p>Rejoignez des milliers d'utilisateurs qui font confiance à GLPI pour gérer leur infrastructure informatique efficacement.</p>
-            <a href="{{ url_for('register') }}" class="cta-btn">Commencer maintenant</a>
+            <h2>Vous n'avez pas de compte ?</h2>
+            <p><i class="fas fa-arrow-down"></i> Cliquez sur le bouton en dessous pour créer un compte <i class="fas fa-arrow-down"></i></p>
+            <a href="{{ url_for('register') }}" class="cta-btn">Créer un compte</a>
         </div>
     </section>
-
-    <footer>
-        <div class="footer-content">
-            <p>&copy; {{ now.year }} GLPI - Tous droits réservés</p>
-            <nav class="footer-nav">
-                <a href="#">Aide</a>
-                <a href="#">Contact</a>
-                <a href="#">Mentions légales</a>
-            </nav>
-        </div>
-    </footer>
-
-    <script>
-        // Ajouter la date actuelle au footer
-        document.addEventListener('DOMContentLoaded', function() {
-            const now = new Date();
-            const year = now.getFullYear();
-            document.querySelector('footer .footer-content p').innerHTML = 
-                `&copy; ${year} GLPI - Tous droits réservés`;
-        });
-    </script>
 </body>
 </html>

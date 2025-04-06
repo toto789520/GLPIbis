@@ -1,4 +1,3 @@
-
 .hero {
     background-image: url("../images/fond.jpg"); /*préférable de changer l'image avec une photo de saint gab*/
     background-size: cover;
@@ -114,7 +113,9 @@
 .feature-icon.tickets { color: #007bff; background-color: rgba(0, 123, 255, 0.1); }
 .feature-icon.inventory { color: #28a745; background-color: rgba(40, 167, 69, 0.1); }
 .feature-icon.activity { color: #6f42c1; background-color: rgba(111, 66, 193, 0.1); }
-.feature-icon.onekey { color: #fd7e14; background-color: rgba(253, 126, 20, 0.1); }
+.feature-icon.onekey { color: #fd7e14; background-color: rgba(253, 126, 20, 0.1); } /* orange */
+.feature-icon.lightblue { color: #17a2b8; background-color: rgba(23, 162, 184, 0.1); } /* light blue */
+.feature-icon.red { color: #dc3545; background-color: rgba(220, 53, 69, 0.1); } /* red */
 
 .feature-content {
     padding: 20px;
