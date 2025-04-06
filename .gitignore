@@ -4,3 +4,6 @@
 /.vscode
 /.venv
 /test/__pycache__
+/activity_screening/__pycache__
+/inventory/__pycache__
+/tickets/__pycache__
