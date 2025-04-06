@@ -1,92 +1,167 @@
 {% extends "base.html" %}
 
-{% block title %}Détails du Matériel{% endblock %}
+{% block title %}Détails de l'équipement{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <div class="row mb-4">
-        <div class="col">
+    <div class="row">
+        <div class="col-md-8">
             <h1>{{ hardware[1] }}</h1>
-            <p class="lead">ID: {{ hardware[0] }}</p>
+            <p class="lead">{{ hardware[2] }} - {{ hardware[3] }}</p>
         </div>
-        <div class="col-auto">
-            <a href="{{ url_for('inventory.index') }}" class="btn-inventory outline-secondary me-2">
-                <i class="fas fa-arrow-left"></i> Retour à l'inventaire
-            </a>
+        <div class="col-md-4 text-end">
             <div class="btn-group">
-                <button type="button" class="btn-inventory primary" data-bs-toggle="modal" data-bs-target="#loanModal">
-                    <i class="fas fa-hand-holding"></i> Emprunter
-                </button>
-                <button type="button" class="btn-inventory outline-primary" data-bs-toggle="modal" data-bs-target="#interventionModal">
-                    <i class="fas fa-tools"></i> Intervention
-                </button>
+                <a href="{{ url_for('inventory.generate_qr', hardware_id=hardware[0]) }}" class="btn btn-primary">
+                    <i class="fas fa-qrcode"></i> Générer QR Code
+                </a>
+                <a href="{{ url_for('inventory.generate_label', hardware_id=hardware[0]) }}" class="btn btn-success">
+                    <i class="fas fa-print"></i> Imprimer étiquette
+                </a>
+                <a href="{{ url_for('inventory.edit_hardware', hardware_id=hardware[0]) }}" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> Modifier
+                </a>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Colonne de gauche - Informations générales -->
-        <div class="col-md-8">
+    <div class="row mt-4">
+        <!-- Informations générales -->
+        <div class="col-md-6">
             <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Informations générales</h5>
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Informations générales</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <h6 class="text-uppercase text-muted mb-2">Catégorie</h6>
-                            <p>{{ hardware[2] }}</p>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <h6 class="text-uppercase text-muted mb-2">Sous-catégories</h6>
-                            <p>{{ hardware[3] }} / {{ hardware[4] }}</p>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <h6 class="text-uppercase text-muted mb-2">Date d'ajout</h6>
-                            <p>{{ hardware[5] }}</p>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <h6 class="text-uppercase text-muted mb-2">Code QR</h6>
-                            {% if hardware[6] %}
-                            <div class="d-flex align-items-center">
-                                <span class="badge bg-success me-2">{{ hardware[6] }}</span>
-                                <a href="{{ url_for('inventory.download_qr_code', qr_code=hardware[6]) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-download"></i> Télécharger
-                                </a>
-                            </div>
-                            {% if qr_code_img %}
-                            <div class="mt-2">
-                                <img src="data:image/png;base64,{{ qr_code_img }}" alt="QR Code" style="max-width: 100px;">
-                            </div>
-                            {% endif %}
-                            {% else %}
-                            <span class="badge bg-secondary">Non défini</span>
-                            {% endif %}
-                        </div>
-                    </div>
+                    <table class="table">
+                        <tr>
+                            <th>Identifiant :</th>
+                            <td>{{ hardware[0] }}</td>
+                        </tr>
+                        <tr>
+                            <th>Marque :</th>
+                            <td>{{ hardware[4] }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date d'achat :</th>
+                            <td>{{ hardware[5] }}</td>
+                        </tr>
+                        <tr>
+                            <th>Numéro de série :</th>
+                            <td>{{ hardware[6] }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-                    <!-- Localisation -->
-                    <div class="mt-4">
-                        <h6 class="text-uppercase text-muted mb-3">Localisation</h6>
-                        {% if location %}
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <p class="mb-1"><strong>Bâtiment:</strong> {{ location[1] }}</p>
-                                {% if location[2] %}
-                                <p class="mb-1"><strong>Étage:</strong> {{ location[2] }}</p>
-                                {% endif %}
-                                {% if location[3] %}
-                                <p class="mb-1"><strong>Salle:</strong> {{ location[3] }}</p>
-                                {% endif %}
-                                {% if location[4] %}
-                                <p class="mb-1 text-muted">{{ location[4] }}</p>
-                                {% endif %}
-                            </div>
-                            <button type="button" class="btn-inventory outline-secondary sm" 
-                                    data-bs-toggle="modal" data-bs-target="#locationModal">
-                                <i class="fas fa-edit"></i> Modifier
-                            </button>
-                        </div>
-                        {% else %}
-                        <div class="d-flex justify-content-between align-items-center">
-                            <p class="text-muted
+        <!-- Caractéristiques -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Caractéristiques</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        {% for carac in caracteristiques %}
+                        <tr>
+                            <th>{{ carac[0] }} :</th>
+                            <td>{{ carac[1] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Description -->
+    <div class="row">
+        <div class="col">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Description</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ description }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historique des tickets -->
+    <div class="row">
+        <div class="col">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Historique des tickets</h5>
+                </div>
+                <div class="card-body">
+                    {% if tickets %}
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Date</th>
+                                <th>Sujet</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in tickets %}
+                            <tr>
+                                <td>{{ ticket[0] }}</td>
+                                <td>{{ ticket[1] }}</td>
+                                <td>{{ ticket[2] }}</td>
+                                <td>
+                                    <span class="badge bg-{{ ticket[3] }}">{{ ticket[4] }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-muted">Aucun ticket associé à cet équipement.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historique des mouvements -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Historique des mouvements</h5>
+                </div>
+                <div class="card-body">
+                    {% if historique %}
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Action</th>
+                                <th>Détails</th>
+                                <th>Utilisateur</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in historique %}
+                            <tr>
+                                <td>{{ event[0] }}</td>
+                                <td>{{ event[1] }}</td>
+                                <td>{{ event[2] }}</td>
+                                <td>{{ event[3] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-muted">Aucun mouvement enregistré pour cet équipement.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,230 +1,366 @@
 {% extends "base.html" %}
 
-{% block title %}Détails du Ticket{% endblock %}
+{% block title %}Ticket #{{ ticket.ID_tiqué }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid">
+    <!-- En-tête du ticket -->
     <div class="row mb-4">
         <div class="col">
-            <h1>Ticket #{{ ticket[0] }}</h1>
-            <p class="lead">{{ ticket[5] }}</p>
-        </div>
-        <div class="col-auto">
-            <a href="{{ url_for('tickets.index') }}" class="btn btn-outline-secondary me-2">
-                <i class="fas fa-arrow-left"></i> Retour à la liste
-            </a>
-            {% if ticket[8] == 1 %}
-            <form method="post" action="{{ url_for('tickets.close', ticket_id=ticket_id) }}" style="display: inline;">
-                <button type="submit" class="btn btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir fermer ce ticket?')">
-                    <i class="fas fa-times"></i> Fermer le ticket
-                </button>
-            </form>
-            {% endif %}
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>
+                    <i class="fas fa-ticket-alt me-2"></i>
+                    {{ ticket.titre }}
+                    <small class="text-muted">#{{ ticket.ID_tiqué }}</small>
+                </h1>
+                <div>
+                    {% if ticket.open %}
+                    <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addSubticketModal">
+                        <i class="fas fa-plus me-2"></i> Sous-ticket
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="closeTicket('{{ ticket.ID_tiqué }}')">
+                        <i class="fas fa-check me-2"></i> Fermer le ticket
+                    </button>
+                    {% else %}
+                    <span class="badge bg-success">Ticket fermé</span>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Informations principales -->
     <div class="row">
-        <!-- Colonne de gauche - Informations du ticket -->
         <div class="col-md-8">
+            <!-- Description du ticket -->
             <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h5 class="mb-0">Informations du ticket</h5>
-                        </div>
-                        <div class="col-auto">
-                            {% if ticket[8] == 1 %}
-                            <span class="badge bg-success">Ouvert</span>
-                            {% else %}
-                            <span class="badge bg-danger">Fermé</span>
-                            {% endif %}
-                        </div>
-                    </div>
+                <div class="card-header">
+                    <h5 class="mb-0">Description</h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-4">
-                        <h6 class="text-uppercase text-muted mb-2">Description</h6>
-                        <p class="text-break">{{ ticket[4] }}</p>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="text-uppercase text-muted mb-2">Détails</h6>
-                            <table class="table table-sm">
-                                <tbody>
-                                    <tr>
-                                        <th>Date de création</th>
-                                        <td>{{ ticket[2] }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Créé par</th>
-                                        <td>{{ creator_name }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Catégorie</th>
-                                        <td>
-                                            {% if ticket[3] %}
-                                                {{ ticket[3] }}
-                                            {% else %}
-                                                Non spécifiée
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="text-uppercase text-muted mb-2">Priorité</h6>
-                            <div class="d-flex align-items-center">
-                                {% set gravity = ticket[6]|int %}
-                                {% for i in range(1, 6) %}
-                                    {% if i <= gravity %}
-                                    <i class="fas fa-circle text-danger mx-1 fa-lg"></i>
-                                    {% else %}
-                                    <i class="far fa-circle text-secondary mx-1 fa-lg"></i>
-                                    {% endif %}
-                                {% endfor %}
-                                <span class="ms-2">({{ gravity }}/5)</span>
-                            </div>
-                        </div>
+                    <p>{{ ticket.descipition }}</p>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <small class="text-muted">
+                            Créé par <strong>{{ ticket.user_name }}</strong>
+                            le {{ ticket.date_open }}
+                        </small>
+                        <span class="badge bg-{{ 'success' if not ticket.open else 'danger' if ticket.gravite >= 8 else 'warning' if ticket.gravite >= 6 else 'info' }}">
+                            Priorité {{ ticket.gravite }}/10
+                        </span>
                     </div>
                 </div>
             </div>
 
-            <!-- Section des commentaires et réponses -->
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Commentaires et réponses</h5>
+            <!-- Sous-tickets -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Sous-tickets ({{ sous_tickets|length }})</h5>
+                    {% if ticket.open %}
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSubticketModal">
+                        <i class="fas fa-plus"></i> Nouveau sous-ticket
+                    </button>
+                    {% endif %}
                 </div>
                 <div class="card-body">
-                    {% if comments %}
-                        <div class="comments-list">
-                            {% for comment in comments %}
-                            <div class="comment-item mb-3">
-                                <div class="d-flex align-items-center mb-1">
-                                    <strong>{{ comment[3] }}</strong>
-                                    <span class="text-muted ms-auto">{{ comment[4] }}</span>
-                                </div>
-                                <div class="comment-content p-3 bg-light rounded">
-                                    {{ comment[2] }}
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
+                    {% if sous_tickets %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Titre</th>
+                                    <th>Statut</th>
+                                    <th>Priorité</th>
+                                    <th>Assigné à</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for st in sous_tickets %}
+                                <tr>
+                                    <td>{{ st.id[:8] }}</td>
+                                    <td>
+                                        <a href="#" onclick="viewSubticket('{{ st.id }}')">
+                                            {{ st.titre }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if st.statut in ['resolu', 'ferme'] else 'warning' if st.statut == 'en_attente' else 'primary' }}">
+                                            {{ st.statut }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if st.priorite >= 8 else 'warning' if st.priorite >= 6 else 'info' }}">
+                                            {{ st.priorite }}
+                                        </span>
+                                    </td>
+                                    <td>{{ st.assigne_name or 'Non assigné' }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-primary" onclick="editSubticket('{{ st.id }}')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            {% if st.statut not in ['resolu', 'ferme'] %}
+                                            <button type="button" class="btn btn-sm btn-success" onclick="resolveSubticket('{{ st.id }}')">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     {% else %}
-                        <p class="text-muted">Aucun commentaire pour l'instant.</p>
+                    <div class="alert alert-info">
+                        Aucun sous-ticket n'a encore été créé.
+                    </div>
                     {% endif %}
-                    
-                    <hr class="my-4">
-                    
-                    <form method="post" action="{{ url_for('tickets.comment', ticket_id=ticket_id) }}">
+                </div>
+            </div>
+
+            <!-- Commentaires -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Commentaires</h5>
+                </div>
+                <div class="card-body">
+                    <div class="comments-container mb-4">
+                        {% for comment in comments %}
+                        <div class="comment mb-3">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ comment.user_name }}</strong>
+                                <small class="text-muted">{{ comment.date }} {{ comment.hour }}</small>
+                            </div>
+                            <p class="mb-1">{{ comment.commenter }}</p>
+                            {% if comment.gravité > 0 %}
+                            <span class="badge bg-warning">Priorité mise à jour: {{ comment.gravité }}/10</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if ticket.open %}
+                    <form id="commentForm" action="{{ url_for('tickets.add_comment', ticket_id=ticket.ID_tiqué) }}" method="post">
                         <div class="mb-3">
-                            <label for="comment" class="form-label">Ajouter un commentaire :</label>
+                            <label for="comment" class="form-label">Nouveau commentaire</label>
                             <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane"></i> Envoyer
-                        </button>
+                        <div class="mb-3">
+                            <label for="gravite" class="form-label">Modifier la priorité</label>
+                            <input type="number" class="form-control" id="gravite" name="gravite" min="0" max="10" value="0">
+                            <small class="form-text text-muted">Laissez à 0 pour ne pas modifier la priorité</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Ajouter le commentaire</button>
                     </form>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        
-        <!-- Colonne de droite - Informations supplémentaires -->
+
         <div class="col-md-4">
+            <!-- Informations complémentaires -->
             <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Statut</h5>
+                <div class="card-header">
+                    <h5 class="mb-0">Détails</h5>
                 </div>
                 <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            État
-                            {% if ticket[8] == 1 %}
-                            <span class="badge rounded-pill bg-success">Ouvert</span>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Statut</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-{{ 'success' if not ticket.open else 'primary' }}">
+                                {{ 'Fermé' if not ticket.open else 'Ouvert' }}
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-4">Date d'ouverture</dt>
+                        <dd class="col-sm-8">{{ ticket.date_open }}</dd>
+
+                        {% if not ticket.open and ticket.date_close %}
+                        <dt class="col-sm-4">Date de fermeture</dt>
+                        <dd class="col-sm-8">{{ ticket.date_close }}</dd>
+                        {% endif %}
+
+                        <dt class="col-sm-4">Tags</dt>
+                        <dd class="col-sm-8">
+                            {% if ticket.tag %}
+                            {% for tag in ticket.tag.split(',') %}
+                            <span class="badge bg-secondary">{{ tag.strip() }}</span>
+                            {% endfor %}
                             {% else %}
-                            <span class="badge rounded-pill bg-danger">Fermé</span>
+                            <em>Aucun tag</em>
                             {% endif %}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Date de création
-                            <span>{{ ticket[2] }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Dernière mise à jour
-                            <span>{{ last_update }}</span>
-                        </li>
-                    </ul>
+                        </dd>
+                    </dl>
                 </div>
             </div>
-            
+
+            <!-- Matériel associé -->
             <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Équipement concerné</h5>
-                </div>
-                <div class="card-body">
-                    {% if related_hardware %}
-                        <div class="hardware-info">
-                            <p><strong>Nom :</strong> {{ related_hardware[1] }}</p>
-                            <p><strong>Type :</strong> {{ related_hardware[2] }}</p>
-                            <p><strong>Localisation :</strong> {{ related_hardware[3] }}</p>
-                            <p><strong>Statut :</strong> {{ related_hardware[4] }}</p>
-                        </div>
-                        <a href="{{ url_for('inventory.view_hardware', hardware_id=related_hardware[0]) }}" class="btn btn-outline-info btn-sm mt-2">
-                            <i class="fas fa-info-circle"></i> Détails de l'équipement
-                        </a>
-                    {% else %}
-                        <p class="text-muted">Aucun équipement associé à ce ticket.</p>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Matériel associé</h5>
+                    {% if ticket.open %}
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addHardwareModal">
+                        <i class="fas fa-plus"></i>
+                    </button>
                     {% endif %}
                 </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Actions</h5>
-                </div>
                 <div class="card-body">
-                    <div class="d-grid gap-2">
-                        {% if ticket[8] == 1 %}
-                        <form method="post" action="{{ url_for('tickets.close', ticket_id=ticket_id) }}">
-                            <button type="submit" class="btn btn-danger w-100 mb-2" onclick="return confirm('Êtes-vous sûr de vouloir fermer ce ticket?')">
-                                <i class="fas fa-times me-1"></i> Fermer le ticket
-                            </button>
-                        </form>
-                        {% else %}
-                        <form method="post" action="{{ url_for('tickets.reopen', ticket_id=ticket_id) }}">
-                            <button type="submit" class="btn btn-success w-100 mb-2">
-                                <i class="fas fa-redo me-1"></i> Réouvrir le ticket
-                            </button>
-                        </form>
-                        {% endif %}
-                        <a href="{{ url_for('tickets.update', ticket_id=ticket_id) }}" class="btn btn-outline-primary w-100 mb-2">
-                            <i class="fas fa-edit me-1"></i> Modifier le ticket
-                        </a>
-                        <button type="button" class="btn btn-outline-secondary w-100" data-bs-toggle="collapse" data-bs-target="#assignTicket">
-                            <i class="fas fa-user me-1"></i> Assigner le ticket
-                        </button>
-                        
-                        <div class="collapse mt-2" id="assignTicket">
-                            <div class="card card-body">
-                                <form method="post" action="{{ url_for('tickets.assign', ticket_id=ticket_id) }}">
-                                    <div class="mb-3">
-                                        <label for="assignee" class="form-label">Assigner à :</label>
-                                        <select class="form-select" id="assignee" name="assignee" required>
-                                            <option value="">Choisir un utilisateur</option>
-                                            {% for user in users %}
-                                            <option value="{{ user[0] }}">{{ user[1] }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary btn-sm">Confirmer</button>
-                                </form>
+                    {% if hardware %}
+                    <ul class="list-group">
+                        {% for hw in hardware %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ hw[1] }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {{ hw[2] }} > {{ hw[3] }} > {{ hw[4] }}
+                                </small>
                             </div>
-                        </div>
+                            {% if ticket.open %}
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removeHardware('{{ ticket.ID_tiqué }}', {{ hw[0] }})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="alert alert-info">
+                        Aucun matériel associé
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modal pour ajouter un sous-ticket -->
+<div class="modal fade" id="addSubticketModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouveau sous-ticket</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addSubticketForm" action="{{ url_for('tickets.add_subticket', ticket_id=ticket.ID_tiqué) }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="titre" class="form-label">Titre</label>
+                        <input type="text" class="form-control" id="titre" name="titre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="priorite" class="form-label">Priorité</label>
+                        <input type="number" class="form-control" id="priorite" name="priorite" min="1" max="10" value="5">
+                    </div>
+                    <div class="mb-3">
+                        <label for="assigne_a" class="form-label">Assigner à</label>
+                        <select class="form-select" id="assigne_a" name="assigne_a">
+                            <option value="">Non assigné</option>
+                            {% for user in users %}
+                            <option value="{{ user.ID }}">{{ user.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour ajouter du matériel -->
+<div class="modal fade" id="addHardwareModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter du matériel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addHardwareForm" action="{{ url_for('tickets.add_hardware', ticket_id=ticket.ID_tiqué) }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="hardware_id" class="form-label">Sélectionner le matériel</label>
+                        <select class="form-select" id="hardware_id" name="hardware_id" required>
+                            {% for hw in available_hardware %}
+                            <option value="{{ hw[0] }}">{{ hw[1] }} ({{ hw[2] }} > {{ hw[3] }} > {{ hw[4] }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function closeTicket(ticketId) {
+    if (confirm('Êtes-vous sûr de vouloir fermer ce ticket ?')) {
+        fetch(`/tickets/${ticketId}/close`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
+    }
+}
+
+function viewSubticket(subticketId) {
+    // Afficher les détails du sous-ticket dans une modal
+    fetch(`/tickets/subticket/${subticketId}`)
+        .then(response => response.json())
+        .then(data => {
+            // TODO: Afficher les détails dans une modal
+        });
+}
+
+function editSubticket(subticketId) {
+    // Rediriger vers la page d'édition du sous-ticket
+    window.location.href = `/tickets/subticket/${subticketId}/edit`;
+}
+
+function resolveSubticket(subticketId) {
+    if (confirm('Marquer ce sous-ticket comme résolu ?')) {
+        fetch(`/tickets/subticket/${subticketId}/resolve`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
+    }
+}
+
+function removeHardware(ticketId, hardwareId) {
+    if (confirm('Retirer ce matériel du ticket ?')) {
+        fetch(`/tickets/${ticketId}/hardware/${hardwareId}`, {
+            method: 'DELETE'
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
+    }
+}
+</script>
 {% endblock %}

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Scanner un QR Code{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    #video-container {
+        width: 100%;
+        max-width: 640px;
+        margin: 0 auto;
+    }
+    #qr-video {
+        width: 100%;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+    }
+    .scan-zone {
+        position: relative;
+        width: 100%;
+        max-width: 640px;
+        margin: 20px auto;
+        padding: 20px;
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        text-align: center;
+    }
+    .scan-zone:hover {
+        border-color: #007bff;
+        cursor: pointer;
+    }
+    .or-divider {
+        text-align: center;
+        margin: 20px 0;
+        position: relative;
+    }
+    .or-divider:before,
+    .or-divider:after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        width: 45%;
+        height: 1px;
+        background: #ccc;
+    }
+    .or-divider:before {
+        left: 0;
+    }
+    .or-divider:after {
+        right: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col">
+            <h1>Scanner un QR Code</h1>
+            <p class="lead">Scannez le QR code d'un équipement pour accéder à ses informations</p>
+        </div>
+    </div>
+
+    <!-- Zone de scan en direct -->
+    <div class="row mb-4">
+        <div class="col">
+            <div id="video-container" class="d-none">
+                <video id="qr-video" playsinline></video>
+                <button id="stop-scan" class="btn btn-secondary mt-2">Arrêter la caméra</button>
+            </div>
+            <button id="start-scan" class="btn btn-primary">Utiliser la caméra</button>
+        </div>
+    </div>
+
+    <div class="or-divider">
+        <span class="bg-white px-3">OU</span>
+    </div>
+
+    <!-- Zone de dépôt d'image -->
+    <div class="row">
+        <div class="col">
+            <form action="{{ url_for('inventory.scan_qr') }}" method="post" enctype="multipart/form-data">
+                <div class="scan-zone" id="drop-zone">
+                    <i class="fas fa-file-upload fa-3x mb-3"></i>
+                    <h4>Déposez une image de QR code ici</h4>
+                    <p>ou</p>
+                    <input type="file" name="qr_image" id="file-input" class="d-none" accept="image/*">
+                    <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('file-input').click()">
+                        Choisir un fichier
+                    </button>
+                    <p class="text-muted mt-2">Formats acceptés : JPG, PNG</p>
+                </div>
+                <div class="text-center mt-3">
+                    <button type="submit" class="btn btn-success" id="submit-btn" style="display: none;">
+                        Analyser l'image
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const videoContainer = document.getElementById('video-container');
+    const video = document.getElementById('qr-video');
+    const startButton = document.getElementById('start-scan');
+    const stopButton = document.getElementById('stop-scan');
+    const fileInput = document.getElementById('file-input');
+    const submitBtn = document.getElementById('submit-btn');
+    const dropZone = document.getElementById('drop-zone');
+    
+    let codeReader;
+    
+    // Gestion du scan par caméra
+    startButton.addEventListener('click', () => {
+        codeReader = new ZXing.BrowserQRCodeReader();
+        videoContainer.classList.remove('d-none');
+        startButton.classList.add('d-none');
+        
+        codeReader.decodeFromVideoDevice(null, 'qr-video', (result, err) => {
+            if (result) {
+                // Extraire l'ID de l'équipement de l'URL dans le QR code
+                const url = result.text;
+                const hardwareId = url.split('/').pop();
+                window.location.href = `/inventory/hardware/${hardwareId}`;
+            }
+            if (err && !(err instanceof ZXing.NotFoundException)) {
+                console.error(err);
+            }
+        });
+    });
+    
+    stopButton.addEventListener('click', () => {
+        if (codeReader) {
+            codeReader.reset();
+            videoContainer.classList.add('d-none');
+            startButton.classList.remove('d-none');
+        }
+    });
+    
+    // Gestion du dépôt de fichier
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#007bff';
+    });
+    
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#ccc';
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#ccc';
+        
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            submitBtn.style.display = 'inline-block';
+        }
+    });
+    
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) {
+            submitBtn.style.display = 'inline-block';
+        } else {
+            submitBtn.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

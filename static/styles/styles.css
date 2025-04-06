@@ -1,116 +1,142 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Freeman&display=swap');
-*{
-    font-family: "Montserrat";
+@import 'variables.css';
+
+/* Reset et styles de base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: var(--font-family-base);
 }
 
-body{
-    margin:0 auto
+body {
+    margin: 0;
+    background-color: var(--gray-100);
+    min-height: 100vh;
 }
 
+/* En-tête principal */
 header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md) var(--spacing-xl);
+    background-color: var(--white);
+    box-shadow: var(--shadow-sm);
+    height: var(--header-height);
 }
 
-header img{
-    width: 100px;
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
 }
 
-section.top-page {
-    background: url("../images/fond.jpg");
-    background-size: cover;
-    height: 80vh;
-    padding: 25px;
-}
-.gros-titre {
-    color: rgb(247, 255, 247);
-    font-size: 80px;
+.logo-container img {
+    height: calc(var(--header-height) - var(--spacing-xl));
+    width: auto;
 }
 
-.bouton-left {
-    margin-right: 30px;
-    width: 700px;
-    font-size: 20px;
-    font-weight: bold;
+/* Navigation principale */
+.main-nav {
+    display: flex;
+    gap: var(--spacing-xl);
 }
 
-.bouton-right {
-    text-align: right;
-    margin-right: 30px;
-    width: 700px;
-    font-size: 20px;
-    font-weight: bold;
-    color: black;
+.main-nav a {
+    color: var(--gray-700);
     text-decoration: none;
-}
-.ticket a {
-    color: white; 
-    text-decoration: none; 
+    font-weight: 500;
+    transition: color var(--transition-speed) var(--transition-timing);
 }
 
-.section-title{
-    font-size: 50px;
-    font-weight: 100;
-    font-family: "Freeman";
-    position: relative;
+.main-nav a:hover {
+    color: var(--primary-color);
 }
 
-.section-title::before{
-    content:"" ;
-    position: absolute;
-    background-color:#FF975A ;
-    width: 125px;
-    height: 7px;
-    bottom: 0;
+/* Conteneur principal */
+main {
+    padding: var(--spacing-xl);
+    max-width: var(--container-max-width);
+    margin: 0 auto;
 }
 
-@media only screen and (max-width:500px) {
-    .img-container {
-      flex-direction: column;
-      align-items: center;
+/* Pied de page */
+footer {
+    background-color: var(--gray-800);
+    color: var(--white);
+    padding: var(--spacing-xl);
+    margin-top: auto;
+}
+
+.footer-content {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-nav a {
+    color: var(--white);
+    text-decoration: none;
+    margin-left: var(--spacing-md);
+    transition: opacity var(--transition-speed) var(--transition-timing);
+}
+
+.footer-nav a:hover {
+    opacity: 0.8;
+}
+
+/* Utilitaires */
+.btn {
+    display: inline-block;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-speed) var(--transition-timing);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: var(--white);
+    border: none;
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-dark);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        padding: var(--spacing-md);
+        height: auto;
     }
-}
-/* Updated styles for the white band */
-.white-band {
-    background-color: white;
-    height: 70px; 
-    display: flex;
-    align-items: center;
-    justify-content: space-between; /* Space out logo and buttons */
-    margin: 0; /* Remove margins */
-    width: 100%; /* Set width to 100% */
-    position: absolute; /* Position it absolutely */
-    top: 0; /* Align to the top */
-    left: 0; /* Align to the left */
-}
 
-.white-band img {
-    height: 100%;
-}
-.rectangles-container {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 38%;
-}
+    .main-nav {
+        margin-top: var(--spacing-md);
+        flex-direction: column;
+        align-items: center;
+    }
 
-.rectangle {
-    width: 17%;
-    height: 800%;
-    background-color: white; /* Point-virgule ajouté ici */
-    color: black;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 280%;
-    flex-direction: column;
-    text-align: center;
-    box-shadow: 10px 10px 10px black;
-    border-radius: 10px;
-    box-shadow: 6px 6px 25px rgba(0, 0, 0, 0.5);
-}
-
-.rectangle h6 {
-    margin: 0; /* Remove default margin */
-    font-size: 20%; /* Adjust the font size as needed */
+    .footer-content {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-md);
+    }
 }

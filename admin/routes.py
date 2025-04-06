@@ -26,6 +26,7 @@ def users():
     return render_template('admin/users.html', users=users, now=datetime.now())
 
 @admin_bp.route('/users/<user_id>', methods=['GET', 'POST'])
+@admin_bp.route('/users/create', methods=['GET', 'POST'])
 def edit_user(user_id):
     """Édition des informations et permissions d'un utilisateur"""
     if request.method == 'POST':
@@ -122,6 +123,42 @@ def edit_user(user_id):
                           all_permissions=all_permissions,
                           now=datetime.now())
 
+@admin_bp.route('/users/create', methods=['GET', 'POST'])
+def create_user():
+    """
+    Crée un nouvel utilisateur avec un rôle spécifique
+    """
+    if request.method == 'POST':
+        # Récupérer les données du formulaire
+        name = request.form.get('name')
+        email = request.form.get('email')
+        role = request.form.get('role', 'user')
+        password = request.form.get('password')
+
+        if not name or not email or not password:
+            flash("Tous les champs sont obligatoires", "error")
+            return redirect(url_for('admin.create_user'))
+
+        try:
+            # Hacher le mot de passe avec SHA256
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+
+            # Ajouter l'utilisateur dans la base de données
+            get_db("""
+                INSERT INTO USEUR (name, email, hashed_password, role)
+                VALUES (%s, %s, %s, %s)
+            """, (name, email, hashed_password, role))
+
+            log_activity(session.get('user_id'), 'create', 'user', f"Création de l'utilisateur {name} avec le rôle {role}")
+            flash("Utilisateur créé avec succès", "success")
+        except Exception as e:
+            flash(f"Erreur lors de la création de l'utilisateur : {str(e)}", "error")
+
+        return redirect(url_for('admin.users'))
+
+    # Méthode GET : Afficher le formulaire de création d'utilisateur
+    return render_template('admin/create_user.html', now=datetime.now())
+
 @admin_bp.route('/users/reset_password/<user_id>', methods=['POST'])
 def reset_password(user_id):
     """Réinitialise le mot de passe d'un utilisateur"""
@@ -155,16 +192,28 @@ def reset_password(user_id):
 @admin_bp.route('/settings')
 def settings():
     """Paramètres généraux du système"""
-    # Récupérer les paramètres actuels
     try:
-        settings = get_db("SELECT * FROM system_settings")
+        # Récupérer les paramètres généraux
+        settings_data = get_db("SELECT * FROM system_settings")
         current_settings = {}
-        for setting in settings:
+        for setting in settings_data:
             current_settings[setting[0]] = setting[1]
-    except:
-        current_settings = {}
+            
+        # Récupérer les paramètres EcoleDirecte
+        ecoledirecte_data = get_db("SELECT setting_value FROM system_settings WHERE setting_key = 'ecoledirecte_credentials'")
+        ecoledirecte_settings = json.loads(ecoledirecte_data[0][0]) if ecoledirecte_data else {}
         
-        # Création de la table des paramètres si elle n'existe pas
+        # Récupérer les statistiques de synchronisation
+        stats = {
+            'nb_salles': get_db("SELECT COUNT(*) FROM ecoledirecte_salles")[0][0],
+            'nb_cours': get_db("SELECT COUNT(*) FROM ecoledirecte_emploi_du_temps")[0][0]
+        }
+    except Exception as e:
+        current_settings = {}
+        ecoledirecte_settings = {}
+        stats = {'nb_salles': 0, 'nb_cours': 0}
+        
+        # Création des tables nécessaires
         get_db("""
             CREATE TABLE IF NOT EXISTS system_settings (
                 setting_key VARCHAR(255) PRIMARY KEY,
@@ -172,37 +221,163 @@ def settings():
             )
         """)
     
-    return render_template('admin/settings.html', settings=current_settings, now=datetime.now())
+    return render_template('admin/settings.html',
+                         settings=current_settings,
+                         ecoledirecte_settings=ecoledirecte_settings,
+                         ecoledirecte_stats=stats,
+                         now=datetime.now())
 
 @admin_bp.route('/settings/update', methods=['POST'])
 def update_settings():
     """Mettre à jour les paramètres du système"""
-    # Récupérer tous les paramètres du formulaire
-    allow_registration = request.form.get('allow_registration', '0')
-    allow_ticket_creation = request.form.get('allow_ticket_creation', '0')
-    default_user_role = request.form.get('default_user_role', 'user')
-    system_name = request.form.get('system_name', 'GLPI')
+    # Récupérer et enregistrer tous les paramètres du formulaire
+    settings = {
+        'system_name': request.form.get('system_name', 'GLPI'),
+        'allow_registration': request.form.get('allow_registration', '0'),
+        'allow_ticket_creation': request.form.get('allow_ticket_creation', '0'),
+        'default_user_role': request.form.get('default_user_role', 'user'),
+        'smtp_server': request.form.get('smtp_server'),
+        'smtp_port': request.form.get('smtp_port'),
+        'smtp_security': request.form.get('smtp_security'),
+        'smtp_username': request.form.get('smtp_username'),
+        'smtp_password': request.form.get('smtp_password'),
+        'sender_email': request.form.get('sender_email')
+    }
     
-    # Enregistrer les paramètres dans la base de données
     try:
-        settings = {
-            'allow_registration': allow_registration,
-            'allow_ticket_creation': allow_ticket_creation,
-            'default_user_role': default_user_role,
-            'system_name': system_name
-        }
-        
         for key, value in settings.items():
-            existing = get_db("SELECT * FROM system_settings WHERE setting_key = %s", (key,))
-            if existing:
-                get_db("UPDATE system_settings SET setting_value = %s WHERE setting_key = %s", (value, key))
-            else:
-                get_db("INSERT INTO system_settings (setting_key, setting_value) VALUES (%s, %s)", (key, value))
+            if value is not None:  # Ne pas enregistrer les valeurs None
+                existing = get_db("SELECT * FROM system_settings WHERE setting_key = %s", (key,))
+                if existing:
+                    get_db("UPDATE system_settings SET setting_value = %s WHERE setting_key = %s",
+                          (value, key))
+                else:
+                    get_db("INSERT INTO system_settings (setting_key, setting_value) VALUES (%s, %s)",
+                          (key, value))
         
-        log_activity(session.get('user_id'), 'update', 'settings', f"Mise à jour des paramètres système")
         flash("Paramètres mis à jour avec succès", "success")
     except Exception as e:
         flash(f"Erreur lors de la mise à jour des paramètres: {str(e)}", "error")
+    
+    return redirect(url_for('admin.settings'))
+
+@admin_bp.route('/settings/ecoledirecte/update', methods=['POST'])
+def update_ecoledirecte_settings():
+    """Mettre à jour les paramètres d'intégration EcoleDirecte"""
+    username = request.form.get('ecoledirecte_username')
+    password = request.form.get('ecoledirecte_password')
+    sync_salles = request.form.get('sync_salles', '0')
+    sync_edt = request.form.get('sync_edt', '0')
+    sync_frequency = request.form.get('sync_frequency', 'daily')
+    sync_delay = request.form.get('sync_delay', '30')  # Valeur par défaut : 30 secondes
+    
+    try:
+        # Convertir et valider le délai
+        sync_delay = int(sync_delay)
+        if sync_delay < 0:
+            sync_delay = 0
+        elif sync_delay > 3600:
+            sync_delay = 3600
+            
+        # Récupérer les paramètres existants
+        settings_data = get_db("""
+            SELECT setting_value 
+            FROM system_settings 
+            WHERE setting_key = 'ecoledirecte_credentials'
+        """)
+        
+        current_settings = json.loads(settings_data[0][0]) if settings_data else {}
+        
+        # Mettre à jour les paramètres
+        new_settings = {
+            'username': username,
+            'password': password if password else current_settings.get('password', ''),
+            'sync_salles': sync_salles,
+            'sync_edt': sync_edt,
+            'sync_frequency': sync_frequency,
+            'sync_delay': str(sync_delay),
+            'last_sync_salles': current_settings.get('last_sync_salles'),
+            'last_sync_edt': current_settings.get('last_sync_edt')
+        }
+        
+        # Enregistrer les nouveaux paramètres
+        settings_json = json.dumps(new_settings)
+        if settings_data:
+            get_db("""
+                UPDATE system_settings 
+                SET setting_value = %s 
+                WHERE setting_key = 'ecoledirecte_credentials'
+            """, (settings_json,))
+        else:
+            get_db("""
+                INSERT INTO system_settings (setting_key, setting_value)
+                VALUES ('ecoledirecte_credentials', %s)
+            """, (settings_json,))
+        
+        flash("Paramètres EcoleDirecte mis à jour avec succès", "success")
+    except Exception as e:
+        flash(f"Erreur lors de la mise à jour des paramètres EcoleDirecte: {str(e)}", "error")
+    
+    return redirect(url_for('admin.settings'))
+
+@admin_bp.route('/settings/ecoledirecte/sync', methods=['POST'])
+def sync_ecoledirecte():
+    """Lancer une synchronisation manuelle avec EcoleDirecte"""
+    try:
+        from utils.ecole_directe_service import EcoleDirecteService
+        
+        service = EcoleDirecteService()
+        success = True
+        
+        # Synchroniser les salles
+        if service.synchroniser_salles():
+            # Mettre à jour la date de dernière synchronisation des salles
+            settings_data = get_db("""
+                SELECT setting_value 
+                FROM system_settings 
+                WHERE setting_key = 'ecoledirecte_credentials'
+            """)
+            
+            if settings_data:
+                current_settings = json.loads(settings_data[0][0])
+                current_settings['last_sync_salles'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                
+                get_db("""
+                    UPDATE system_settings 
+                    SET setting_value = %s 
+                    WHERE setting_key = 'ecoledirecte_credentials'
+                """, (json.dumps(current_settings),))
+        else:
+            success = False
+        
+        # Synchroniser l'emploi du temps
+        if service.synchroniser_emploi_du_temps():
+            # Mettre à jour la date de dernière synchronisation de l'EDT
+            settings_data = get_db("""
+                SELECT setting_value 
+                FROM system_settings 
+                WHERE setting_key = 'ecoledirecte_credentials'
+            """)
+            
+            if settings_data:
+                current_settings = json.loads(settings_data[0][0])
+                current_settings['last_sync_edt'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                
+                get_db("""
+                    UPDATE system_settings 
+                    SET setting_value = %s 
+                    WHERE setting_key = 'ecoledirecte_credentials'
+                """, (json.dumps(current_settings),))
+        else:
+            success = False
+        
+        if success:
+            flash("Synchronisation EcoleDirecte effectuée avec succès", "success")
+        else:
+            flash("La synchronisation EcoleDirecte a rencontré des erreurs", "warning")
+            
+    except Exception as e:
+        flash(f"Erreur lors de la synchronisation EcoleDirecte: {str(e)}", "error")
     
     return redirect(url_for('admin.settings'))
 

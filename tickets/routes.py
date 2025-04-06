@@ -1,11 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from utils.db import get_db, log_activity
-from onekey.user import get_user_info
+from onekey.user import get_user_info, list_users
 from .ticket_service import (
     create_ticket, list_tickets, get_ticket_info, get_ticket_comments, 
-    add_comment as add_ticket_comment,  # Renommer l'import pour éviter le conflit
-    close_ticket, associate_hardware_to_ticket, 
-    disassociate_hardware_from_ticket, get_associated_hardware, get_available_hardware
+    add_comment as add_ticket_comment, close_ticket, associate_hardware_to_ticket, 
+    disassociate_hardware_from_ticket, get_associated_hardware, get_available_hardware, SousTicketService
 )
 from datetime import datetime
 
@@ -39,8 +38,9 @@ def index():
                           now=datetime.now())
 
 @tickets_bp.route('/create', methods=['GET', 'POST'])
+@tickets_bp.route('/subticket/<ticket_id>/create', methods=['GET', 'POST'])
 def create():
-    """Création d'un nouveau ticket"""
+    """Création d'un nouveau ticket ou d'un sous-ticket"""
     user_id = session.get('user_id')
     if not user_id:
         return redirect(url_for('login'))
@@ -50,14 +50,24 @@ def create():
         description = request.form.get('description')
         gravite = request.form.get('gravite')
         tags = request.form.get('tags')
+        parent_ticket_id = request.form.get('parent_ticket_id')  # For sub-tickets
         
         if not all([titre, description, gravite]):
             flash("Tous les champs obligatoires doivent être remplis", "error")
             return render_template('tickets/create.html', now=datetime.now())
         
         try:
-            ticket_id = create_ticket(user_id, titre, description, gravite, tags)
-            log_activity(user_id, 'create', 'ticket', f"Ticket créé: {titre}")
+            if parent_ticket_id:
+                # Create a sub-ticket
+                ticket_id = SousTicketService.creer_sous_ticket(
+                    parent_ticket_id, titre, description, gravite, user_id, None
+                )
+                log_activity(user_id, 'create', 'subticket', f"Sous-ticket créé: {titre}")
+            else:
+                # Create a main ticket
+                ticket_id = create_ticket(user_id, titre, description, gravite, tags)
+                log_activity(user_id, 'create', 'ticket', f"Ticket créé: {titre}")
+            
             flash("Le ticket a été créé avec succès!", "success")
             return redirect(url_for('tickets.view', ticket_id=ticket_id))
         except Exception as e:
@@ -81,7 +91,7 @@ def view(ticket_id):
         creator_name = ticket[-1] if ticket else "Utilisateur inconnu"  # Le nom est ajouté à la fin du tuple par get_ticket_info
         
         # Récupérer la liste des utilisateurs pour l'assignation
-        users = get_db("SELECT ID, name FROM USEUR WHERE active = 1")
+        users = list_users()
         
         # Calculer la date de dernière mise à jour
         last_update = ticket[2]  # Par défaut, date de création
@@ -103,6 +113,9 @@ def view(ticket_id):
         # Récupérer la liste de tout le matériel disponible
         available_hardware = get_available_hardware()
         
+        # Récupérer les sous-tickets
+        sous_tickets = SousTicketService.get_sous_tickets(ticket_id)
+        
         return render_template('tickets/view.html', 
                               ticket=ticket, 
                               comments=formatted_comments,
@@ -112,10 +125,135 @@ def view(ticket_id):
                               creator_name=creator_name,
                               last_update=last_update,
                               users=users,
+                              sous_tickets=sous_tickets,
                               now=datetime.now())
     except Exception as e:
         flash(f"Erreur lors de l'accès au ticket: {str(e)}", "error")
         return redirect(url_for('tickets.index'))
+
+@tickets_bp.route('/subticket/<subticket_id>')
+def view_subticket(subticket_id):
+    """Récupère les détails d'un sous-ticket en JSON"""
+    sous_tickets = get_db("""
+        SELECT st.*, u1.name as createur_name, u2.name as assigne_name,
+               t.titre as ticket_parent_titre
+        FROM sous_tickets st
+        LEFT JOIN USEUR u1 ON st.createur_id = u1.ID
+        LEFT JOIN USEUR u2 ON st.assigne_a = u2.ID
+        LEFT JOIN tiqué t ON st.parent_ticket_id = t.ID_tiqué
+        WHERE st.id = %s
+    """, (subticket_id,))
+    
+    if not sous_tickets:
+        return jsonify({'error': 'Sous-ticket non trouvé'}), 404
+    
+    st = sous_tickets[0]
+    return jsonify({
+        'id': st[0],
+        'parent_ticket_id': st[1],
+        'titre': st[2],
+        'description': st[3],
+        'statut': st[4],
+        'priorite': st[5],
+        'date_creation': str(st[7]),
+        'date_modification': str(st[8]) if st[8] else None,
+        'date_resolution': str(st[9]) if st[9] else None,
+        'createur_name': st[11],
+        'assigne_name': st[12],
+        'ticket_parent_titre': st[13]
+    })
+
+@tickets_bp.route('/<ticket_id>/subticket', methods=['POST'])
+def add_subticket(ticket_id):
+    """Crée un nouveau sous-ticket"""
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+    
+    titre = request.form.get('titre')
+    description = request.form.get('description')
+    priorite = request.form.get('priorite', 5)
+    assigne_a = request.form.get('assigne_a')
+    
+    try:
+        sous_ticket_id = SousTicketService.creer_sous_ticket(
+            ticket_id, titre, description, priorite,
+            session['user_id'], assigne_a
+        )
+        
+        if sous_ticket_id:
+            flash("Sous-ticket créé avec succès", "success")
+        else:
+            flash("Erreur lors de la création du sous-ticket", "error")
+            
+    except Exception as e:
+        flash(f"Erreur: {str(e)}", "error")
+    
+    return redirect(url_for('tickets.view', ticket_id=ticket_id))
+
+@tickets_bp.route('/subticket/<subticket_id>/resolve', methods=['POST'])
+def resolve_subticket(subticket_id):
+    """Marque un sous-ticket comme résolu"""
+    if not session.get('user_id'):
+        return jsonify({'error': 'Non autorisé'}), 401
+    
+    try:
+        success = SousTicketService.changer_statut(
+            subticket_id, 'resolu', session['user_id']
+        )
+        
+        if success:
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'error': 'Erreur lors de la résolution'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@tickets_bp.route('/subticket/<subticket_id>/assign', methods=['POST'])
+def assign_subticket(subticket_id):
+    """Assigne un sous-ticket à un utilisateur"""
+    if not session.get('user_id'):
+        return jsonify({'error': 'Non autorisé'}), 401
+    
+    assigne_a = request.form.get('assigne_a')
+    if not assigne_a:
+        return jsonify({'error': 'Utilisateur non spécifié'}), 400
+    
+    try:
+        success = SousTicketService.assigner_sous_ticket(
+            subticket_id, assigne_a, session['user_id']
+        )
+        
+        if success:
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'error': 'Erreur lors de l\'assignation'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@tickets_bp.route('/subticket/<subticket_id>/comment', methods=['POST'])
+def add_subticket_comment(subticket_id):
+    """Ajoute un commentaire à un sous-ticket"""
+    if not session.get('user_id'):
+        return jsonify({'error': 'Non autorisé'}), 401
+    
+    commentaire = request.form.get('commentaire')
+    if not commentaire:
+        return jsonify({'error': 'Commentaire vide'}), 400
+    
+    try:
+        success = SousTicketService.ajouter_commentaire(
+            subticket_id, session['user_id'], commentaire
+        )
+        
+        if success:
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'error': 'Erreur lors de l\'ajout du commentaire'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @tickets_bp.route('/comment/<ticket_id>', methods=['POST'])
 def comment(ticket_id):

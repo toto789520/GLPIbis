@@ -149,7 +149,7 @@ def login_user(email, password):
     user = users[0]
     user_id = user[0]
     username = user[1]
-    hashed_pw = user[4]  # Récupérer le mot de passe hashé directement par son nom de colonne
+    hashed_pw = user[4]
     
     # Vérifier le mot de passe
     ph = argon2.PasswordHasher()
@@ -158,6 +158,9 @@ def login_user(email, password):
     except argon2.exceptions.VerifyMismatchError:
         log_activity(user_id, 'login_failed', 'auth', f"Tentative de connexion échouée pour {email}")
         return {'status': 'error', 'message': 'Email ou mot de passe incorrect'}
+    
+    # Mettre à jour la date de dernière connexion
+    get_db("UPDATE USEUR SET derniere_connexion = NOW() WHERE ID = %s", (user_id,))
     
     # Créer une session
     token = generate_token()

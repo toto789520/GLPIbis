@@ -1,6 +1,7 @@
 import string
 import secrets
 import datetime
+import uuid
 from utils.db import get_db, log_activity
 from flask import session
 
@@ -58,6 +59,56 @@ def create_ticket(user_id, titre, description, gravite, tags):
     update_user_stats(user_id, "tiqué_créer", ticket_id)
     
     return ticket_id
+
+def create_subticket(user_id, parent_ticket_id, titre, description, gravite, tags):
+    """
+    Crée un sous-ticket lié à un ticket parent dans la base de données
+
+    Args:
+        user_id (str): ID de l'utilisateur créant le sous-ticket
+        parent_ticket_id (str): ID du ticket parent
+        titre (str): Titre du sous-ticket
+        description (str): Description détaillée du sous-ticket
+        gravite (str/int): Niveau de gravité du sous-ticket
+        tags (str): Tags ou catégories associés au sous-ticket
+
+    Returns:
+        str: ID du sous-ticket créé
+    """
+    subticket_id = generate_ticket_id()
+
+    # Préparation des données
+    data = {
+        'ID_user': user_id,
+        'ID_tiqué': subticket_id,
+        'parent_ID_tiqué': parent_ticket_id,
+        'date_open': str(datetime.date.today()),
+        'titre': titre,
+        'descipition': description,
+        'gravite': int(gravite),
+        'tag': tags,
+        'open': 1
+    }
+
+    # Insertion du sous-ticket
+    get_db("""
+        INSERT INTO tiqué (ID_tiqué, ID_user, parent_ID_tiqué, date_open, titre, descipition, gravite, tag, open)
+        VALUES (%(ID_tiqué)s, %(ID_user)s, %(parent_ID_tiqué)s, %(date_open)s, %(titre)s, %(descipition)s, %(gravite)s, %(tag)s, %(open)s)
+    """, data)
+
+    # Création d'une table pour les commentaires du sous-ticket
+    get_db(f"""CREATE TABLE IF NOT EXISTS {subticket_id} (
+        ID_user VARCHAR(255), 
+        date TEXT, 
+        hour TEXT, 
+        commenter TEXT,
+        gravité INTEGER DEFAULT 0
+    )""")
+
+    # Mise à jour des statistiques de l'utilisateur
+    update_user_stats(user_id, "tiqué_créer", subticket_id)
+
+    return subticket_id
 
 def list_tickets(filter_value=None):
     """
@@ -405,3 +456,186 @@ def get_available_hardware():
     """)
     
     return hardware
+
+class SousTicketService:
+    @staticmethod
+    def creer_sous_ticket(parent_ticket_id, titre, description, priorite, createur_id, assigne_a=None):
+        """
+        Crée un nouveau sous-ticket
+        """
+        sous_ticket_id = str(uuid.uuid4())
+        
+        try:
+            get_db("""
+                INSERT INTO sous_tickets 
+                (id, parent_ticket_id, titre, description, priorite, createur_id, assigne_a)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (sous_ticket_id, parent_ticket_id, titre, description, priorite, createur_id, assigne_a))
+            
+            # Mettre à jour le compteur de sous-tickets
+            get_db("""
+                UPDATE tiqué 
+                SET nombre_sous_tickets = nombre_sous_tickets + 1
+                WHERE ID_tiqué = %s
+            """, (parent_ticket_id,))
+            
+            # Enregistrer dans l'historique
+            get_db("""
+                INSERT INTO sous_tickets_historique 
+                (sous_ticket_id, user_id, type_modification, nouvelle_valeur)
+                VALUES (%s, %s, 'creation', %s)
+            """, (sous_ticket_id, createur_id, f"Création du sous-ticket: {titre}"))
+            
+            log_activity(createur_id, 'create', 'sous-ticket', 
+                        f"Création du sous-ticket '{titre}' pour le ticket {parent_ticket_id}")
+            
+            return sous_ticket_id
+        except Exception as e:
+            print(f"Erreur lors de la création du sous-ticket: {e}")
+            return None
+
+    @staticmethod
+    def ajouter_dependance(sous_ticket_id, depend_de_id, user_id):
+        """
+        Ajoute une dépendance entre deux sous-tickets
+        """
+        try:
+            get_db("""
+                INSERT INTO sous_tickets_dependances (sous_ticket_id, depend_de_id)
+                VALUES (%s, %s)
+            """, (sous_ticket_id, depend_de_id))
+            
+            log_activity(user_id, 'update', 'sous-ticket', 
+                        f"Ajout d'une dépendance entre les sous-tickets {sous_ticket_id} et {depend_de_id}")
+            
+            return True
+        except Exception as e:
+            print(f"Erreur lors de l'ajout de la dépendance: {e}")
+            return False
+
+    @staticmethod
+    def changer_statut(sous_ticket_id, nouveau_statut, user_id):
+        """
+        Change le statut d'un sous-ticket
+        """
+        try:
+            # Récupérer l'ancien statut
+            ancien_statut = get_db("""
+                SELECT statut FROM sous_tickets WHERE id = %s
+            """, (sous_ticket_id,))[0][0]
+            
+            # Mettre à jour le statut
+            get_db("""
+                UPDATE sous_tickets 
+                SET statut = %s,
+                    date_resolution = CASE 
+                        WHEN %s IN ('resolu', 'ferme') THEN NOW()
+                        ELSE NULL
+                    END
+                WHERE id = %s
+            """, (nouveau_statut, nouveau_statut, sous_ticket_id))
+            
+            # Enregistrer dans l'historique
+            get_db("""
+                INSERT INTO sous_tickets_historique 
+                (sous_ticket_id, user_id, type_modification, ancienne_valeur, nouvelle_valeur)
+                VALUES (%s, %s, 'statut', %s, %s)
+            """, (sous_ticket_id, user_id, ancien_statut, nouveau_statut))
+            
+            log_activity(user_id, 'update', 'sous-ticket', 
+                        f"Changement de statut du sous-ticket {sous_ticket_id} de {ancien_statut} à {nouveau_statut}")
+            
+            return True
+        except Exception as e:
+            print(f"Erreur lors du changement de statut: {e}")
+            return False
+
+    @staticmethod
+    def assigner_sous_ticket(sous_ticket_id, assigne_a, assigne_par):
+        """
+        Assigne un sous-ticket à un utilisateur
+        """
+        try:
+            # Récupérer l'ancienne assignation
+            ancien_assigne = get_db("""
+                SELECT assigne_a FROM sous_tickets WHERE id = %s
+            """, (sous_ticket_id,))[0][0]
+            
+            # Mettre à jour l'assignation
+            get_db("""
+                UPDATE sous_tickets SET assigne_a = %s WHERE id = %s
+            """, (assigne_a, sous_ticket_id))
+            
+            # Enregistrer dans l'historique
+            get_db("""
+                INSERT INTO sous_tickets_historique 
+                (sous_ticket_id, user_id, type_modification, ancienne_valeur, nouvelle_valeur)
+                VALUES (%s, %s, 'assignation', %s, %s)
+            """, (sous_ticket_id, assigne_par, ancien_assigne or 'Non assigné', assigne_a))
+            
+            log_activity(assigne_par, 'update', 'sous-ticket', 
+                        f"Assignation du sous-ticket {sous_ticket_id} à l'utilisateur {assigne_a}")
+            
+            return True
+        except Exception as e:
+            print(f"Erreur lors de l'assignation: {e}")
+            return False
+
+    @staticmethod
+    def ajouter_commentaire(sous_ticket_id, user_id, commentaire):
+        """
+        Ajoute un commentaire à un sous-ticket
+        """
+        try:
+            get_db("""
+                INSERT INTO sous_tickets_commentaires 
+                (sous_ticket_id, user_id, commentaire)
+                VALUES (%s, %s, %s)
+            """, (sous_ticket_id, user_id, commentaire))
+            
+            log_activity(user_id, 'comment', 'sous-ticket', 
+                        f"Ajout d'un commentaire au sous-ticket {sous_ticket_id}")
+            
+            return True
+        except Exception as e:
+            print(f"Erreur lors de l'ajout du commentaire: {e}")
+            return False
+
+    @staticmethod
+    def get_sous_tickets(parent_ticket_id):
+        """
+        Récupère tous les sous-tickets d'un ticket parent
+        """
+        try:
+            sous_tickets = get_db("""
+                SELECT st.*, u1.name as createur_name, u2.name as assigne_name
+                FROM sous_tickets st
+                LEFT JOIN USEUR u1 ON st.createur_id = u1.ID
+                LEFT JOIN USEUR u2 ON st.assigne_a = u2.ID
+                WHERE st.parent_ticket_id = %s
+                ORDER BY st.date_creation DESC
+            """, (parent_ticket_id,))
+            
+            # Formater les résultats
+            formatted_tickets = []
+            for st in sous_tickets:
+                formatted_tickets.append({
+                    'id': st[0],
+                    'parent_ticket_id': st[1],
+                    'titre': st[2],
+                    'description': st[3],
+                    'statut': st[4],
+                    'priorite': st[5],
+                    'assigne_a': st[6],
+                    'date_creation': st[7],
+                    'date_modification': st[8],
+                    'date_resolution': st[9],
+                    'createur_id': st[10],
+                    'createur_name': st[11],
+                    'assigne_name': st[12]
+                })
+            
+            return formatted_tickets
+        except Exception as e:
+            print(f"Erreur lors de la récupération des sous-tickets: {e}")
+            return []

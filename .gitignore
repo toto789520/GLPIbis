@@ -9,3 +9,11 @@
 /tickets/__pycache__
 /activity_screening/__pycache__
 /admin/__pycache__
+/activity_screening/__pycache__
+/onekey/__pycache__
+/tickets/__pycache__
+/activity_screening/__pycache__
+/admin/__pycache__
+/.vscode
+/onekey/__pycache__
+*.pyc

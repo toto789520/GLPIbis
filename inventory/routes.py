@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, Response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, Response, send_file
 from utils.db import get_db, log_activity
 from .inventory_service import (add_item, delete_item, get_categories, get_sous_categories, 
                               get_sous_sous_categories, list_items, get_item_by_id,
@@ -6,10 +6,13 @@ from .inventory_service import (add_item, delete_item, get_categories, get_sous_
                               create_loan, return_item, get_active_loans, get_item_loan_history,
                               add_intervention, get_item_interventions, close_intervention,
                               export_inventory_csv, export_inventory_json, import_inventory_csv)
+from .qr_service import QRCodeService
 from datetime import datetime
+import os
 
 # Création du Blueprint pour les routes liées à l'inventaire
-inventory_bp = Blueprint('inventory', __name__)
+inventory_bp = Blueprint('inventory', __name__, template_folder='templates')
+qr_service = QRCodeService(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static'))
 
 @inventory_bp.route('/')
 def index():
@@ -287,6 +290,117 @@ def download_qr_code(qr_code):
     # Envoyer le fichier au client
     return send_file(img_buffer, mimetype='image/png', as_attachment=True, 
                      download_name=f'qr_code_{qr_code}.png')
+
+@inventory_bp.route('/hardware/<int:hardware_id>/qr')
+def generate_qr(hardware_id):
+    """Génère un QR code pour un équipement"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+    
+    try:
+        # Récupérer les informations de l'équipement
+        hardware = get_db("""
+            SELECT * FROM HARDWARE WHERE id = %s
+        """, (hardware_id,))
+        
+        if not hardware:
+            flash("Équipement non trouvé", "error")
+            return redirect(url_for('inventory.index'))
+        
+        # Générer le QR code
+        filename = qr_service.generate_qr_code(hardware_id, hardware[0])
+        
+        # Log de l'action
+        log_activity(user_id, 'generate_qr', 'inventory', f"Génération QR code pour l'équipement {hardware_id}")
+        
+        return send_file(
+            os.path.join(qr_service.qr_folder, filename),
+            mimetype='image/png',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        flash(f"Erreur lors de la génération du QR code : {str(e)}", "error")
+        return redirect(url_for('inventory.index'))
+
+@inventory_bp.route('/hardware/<int:hardware_id>/label')
+def generate_label(hardware_id):
+    """Génère une étiquette avec QR code pour l'impression"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+    
+    try:
+        # Récupérer les informations de l'équipement
+        hardware = get_db("""
+            SELECT * FROM HARDWARE WHERE id = %s
+        """, (hardware_id,))
+        
+        if not hardware:
+            flash("Équipement non trouvé", "error")
+            return redirect(url_for('inventory.index'))
+        
+        # Formater les informations pour l'étiquette
+        hardware_info = {
+            'id': hardware[0][0],
+            'name': hardware[0][1],
+            'type': hardware[0][2],
+            'status': hardware[0][3]
+        }
+        
+        # Générer l'étiquette
+        filename = qr_service.generate_qr_label(hardware_info)
+        
+        # Log de l'action
+        log_activity(user_id, 'generate_label', 'inventory', f"Génération étiquette pour l'équipement {hardware_id}")
+        
+        return send_file(
+            os.path.join(qr_service.qr_folder, filename),
+            mimetype='image/png',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        flash(f"Erreur lors de la génération de l'étiquette : {str(e)}", "error")
+        return redirect(url_for('inventory.index'))
+
+@inventory_bp.route('/scan', methods=['GET', 'POST'])
+def scan_qr():
+    """Page de scan de QR code"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        try:
+            if 'qr_image' not in request.files:
+                flash("Aucune image fournie", "error")
+                return redirect(request.url)
+            
+            file = request.files['qr_image']
+            if file.filename == '':
+                flash("Aucun fichier sélectionné", "error")
+                return redirect(request.url)
+            
+            # Lire le QR code
+            hardware_id = qr_service.get_qr_info(file.read())
+            
+            if hardware_id:
+                # Log de l'action
+                log_activity(user_id, 'scan_qr', 'inventory', f"Scan QR code pour l'équipement {hardware_id}")
+                return redirect(url_for('inventory.view_hardware', hardware_id=hardware_id))
+            else:
+                flash("Aucun QR code valide détecté", "error")
+                return redirect(request.url)
+            
+        except Exception as e:
+            flash(f"Erreur lors du scan du QR code : {str(e)}", "error")
+            return redirect(request.url)
+    
+    return render_template('inventory/scan_qr.html')
 
 # Routes pour la localisation
 @inventory_bp.route('/locations', methods=['GET', 'POST'])

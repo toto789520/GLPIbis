@@ -1,0 +1,76 @@
+:root {
+    /* Couleurs principales */
+    --primary-color: #007bff;
+    --primary-dark: #0056b3;
+    --secondary-color: #6c757d;
+    --secondary-dark: #545b62;
+    --success-color: #28a745;
+    --success-dark: #1e7e34;
+    --warning-color: #ffc107;
+    --warning-dark: #d39e00;
+    --danger-color: #dc3545;
+    --danger-dark: #bd2130;
+    --info-color: #17a2b8;
+    --info-dark: #117a8b;
+
+    /* Couleurs neutres */
+    --white: #ffffff;
+    --gray-100: #f8f9fa;
+    --gray-200: #e9ecef;
+    --gray-300: #dee2e6;
+    --gray-400: #ced4da;
+    --gray-500: #adb5bd;
+    --gray-600: #6c757d;
+    --gray-700: #495057;
+    --gray-800: #343a40;
+    --gray-900: #212529;
+    --black: #000000;
+
+    /* Couleurs spécifiques à l'application */
+    --menu-bg: #E85D04;
+    --menu-header-bg: #DC2F02;
+    --menu-border: #D00000;
+
+    /* Espacements */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-xxl: 3rem;
+
+    /* Typographie */
+    --font-family-base: "Montserrat", sans-serif;
+    --font-family-heading: "Freeman", sans-serif;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.25rem;
+    --font-size-xl: 1.5rem;
+    --font-size-xxl: 2rem;
+
+    /* Bordures et ombres */
+    --border-radius-sm: 0.25rem;
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 1rem;
+    --border-width: 1px;
+    --border-color: var(--gray-300);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+
+    /* Transitions */
+    --transition-speed: 0.3s;
+    --transition-timing: ease;
+
+    /* Breakpoints */
+    --breakpoint-sm: 576px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 992px;
+    --breakpoint-xl: 1200px;
+
+    /* Layout */
+    --container-max-width: 1200px;
+    --menu-width: 250px;
+    --header-height: 60px;
+}

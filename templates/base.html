@@ -28,7 +28,13 @@
                 <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Accueil</a></li>
                 <li><a href="/tickets/"><i class="fas fa-ticket-alt"></i> Tickets</a></li>
                 <li><a href="/inventory/"><i class="fas fa-boxes"></i> Inventaire</a></li>
-                <li><a href="/activity/"><i class="fas fa-tasks"></i> Activités</a></li>
+                <li>
+                    <a href="/activity/"><i class="fas fa-tasks"></i> Activités</a>
+                    <ul class="sub-menu">
+                        <li><a href="{{ url_for('activity.index') }}"><i class="fas fa-chart-line"></i> Tableau de bord</a></li>
+                        <li><a href="{{ url_for('activity.live') }}"><i class="fas fa-tv"></i> Affichage en direct</a></li>
+                    </ul>
+                </li>
             </ul>
         </nav>
         <div class="user-nav">

@@ -1,4 +1,31 @@
-/* Styles spécifiques pour le module Tickets */
+@import 'variables.css';
+
+/* Container principal des tickets */
+.tickets-container {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    padding: var(--spacing-xl);
+}
+
+/* En-tête de la section tickets */
+.tickets-header {
+    margin-bottom: var(--spacing-xl);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tickets-title {
+    font-size: var(--font-size-xxl);
+    color: var(--gray-800);
+    font-family: var(--font-family-heading);
+}
+
+/* Liste des tickets */
+.ticket-list {
+    display: grid;
+    gap: var(--spacing-lg);
+}
 
 /* Styles généraux pour les pages de tickets */
 .ticket-container {
@@ -7,75 +34,222 @@
     padding: 20px;
 }
 
-/* Styles pour les cartes de tickets */
 .ticket-card {
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    background-color: #fff;
-    border: 1px solid rgba(0, 0, 0, 0.125);
+    background-color: var(--white);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: var(--spacing-lg);
+    transition: transform var(--transition-speed) var(--transition-timing);
 }
 
-.ticket-card .card-header {
-    padding: 15px 20px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-    border-radius: 7px 7px 0 0;
+.ticket-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
-.ticket-card .card-body {
-    padding: 20px;
+.ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-md);
 }
 
-.ticket-card .card-footer {
-    background-color: #f9f9f9;
-    padding: 12px 20px;
-    border-top: 1px solid rgba(0, 0, 0, 0.125);
-    border-radius: 0 0 7px 7px;
+.ticket-id {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
 }
 
-/* Styles pour les indicateurs de priorité */
-.priority-indicator {
-    display: inline-flex;
+.ticket-title {
+    font-size: var(--font-size-lg);
+    color: var(--gray-800);
+    margin-bottom: var(--spacing-sm);
+}
+
+.ticket-meta {
+    display: flex;
+    gap: var(--spacing-md);
+    color: var(--gray-600);
+    font-size: var(--font-size-sm);
+}
+
+.ticket-body {
+    padding: var(--spacing-md);
+}
+
+.ticket-description {
+    color: var(--gray-700);
+    margin-bottom: var(--spacing-md);
+}
+
+.ticket-metadata {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--spacing-md);
+}
+
+.metadata-item {
+    display: flex;
     align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--gray-600);
+    font-size: var(--font-size-sm);
 }
 
-.priority-indicator i {
-    color: #dc3545;
-    margin-right: 2px;
+.ticket-footer {
+    padding: var(--spacing-md);
+    background-color: var(--gray-100);
+    border-top: var(--border-width) solid var(--border-color);
+    border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
 }
 
-/* Styles pour les status de tickets */
+/* États des tickets */
 .ticket-status {
     display: inline-block;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 0.85em;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
     font-weight: 500;
 }
 
 .status-new {
-    background-color: #17a2b8;
-    color: white;
+    background-color: var(--info-color);
+    color: var(--white);
 }
 
 .status-in-progress {
-    background-color: #ffc107;
-    color: #212529;
+    background-color: var(--warning-color);
+    color: var(--gray-900);
 }
 
 .status-resolved {
-    background-color: #28a745;
-    color: white;
+    background-color: var(--success-color);
+    color: var(--white);
 }
 
 .status-closed {
-    background-color: #6c757d;
-    color: white;
+    background-color: var(--gray-500);
+    color: var(--white);
 }
 
-.status-pending {
-    background-color: #fd7e14;
-    color: white;
+.priority-high {
+    background-color: var(--danger-color);
+    color: var(--white);
+}
+
+.priority-medium {
+    background-color: var(--warning-color);
+    color: var(--gray-900);
+}
+
+.priority-low {
+    background-color: var(--success-color);
+    color: var(--white);
+}
+
+/* Indicateurs de priorité */
+.priority-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.priority-indicator i {
+    color: var(--danger-color);
+}
+
+/* Formulaire de ticket */
+.ticket-form {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
+    background-color: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.ticket-form .form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.ticket-form label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    color: var(--gray-700);
+    font-weight: 500;
+}
+
+.ticket-form input,
+.ticket-form textarea,
+.ticket-form select {
+    width: 100%;
+    padding: var(--spacing-md);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-base);
+    transition: all var(--transition-speed) var(--transition-timing);
+}
+
+.ticket-form input:focus,
+.ticket-form textarea:focus,
+.ticket-form select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+
+.form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    color: var(--gray-700);
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: var(--spacing-md);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-base);
+    color: var(--gray-800);
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--primary-color-light);
+}
+
+/* Commentaires de ticket */
+.ticket-comments {
+    margin-top: var(--spacing-xl);
+}
+
+.comment {
+    padding: var(--spacing-md);
+    background-color: var(--gray-50);
+    border-radius: var(--border-radius-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-sm);
+}
+
+.comment-author {
+    font-weight: 500;
+    color: var(--gray-800);
+}
+
+.comment-date {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
 }
 
 /* Styles pour le fil de discussion */
@@ -129,40 +303,23 @@
     background-color: rgba(0, 123, 255, 0.05);
 }
 
-/* Styles pour le formulaire de création de ticket */
-.ticket-form label {
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    color: #333;
-}
-
-.ticket-form input,
-.ticket-form select,
-.ticket-form textarea {
-    width: 100%;
-    padding: 0.375rem 0.75rem;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    color: #495057;
-    background-color: #fff;
-    background-clip: padding-box;
-    border: 1px solid #ced4da;
-    border-radius: 0.25rem;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.ticket-form input:focus,
-.ticket-form select:focus,
-.ticket-form textarea:focus {
-    border-color: #80bdff;
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-/* Styles responsives */
+/* Responsive */
 @media (max-width: 768px) {
+    .tickets-container {
+        padding: var(--spacing-md);
+    }
+
+    .tickets-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
     .ticket-container {
         padding: 10px;
+    }
+    
+    .ticket-form {
+        padding: var(--spacing-md);
     }
     
     .ticket-form .row {
@@ -172,5 +329,14 @@
     .ticket-form [class*="col-"] {
         width: 100%;
         padding: 0;
+    }
+
+    .ticket-list {
+        gap: var(--spacing-sm);
+    }
+
+    .ticket-metadata {
+        flex-direction: column;
+        gap: var(--spacing-sm);
     }
 }

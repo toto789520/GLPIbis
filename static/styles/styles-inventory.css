@@ -1,348 +1,200 @@
-/* Styles spécifiques pour le module d'inventaire */
+@import 'variables.css';
 
-/* Styles généraux pour les conteneurs */
+/* Container principal de l'inventaire */
 .inventory-container {
-    max-width: 1200px;
+    max-width: var(--container-max-width);
     margin: 0 auto;
-    padding: 20px;
+    padding: var(--spacing-xl);
 }
 
-/* Styles pour les cartes */
-.inventory-card {
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    background-color: #fff;
-    border: 1px solid rgba(0, 0, 0, 0.125);
+/* En-tête de l'inventaire */
+.inventory-header {
+    margin-bottom: var(--spacing-xl);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.inventory-card .card-header {
-    background-color: #f5f5f5;
-    padding: 15px 20px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-    border-radius: 7px 7px 0 0;
+.inventory-title {
+    font-size: var(--font-size-xxl);
+    color: var(--gray-800);
+    font-family: var(--font-family-heading);
 }
 
-.inventory-card .card-body {
-    padding: 20px;
+/* Filtres et recherche */
+.inventory-filters {
+    background-color: var(--white);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-sm);
 }
 
-.inventory-card .card-footer {
-    background-color: #f9f9f9;
-    padding: 12px 20px;
-    border-top: 1px solid rgba(0, 0, 0, 0.125);
-    border-radius: 0 0 7px 7px;
+.filter-group {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    margin-bottom: var(--spacing-md);
 }
 
-/* Styles pour les tableaux de matériel */
+/* Table d'inventaire */
 .inventory-table {
     width: 100%;
-    border-collapse: collapse;
+    background-color: var(--white);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
 }
 
 .inventory-table th {
-    background-color: #f1f1f1;
-    text-align: left;
-    padding: 12px;
+    background-color: var(--gray-100);
+    color: var(--gray-700);
     font-weight: 600;
-    color: #333;
-    border-bottom: 2px solid #ddd;
+    padding: var(--spacing-md);
+    text-align: left;
+    border-bottom: var(--border-width) solid var(--border-color);
 }
 
 .inventory-table td {
-    padding: 12px;
-    border-bottom: 1px solid #eee;
-    vertical-align: middle;
+    padding: var(--spacing-md);
+    border-bottom: var(--border-width) solid var(--border-color);
+    color: var(--gray-700);
 }
 
 .inventory-table tr:hover {
-    background-color: rgba(0, 123, 255, 0.05);
+    background-color: var(--gray-50);
 }
 
-/* Badges pour statuts et codes QR */
-.badge-qr {
-    padding: 6px 10px;
-    border-radius: 4px;
-    font-weight: 500;
-    font-size: 0.85em;
+/* Détails de l'équipement */
+.equipment-details {
+    background-color: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
 }
 
-.badge-qr.success {
-    background-color: #28a745;
-    color: white;
-}
-
-.badge-qr.secondary {
-    background-color: #6c757d;
-    color: white;
-}
-
-/* Styles pour les boutons */
-.btn-inventory {
-    display: inline-block;
-    font-weight: 500;
-    text-align: center;
-    vertical-align: middle;
-    cursor: pointer;
-    border: 1px solid transparent;
-    padding: 0.375rem 0.75rem;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    border-radius: 0.25rem;
-    transition: all 0.2s ease-in-out;
-}
-
-.btn-inventory.primary {
-    background-color: #007bff;
-    border-color: #007bff;
-    color: white;
-}
-
-.btn-inventory.primary:hover {
-    background-color: #0069d9;
-    border-color: #0062cc;
-}
-
-.btn-inventory.secondary {
-    background-color: #6c757d;
-    border-color: #6c757d;
-    color: white;
-}
-
-.btn-inventory.secondary:hover {
-    background-color: #5a6268;
-    border-color: #545b62;
-}
-
-.btn-inventory.danger {
-    background-color: #dc3545;
-    border-color: #dc3545;
-    color: white;
-}
-
-.btn-inventory.danger:hover {
-    background-color: #c82333;
-    border-color: #bd2130;
-}
-
-.btn-inventory.outline {
-    background-color: transparent;
-}
-
-.btn-inventory.outline-primary {
-    color: #007bff;
-    border-color: #007bff;
-}
-
-.btn-inventory.outline-primary:hover {
-    background-color: #007bff;
-    color: white;
-}
-
-.btn-inventory.outline-secondary {
-    color: #6c757d;
-    border-color: #6c757d;
-}
-
-.btn-inventory.outline-secondary:hover {
-    background-color: #6c757d;
-    color: white;
-}
-
-.btn-inventory.outline-danger {
-    color: #dc3545;
-    border-color: #dc3545;
-}
-
-.btn-inventory.outline-danger:hover {
-    background-color: #dc3545;
-    color: white;
-}
-
-.btn-inventory.sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.765rem;
-}
-
-/* Styles pour les formulaires */
-.inventory-form label {
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    color: #333;
-}
-
-.inventory-form input,
-.inventory-form select,
-.inventory-form textarea {
-    width: 100%;
-    padding: 0.375rem 0.75rem;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    color: #495057;
-    background-color: #fff;
-    background-clip: padding-box;
-    border: 1px solid #ced4da;
-    border-radius: 0.25rem;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.inventory-form input:focus,
-.inventory-form select:focus,
-.inventory-form textarea:focus {
-    border-color: #80bdff;
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-/* État d'erreur pour les formulaires */
-.inventory-form .is-invalid {
-    border-color: #dc3545;
-}
-
-.inventory-form .is-invalid:focus {
-    border-color: #dc3545;
-    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-}
-
-.inventory-form .invalid-feedback {
-    color: #dc3545;
-    font-size: 0.85rem;
-    margin-top: 0.25rem;
-}
-
-/* Détails du matériel */
-.hardware-details {
+.equipment-header {
     display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-xl);
 }
 
-.hardware-details .detail-item {
-    flex: 1 1 200px;
-    margin-bottom: 15px;
+.equipment-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
 }
 
-.hardware-details .detail-label {
-    font-weight: 600;
-    color: #6c757d;
-    margin-bottom: 5px;
-    text-transform: uppercase;
-    font-size: 0.85rem;
+.info-group {
+    margin-bottom: var(--spacing-lg);
 }
 
-.hardware-details .detail-value {
-    font-size: 1rem;
+.info-label {
+    color: var(--gray-600);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-xs);
 }
 
-/* QR code display */
-.qr-code-container {
-    margin-top: 15px;
-    margin-bottom: 15px;
+.info-value {
+    color: var(--gray-800);
+    font-weight: 500;
+}
+
+/* Code QR */
+.qr-container {
+    background-color: var(--white);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
     text-align: center;
 }
 
-.qr-code-image {
-    max-width: 150px;
-    border: 1px solid #ddd;
-    padding: 5px;
-    background-color: white;
+.qr-code {
+    max-width: 200px;
+    margin: 0 auto;
 }
 
-/* Messages d'état */
-.inventory-message {
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 5px;
+/* Formulaires d'inventaire */
+.inventory-form {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
+    background-color: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
 }
 
-.inventory-message.success {
-    background-color: rgba(40, 167, 69, 0.1);
-    border-left: 4px solid #28a745;
-    color: #155724;
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
 }
 
-.inventory-message.info {
-    background-color: rgba(23, 162, 184, 0.1);
-    border-left: 4px solid #17a2b8;
-    color: #0c5460;
-}
-
-.inventory-message.warning {
-    background-color: rgba(255, 193, 7, 0.1);
-    border-left: 4px solid #ffc107;
-    color: #856404;
-}
-
-.inventory-message.error {
-    background-color: rgba(220, 53, 69, 0.1);
-    border-left: 4px solid #dc3545;
-    color: #721c24;
-}
-
-/* Vue vide (pas de matériel trouvé) */
-.empty-state {
-    text-align: center;
-    padding: 40px 20px;
-}
-
-.empty-state img {
-    max-width: 150px;
-    margin-bottom: 20px;
-    opacity: 0.5;
-}
-
-.empty-state h3 {
+/* États de l'équipement */
+.equipment-status {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
     font-weight: 500;
-    margin-bottom: 10px;
-    color: #6c757d;
 }
 
-.empty-state p {
-    color: #6c757d;
-    margin-bottom: 20px;
+.status-available {
+    background-color: var(--success-color);
+    color: var(--white);
 }
 
-/* Filtres */
-.filter-section {
-    background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
+.status-in-use {
+    background-color: var(--warning-color);
+    color: var(--gray-900);
 }
 
-/* Caractéristiques techniques */
-.specs-table {
-    width: 100%;
-    border-collapse: collapse;
+.status-maintenance {
+    background-color: var(--info-color);
+    color: var(--white);
 }
 
-.specs-table th,
-.specs-table td {
-    padding: 8px 12px;
-    border-bottom: 1px solid #eee;
+.status-retired {
+    background-color: var(--danger-color);
+    color: var(--white);
 }
 
-.specs-table th {
-    text-align: left;
-    font-weight: 500;
-    width: 40%;
+/* Actions et boutons */
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
 }
 
-/* Responsive design */
+/* Responsive */
 @media (max-width: 768px) {
     .inventory-container {
-        padding: 10px;
+        padding: var(--spacing-md);
     }
-    
-    .hardware-details {
+
+    .inventory-header {
         flex-direction: column;
+        gap: var(--spacing-md);
     }
-    
-    .hardware-details .detail-item {
-        flex: 1 1 100%;
+
+    .filter-group {
+        flex-direction: column;
+        align-items: stretch;
     }
-    
-    .inventory-form .form-row {
+
+    .inventory-table {
+        display: block;
+        overflow-x: auto;
+    }
+
+    .equipment-header {
+        flex-direction: column;
+        gap: var(--spacing-lg);
+    }
+
+    .action-buttons {
         flex-direction: column;
     }
 }

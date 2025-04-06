@@ -1,138 +1,172 @@
+@import 'variables.css';
+
 /* Styles spécifiques pour le module d'activités */
 
-/* Styles généraux pour les pages d'activités */
+/* Container principal */
 .activity-container {
-    max-width: 1200px;
+    max-width: var(--container-max-width);
     margin: 0 auto;
-    padding: 20px;
+    padding: var(--spacing-xl);
 }
 
-/* Styles pour les cartes statistiques */
-.card.border-left-primary {
-    border-left: 4px solid #007bff;
+/* En-tête de l'activité */
+.activity-header {
+    margin-bottom: var(--spacing-xl);
 }
 
-.card.border-left-success {
-    border-left: 4px solid #28a745;
+.activity-title {
+    font-size: var(--font-size-xxl);
+    color: var(--gray-800);
+    margin-bottom: var(--spacing-md);
+    font-family: var(--font-family-heading);
 }
 
-.card.border-left-info {
-    border-left: 4px solid #17a2b8;
+/* Grille d'activités */
+.activity-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
 }
 
-.card.border-left-warning {
-    border-left: 4px solid #ffc107;
+/* Carte d'activité */
+.activity-card {
+    background-color: var(--white);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-speed) var(--transition-timing);
+    overflow: hidden;
 }
 
-.card h5 {
-    margin: 0;
-    font-weight: 600;
+.activity-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
-/* Styles pour le tableau d'activités */
-#activityTable {
-    width: 100%;
-    border-collapse: collapse;
+.activity-card-header {
+    padding: var(--spacing-md);
+    background-color: var(--gray-100);
+    border-bottom: var(--border-width) solid var(--border-color);
 }
 
-#activityTable thead th {
-    background-color: #f8f9fa;
-    padding: 12px;
-    font-weight: 600;
-    border-bottom: 2px solid #ddd;
+.activity-card-title {
+    font-size: var(--font-size-lg);
+    color: var(--gray-800);
+    margin-bottom: var(--spacing-xs);
 }
 
-#activityTable tbody td {
-    padding: 12px;
-    border-top: 1px solid #eee;
-    vertical-align: middle;
+.activity-card-body {
+    padding: var(--spacing-md);
 }
 
-#activityTable tr:hover {
-    background-color: rgba(0, 123, 255, 0.05);
+.activity-card-footer {
+    padding: var(--spacing-md);
+    background-color: var(--gray-100);
+    border-top: var(--border-width) solid var(--border-color);
 }
 
-/* Styles pour les badges d'activités */
-.badge {
-    padding: 6px 10px;
-    border-radius: 4px;
+/* Formulaires d'activité */
+.activity-form {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
+    background-color: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.activity-form .form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.activity-form label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    color: var(--gray-700);
     font-weight: 500;
 }
 
-.bg-primary {
-    background-color: #007bff !important;
-}
-
-.bg-success {
-    background-color: #28a745 !important;
-}
-
-.bg-warning {
-    background-color: #ffc107 !important;
-    color: #212529 !important;
-}
-
-.bg-secondary {
-    background-color: #6c757d !important;
-}
-
-/* Styles pour les graphiques */
-#ticketActivityChart, 
-#ticketDistributionChart {
+.activity-form input,
+.activity-form textarea,
+.activity-form select {
     width: 100%;
-    height: 300px;
+    padding: var(--spacing-md);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-base);
+    transition: border-color var(--transition-speed) var(--transition-timing);
 }
 
-/* Styles pour les boutons de période */
-.btn-group-sm .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-    border-radius: 0.2rem;
+.activity-form input:focus,
+.activity-form textarea:focus,
+.activity-form select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-.btn-group-sm .btn.active {
-    background-color: #007bff;
-    color: white;
+/* Statut de l'activité */
+.activity-status {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
 }
 
-/* Styles pour les filtres */
-.dropdown-menu {
-    padding: 8px 0;
-    border-radius: 4px;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+.status-pending {
+    background-color: var(--warning-color);
+    color: var(--gray-900);
 }
 
-.dropdown-header {
-    padding: 8px 16px;
-    font-weight: 600;
-    color: #6c757d;
+.status-in-progress {
+    background-color: var(--info-color);
+    color: var(--white);
 }
 
-.dropdown-item {
-    padding: 8px 16px;
+.status-completed {
+    background-color: var(--success-color);
+    color: var(--white);
 }
 
-.dropdown-item:hover, 
-.dropdown-item:focus {
-    background-color: #f8f9fa;
+.status-cancelled {
+    background-color: var(--danger-color);
+    color: var(--white);
 }
 
-.dropdown-divider {
-    margin: 8px 0;
+/* Vue en direct */
+.live-view {
+    background-color: var(--gray-100);
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius-lg);
 }
 
-/* Styles responsives */
+.live-header {
+    margin-bottom: var(--spacing-xl);
+    text-align: center;
+}
+
+.live-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-    .col-md-3.mb-3 {
-        margin-bottom: 15px;
+    .activity-container {
+        padding: var(--spacing-md);
     }
-    
-    .card h5 {
-        font-size: 1rem;
+
+    .activity-grid {
+        grid-template-columns: 1fr;
     }
-    
-    #ticketActivityChart, 
-    #ticketDistributionChart {
-        height: 220px;
+
+    .activity-form {
+        padding: var(--spacing-md);
+    }
+
+    .live-grid {
+        grid-template-columns: 1fr;
     }
 }

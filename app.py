@@ -20,10 +20,11 @@ app.register_blueprint(inventory_bp, url_prefix='/inventory')
 app.register_blueprint(activity_bp, url_prefix='/activity')
 app.register_blueprint(admin_bp, url_prefix='/admin')
 
-# Rendre get_db disponible dans tous les templates
+# Rendre get_db et now disponibles dans tous les templates
 @app.context_processor
 def utility_processor():
-    return dict(get_db=get_db)
+    from datetime import datetime
+    return dict(get_db=get_db, now=datetime.now())
 
 # Configuration de la session
 @app.before_request
@@ -73,6 +74,7 @@ def check_auth():
 
 @app.route('/')
 def index():
+    from datetime import datetime
     return render_template('index.html', now=datetime.now())
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -139,105 +141,97 @@ def register():
 
 @app.route('/dashboard')
 def dashboard():
-    # Vérification explicite de l'authentification pour le dashboard
-    user_id = session.get('user_id')
-    username = session.get('username')
-    token = session.get('token')
-    
-    print(f"Accès au dashboard - user_id: {user_id}, username: {username}, token présent: {'oui' if token else 'non'}")
-    
-    # Double vérification pour le dashboard
-    if not user_id or not token:
-        print("Tentative d'accès au dashboard sans authentification")
-        session.clear()
-        flash("Veuillez vous connecter pour accéder à votre tableau de bord", "warning")
+    """Page du tableau de bord principal"""
+    if 'user_id' not in session:
         return redirect(url_for('login'))
+
+    # Statistiques des tickets
+    stats = {}
     
-    # Créer un objet user pour le template avec toutes les informations nécessaires
-    user = {
-        'id': user_id,
-        'name': username or 'Utilisateur',  # Valeur par défaut si username n'existe pas
-        'email': '',
-        'role': session.get('role', 'user'),
-        'creation_date': '',
-        'stats': {
-            'tickets_created': 0,
-            'tickets_participated': 0,
-            'comments': 0
-        }
-    }
+    # Tickets ouverts et urgents
+    tickets_ouverts = get_db("""
+        SELECT COUNT(*) as total,
+        SUM(CASE WHEN gravite >= 8 THEN 1 ELSE 0 END) as urgents
+        FROM tiqué WHERE open = 1
+    """)
+    stats['tickets_ouverts'] = tickets_ouverts[0][0] if tickets_ouverts else 0
+    stats['tickets_urgents'] = tickets_ouverts[0][1] if tickets_ouverts else 0
     
-    # Récupérer les détails utilisateur depuis la base de données
-    try:
-        # Récupérer directement la date de création en utilisant le nom de colonne
-        date_creation_query = """
-            SELECT dete_de_creation 
-            FROM USEUR 
-            WHERE ID = %s
-        """
-        creation_date_result = get_db(date_creation_query, (user_id,))
+    # Tickets résolus cette semaine
+    stats['tickets_resolus'] = get_db("""
+        SELECT COUNT(*) FROM tiqué 
+        WHERE open = 0 
+        AND date_close >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    """)[0][0]
+    
+    # Tickets en attente
+    stats['tickets_en_attente'] = get_db("""
+        SELECT COUNT(*) FROM tiqué 
+        WHERE open = 1 AND tag = 'en_attente'
+    """)[0][0]
+    
+    # Temps moyen de résolution
+    temps_moyen = get_db("""
+        SELECT AVG(TIMESTAMPDIFF(HOUR, date_open, date_close))
+        FROM tiqué 
+        WHERE open = 0 
+        AND date_close IS NOT NULL
+    """)
+    avg_hours = temps_moyen[0][0] if temps_moyen and temps_moyen[0][0] else 0
+    stats['temps_moyen_resolution'] = f"{int(avg_hours)}h" if avg_hours else "N/A"
+    
+    # Tickets récents
+    tickets_recents = get_db("""
+        SELECT t.ID_tiqué, t.titre, t.gravite, t.open, t.tag,
+               u.name as assigne_a, t.date_open
+        FROM tiqué t
+        LEFT JOIN USEUR u ON t.ID_user = u.ID
+        ORDER BY t.date_open DESC
+        LIMIT 10
+    """)
+    
+    tickets_formated = []
+    for t in tickets_recents:
+        priorite_class = {
+            9: 'danger',
+            8: 'danger',
+            7: 'warning',
+            6: 'warning',
+            5: 'info',
+        }.get(t[2], 'secondary')
         
-        if creation_date_result and len(creation_date_result) > 0 and creation_date_result[0][0]:
-            try:
-                creation_date = creation_date_result[0][0]
-                # Si c'est une chaîne, essayer de la parser
-                if isinstance(creation_date, str):
-                    # Essayer d'abord le format complet avec heures
-                    try:
-                        parsed_date = datetime.strptime(creation_date, '%Y-%m-%d %H:%M:%S')
-                        user['creation_date'] = parsed_date.strftime('%d/%m/%Y %H:%M')
-                    except ValueError:
-                        # Essayer juste la date
-                        try:
-                            parsed_date = datetime.strptime(creation_date, '%Y-%m-%d')
-                            user['creation_date'] = parsed_date.strftime('%d/%m/%Y')
-                        except ValueError:
-                            # Si aucun format ne correspond, utiliser tel quel
-                            user['creation_date'] = creation_date
-                elif isinstance(creation_date, datetime):
-                    # Si c'est déjà un objet datetime
-                    user['creation_date'] = creation_date.strftime('%d/%m/%Y %H:%M')
-                else:
-                    # Autre type, convertir en string
-                    user['creation_date'] = str(creation_date)
-            except Exception as e:
-                print(f"Erreur lors du formatage de la date: {str(e)}")
-                user['creation_date'] = str(creation_date_result[0][0])
+        statut_class = 'success' if not t[3] else 'warning' if t[4] == 'en_attente' else 'primary'
         
-        # Récupérer les autres informations utilisateur
-        user_data = get_db("SELECT * FROM USEUR WHERE ID = %s", (user_id,))
-        if user_data and len(user_data) > 0:
-            user_row = user_data[0]
-            col_count = len(user_row)
-            
-            # Récupérer le nom d'utilisateur
-            if col_count > 3:  # Si format est (ID, name, age, tel, ...)
-                user['name'] = username or user_row[1]
-            elif col_count > 1:  # Si format est (ID, name, ...)
-                user['name'] = username or user_row[1]
-            
-            # Récupérer l'email
-            if col_count > 5:  # Si format est (ID, name, age, tel, hashed_password, email, ...)
-                user['email'] = user_row[5]
-            elif col_count > 2:  # Si format est (ID, name, email, ...)
-                user['email'] = user_row[2]
-        
-        # Récupérer les statistiques de l'utilisateur
-        stats_data = get_db("SELECT * FROM state WHERE id_user = %s", (user_id,))
-        if stats_data and len(stats_data) > 0:
-            stats_row = stats_data[0]
-            if len(stats_row) > 1:
-                user['stats']['tickets_created'] = stats_row[1] if stats_row[1] is not None else 0
-            if len(stats_row) > 2:
-                user['stats']['tickets_participated'] = stats_row[2] if stats_row[2] is not None else 0
-            if len(stats_row) > 3:
-                user['stats']['comments'] = stats_row[3] if stats_row[3] is not None else 0
+        tickets_formated.append({
+            'id': t[0],
+            'titre': t[1],
+            'priorite': t[2],
+            'priorite_class': priorite_class,
+            'statut': 'Fermé' if not t[3] else 'En attente' if t[4] == 'en_attente' else 'Ouvert',
+            'statut_class': statut_class,
+            'assigne_a': t[5],
+            'derniere_maj': t[6]
+        })
     
-    except Exception as e:
-        print(f"Erreur lors de la récupération des données utilisateur: {str(e)}")
-        # L'objet user minimal est déjà créé avec des valeurs par défaut
+    # Activités récentes
+    activites_recentes = get_db("""
+        SELECT al.timestamp, u.name, al.description
+        FROM activity_logs al
+        LEFT JOIN USEUR u ON al.user_id = u.ID
+        ORDER BY al.timestamp DESC
+        LIMIT 15
+    """)
     
-    return render_template('dashboard.html', user=user, now=datetime.now())
+    activities_formatted = [{
+        'timestamp': a[0],
+        'user': a[1],
+        'description': a[2]
+    } for a in activites_recentes]
+
+    return render_template('dashboard.html',
+                         stats=stats,
+                         tickets_recents=tickets_formated,
+                         activites_recentes=activities_formatted)
 
 @app.route('/logout')
 def logout():

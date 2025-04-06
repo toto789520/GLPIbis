@@ -157,5 +157,143 @@
             </form>
         </div>
     </div>
+
+    <!-- Paramètres EcoleDirecte -->
+    <div class="card mt-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Intégration EcoleDirecte</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('admin.update_ecoledirecte_settings') }}" method="post">
+                <div class="mb-3">
+                    <label for="ecoledirecte_username" class="form-label">Identifiant EcoleDirecte</label>
+                    <input type="text" class="form-control" id="ecoledirecte_username" 
+                           name="ecoledirecte_username" 
+                           value="{{ ecoledirecte_settings.get('username', '') }}">
+                </div>
+
+                <div class="mb-3">
+                    <label for="ecoledirecte_password" class="form-label">Mot de passe</label>
+                    <input type="password" class="form-control" id="ecoledirecte_password" 
+                           name="ecoledirecte_password" 
+                           placeholder="••••••••">
+                    <div class="form-text">
+                        Laissez vide pour conserver le mot de passe actuel
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Synchronisation automatique</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                               id="sync_salles" name="sync_salles" value="1"
+                               {% if ecoledirecte_settings.get('sync_salles') == '1' %}checked{% endif %}>
+                        <label class="form-check-label" for="sync_salles">
+                            Synchroniser les salles
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                               id="sync_edt" name="sync_edt" value="1"
+                               {% if ecoledirecte_settings.get('sync_edt') == '1' %}checked{% endif %}>
+                        <label class="form-check-label" for="sync_edt">
+                            Synchroniser l'emploi du temps
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="sync_frequency" class="form-label">Fréquence de synchronisation</label>
+                    <select class="form-select" id="sync_frequency" name="sync_frequency">
+                        <option value="hourly" {% if ecoledirecte_settings.get('sync_frequency') == 'hourly' %}selected{% endif %}>
+                            Toutes les heures
+                        </option>
+                        <option value="daily" {% if ecoledirecte_settings.get('sync_frequency') == 'daily' %}selected{% endif %}>
+                            Une fois par jour
+                        </option>
+                        <option value="weekly" {% if ecoledirecte_settings.get('sync_frequency') == 'weekly' %}selected{% endif %}>
+                            Une fois par semaine
+                        </option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="sync_delay" class="form-label">Délai de temporisation (secondes)</label>
+                    <input type="number" class="form-control" id="sync_delay" name="sync_delay" 
+                           min="0" max="3600" value="{{ ecoledirecte_settings.get('sync_delay', '30') }}"
+                           aria-describedby="sync_delay_help">
+                    <div id="sync_delay_help" class="form-text">
+                        Temps d'attente entre chaque requête à EcoleDirecte (0-3600 secondes)
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-2"></i> Enregistrer
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" onclick="syncNow()">
+                        <i class="fas fa-sync me-2"></i> Synchroniser maintenant
+                    </button>
+                </div>
+            </form>
+
+            <hr>
+
+            <div class="mt-3">
+                <h6>Dernière synchronisation</h6>
+                <ul class="list-unstyled">
+                    <li>
+                        <small>
+                            <i class="fas fa-door-open me-2"></i>
+                            Salles: {{ ecoledirecte_settings.get('last_sync_salles', 'Jamais') }}
+                        </small>
+                    </li>
+                    <li>
+                        <small>
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            Emploi du temps: {{ ecoledirecte_settings.get('last_sync_edt', 'Jamais') }}
+                        </small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rapport de synchronisation -->
+    <div class="card mt-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Rapport de synchronisation</h5>
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-6">
+                    <h3>{{ ecoledirecte_stats.get('nb_salles', 0) }}</h3>
+                    <p class="text-muted">Salles synchronisées</p>
+                </div>
+                <div class="col-6">
+                    <h3>{{ ecoledirecte_stats.get('nb_cours', 0) }}</h3>
+                    <p class="text-muted">Cours synchronisés</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function syncNow() {
+    if (confirm('Lancer la synchronisation maintenant ?')) {
+        fetch('{{ url_for("admin.sync_ecoledirecte") }}', {
+            method: 'POST'
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Erreur lors de la synchronisation');
+            }
+        });
+    }
+}
+</script>
 {% endblock %}
