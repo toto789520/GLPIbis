@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import os
 import json
+import traceback
+import sys
 from datetime import timedelta, datetime
 from setup import set_up_database
 from onekey.auth import register_user, login_user, validate_session, logout_user
@@ -19,6 +21,29 @@ app.register_blueprint(tickets_bp, url_prefix='/tickets')
 app.register_blueprint(inventory_bp, url_prefix='/inventory')
 app.register_blueprint(activity_bp, url_prefix='/activity')
 app.register_blueprint(admin_bp, url_prefix='/admin')
+
+# Gestionnaire d'erreurs général pour le mode SOS
+@app.errorhandler(500)
+def server_error(e):
+    error_tb = traceback.format_exc()
+    error_type = sys.exc_info()[0].__name__ if sys.exc_info()[0] else "Unknown Error"
+    return render_template('sos.html', 
+                          error_type=error_type,
+                          error=str(e),
+                          traceback=error_tb), 500
+
+# Gestionnaire d'erreur pour les exceptions de base de données
+@app.errorhandler(Exception)
+def handle_exception(e):
+    if "database" in str(e).lower() or "db" in str(e).lower() or "sql" in str(e).lower():
+        app.logger.error(f"Erreur de base de données: {str(e)}")
+        error_tb = traceback.format_exc()
+        return render_template('sos.html', 
+                              error_type="Erreur de Base de Données",
+                              error=str(e),
+                              traceback=error_tb), 500
+    # Pour les autres erreurs, laisser Flask gérer normalement
+    return e
 
 # Rendre get_db et now disponibles dans tous les templates
 @app.context_processor
@@ -261,10 +286,32 @@ def check_session():
     else:
         return json.dumps({'status': 'logged_out'})
 
+# Route pour tester le mode SOS
+@app.route('/test-sos')
+def test_sos():
+    # Seulement accessible en mode debug
+    if app.debug:
+        raise Exception("Ceci est un test du mode SOS")
+    return "Mode SOS test non disponible en production"
+
 # Point d'entrée principal
 if __name__ == '__main__':
-    # S'assurer que la base de données est configurée
-    set_up_database()
-    
-    # Démarrer l'application Flask
-    app.run(debug=True)
+    try:
+        # S'assurer que la base de données est configurée
+        set_up_database()
+        
+        # Démarrer l'application Flask
+        app.run(host='0.0.0.0', debug=True)
+    except Exception as e:
+        print(f"ERREUR CRITIQUE AU DÉMARRAGE: {str(e)}")
+        
+        # Démarrer l'application en mode SOS si l'erreur est liée à la base de données
+        if "database" in str(e).lower() or "db" in str(e).lower() or "sql" in str(e).lower():
+            print("Démarrage en MODE SOS...")
+            app.config['SOS_MODE'] = True
+            app.config['SOS_ERROR'] = str(e)
+            app.config['SOS_TRACEBACK'] = traceback.format_exc()
+            app.run(host='0.0.0.0', debug=True)
+        else:
+            # Pour les autres erreurs critiques, interrompre le démarrage
+            raise

@@ -17,3 +17,5 @@
 /.vscode
 /onekey/__pycache__
 *.pyc
+/activity_screening/__pycache__
+*.pyc
