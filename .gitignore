@@ -19,3 +19,5 @@
 *.pyc
 /activity_screening/__pycache__
 *.pyc
+*.pyc
+/admin/__pycache__

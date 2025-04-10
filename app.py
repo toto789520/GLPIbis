@@ -15,6 +15,9 @@ from utils.db import get_db
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Génération d'une clé secrète aléatoire
 app.permanent_session_lifetime = timedelta(hours=8)  # Session de 8 heures
+app.config['SOS_MODE'] = False  # Par défaut, le mode SOS est désactivé
+app.config['SOS_ERROR'] = None  # Message d'erreur en mode SOS
+app.config['SOS_TRACEBACK'] = None  # Traceback de l'erreur en mode SOS
 
 # Enregistrement des blueprints
 app.register_blueprint(tickets_bp, url_prefix='/tickets')
@@ -25,8 +28,11 @@ app.register_blueprint(admin_bp, url_prefix='/admin')
 # Gestionnaire d'erreurs général pour le mode SOS
 @app.errorhandler(500)
 def server_error(e):
+    app.config['SOS_MODE'] = True
     error_tb = traceback.format_exc()
     error_type = sys.exc_info()[0].__name__ if sys.exc_info()[0] else "Unknown Error"
+    app.config['SOS_ERROR'] = str(e)
+    app.config['SOS_TRACEBACK'] = error_tb
     return render_template('sos.html', 
                           error_type=error_type,
                           error=str(e),
@@ -37,19 +43,27 @@ def server_error(e):
 def handle_exception(e):
     if "database" in str(e).lower() or "db" in str(e).lower() or "sql" in str(e).lower():
         app.logger.error(f"Erreur de base de données: {str(e)}")
+        app.config['SOS_MODE'] = True
         error_tb = traceback.format_exc()
+        app.config['SOS_ERROR'] = str(e)
+        app.config['SOS_TRACEBACK'] = error_tb
         return render_template('sos.html', 
                               error_type="Erreur de Base de Données",
                               error=str(e),
                               traceback=error_tb), 500
-    # Pour les autres erreurs, laisser Flask gérer normalement
-    return e
+    # Pour les autres erreurs, propager l'exception pour que Flask puisse la gérer
+    return app.handle_exception(e)
 
 # Rendre get_db et now disponibles dans tous les templates
 @app.context_processor
 def utility_processor():
     from datetime import datetime
-    return dict(get_db=get_db, now=datetime.now())
+    return dict(
+        get_db=get_db, 
+        now=datetime.now(), 
+        SOS_MODE=app.config.get('SOS_MODE', False),
+        SOS_ERROR=app.config.get('SOS_ERROR')
+    )
 
 # Configuration de la session
 @app.before_request
@@ -60,7 +74,7 @@ def make_session_permanent():
 @app.before_request
 def check_auth():
     # Liste des routes qui ne nécessitent pas d'authentification
-    public_routes = ['index', 'login', 'register', 'static', 'check_session']
+    public_routes = ['index', 'login', 'register', 'static', 'check_session', 'test_sos', 'server_error', 'handle_exception']
     
     # Si la route actuelle ne nécessite pas d'authentification, on passe
     if request.endpoint in public_routes or request.path.startswith('/static/'):
@@ -289,6 +303,7 @@ def check_session():
 # Route pour tester le mode SOS
 @app.route('/test-sos')
 def test_sos():
+    # Accessible sans authentification
     # Seulement accessible en mode debug
     if app.debug:
         raise Exception("Ceci est un test du mode SOS")
