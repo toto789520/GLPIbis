@@ -6,154 +6,12 @@
     <title>GLPI - Connexion</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/StylesconnexionUseur.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .login-container {
-            max-width: 450px;
-            margin: 50px auto;
-            padding: 30px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .login-header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-        
-        .login-header img {
-            max-width: 120px;
-            margin-bottom: 15px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-        
-        .form-control {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
-        
-        .form-control:focus {
-            border-color: #007bff;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(0,123,255,.25);
-        }
-        
-        .btn-primary {
-            width: 100%;
-            padding: 12px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        
-        .btn-primary:hover {
-            background-color: #0069d9;
-        }
-        
-        .login-footer {
-            text-align: center;
-            margin-top: 20px;
-        }
-        
-        .login-footer a {
-            color: #007bff;
-            text-decoration: none;
-        }
-        
-        .login-footer a:hover {
-            text-decoration: underline;
-        }
-        
-        .alert {
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-        
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .alert-warning {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
-        }
-        
-        .alert-error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .onekey-benefits {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 10px;
-        }
-        
-        .onekey-benefits h3 {
-            color: #007bff;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        
-        .benefits-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        
-        .benefit-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            padding: 15px;
-        }
-        
-        .benefit-icon {
-            font-size: 2em;
-            color: #007bff;
-            margin-bottom: 10px;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <div class="logo-container">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
-            <h1>GLPI</h1>
-        </div>
-    </header>
-
     <main>
-        <div class="login-container">
-            <div class="login-header">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo OneKey">
-                <h2>Connexion OneKey</h2>
-                <p>Accédez à tous les services avec un seul compte</p>
+        <div class="register-container">
+            <div class="register-header">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
+                <h2>Connexion GLPI-Bis</h2>
+                <p>Connectez-vous à votre compte</p>
             </div>
             
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -165,61 +23,23 @@
             {% endwith %}
             
             <form method="post" action="{{ url_for('login') }}">
-                <div class="form-group">
-                    <label for="email">Email</label>
+                    <div class="form-group">                        <label for="email">Identifiant (Email)</label>
                     <input type="email" id="email" name="email" class="form-control" required>
                 </div>
+                
                 <div class="form-group">
                     <label for="password">Mot de passe</label>
                     <input type="password" id="password" name="password" class="form-control" required>
-                </div>
+                    </div>
+                
                 <button type="submit" class="btn-primary">Se connecter</button>
             </form>
             
-            <div class="login-footer">
+            <div class="register-footer">
                 <p>Vous n'avez pas de compte ? <a href="{{ url_for('register') }}">Créer un compte</a></p>
                 <p><a href="#">Mot de passe oublié ?</a></p>
-            </div>
-            
-            <div class="onekey-benefits">
-                <h3>Les avantages de OneKey</h3>
-                <div class="benefits-list">
-                    <div class="benefit-item">
-                        <i class="fas fa-key benefit-icon"></i>
-                        <p>Un seul compte pour tous les services</p>
-                    </div>
-                    <div class="benefit-item">
-                        <i class="fas fa-shield-alt benefit-icon"></i>
-                        <p>Authentification sécurisée</p>
-                    </div>
-                    <div class="benefit-item">
-                        <i class="fas fa-sync-alt benefit-icon"></i>
-                        <p>Synchronisation entre services</p>
-                    </div>
                 </div>
-            </div>
-        </div>
-    </main>
+        </main>
 
-    <footer>
-        <div class="footer-content">
-            <p>&copy; 2023 GLPI - Tous droits réservés</p>
-            <nav class="footer-nav">
-                <a href="#">Aide</a>
-                <a href="#">Contact</a>
-                <a href="#">Mentions légales</a>
-            </nav>
-        </div>
-    </footer>
-
-    <script>
-        // Ajouter la date actuelle au footer
-        document.addEventListener('DOMContentLoaded', function() {
-            const now = new Date();
-            const year = now.getFullYear();
-            document.querySelector('footer .footer-content p').innerHTML = 
-                `&copy; ${year} GLPI - Tous droits réservés`;
-        });
-    </script>
-</body>
+    </body>
 </html>
