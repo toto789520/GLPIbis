@@ -3,43 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GLPI - Connexion</title>
+    <title>GLPI - Inscription</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/StylesconnexionUseur.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles-regidter.css') }}">
+    
+</head>
+<body>
     <main>
         <div class="register-container">
             <div class="register-header">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
-                <h2>Connexion GLPI-Bis</h2>
-                <p>Connectez-vous à votre compte</p>
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo OneKey">
+                <h2>Connexion</h2>
             </div>
-            
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            
-            <form method="post" action="{{ url_for('login') }}">
-                    <div class="form-group">                        <label for="email">Identifiant (Email)</label>
+            <form action="{{ url_for('login') }}" method="POST">
+                <div class="form-group">
+                    <label for="email">Email professionnel</label>
                     <input type="email" id="email" name="email" class="form-control" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="password">Mot de passe</label>
                     <input type="password" id="password" name="password" class="form-control" required>
-                    </div>
-                
-                <button type="submit" class="btn-primary">Se connecter</button>
+                </div>
+            
+                <button type="submit" class="btn-primary">se connecter</button>
             </form>
             
             <div class="register-footer">
-                <p>Vous n'avez pas de compte ? <a href="{{ url_for('register') }}">Créer un compte</a></p>
-                <p><a href="#">Mot de passe oublié ?</a></p>
-                </div>
-        </main>
-
-    </body>
+                <p>Vous avez pas de compte ? <a href="{{ url_for('register') }}">Créer un compte</a></p>
+            </div>
+        </div>
+    </main>
+</body>
 </html>

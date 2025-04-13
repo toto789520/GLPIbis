@@ -1,6 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
-@import 'variables.css';
-
 * {
     margin: 0;
     padding: 0;
@@ -10,123 +8,23 @@
 
 /* Conteneur principal de connexion */
 .login-container {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: linear-gradient(to bottom, var(--gray-300), var(--gray-400));
+    display: none; /* Remove the gray background rectangle */
 }
 
 .center-square {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
     width: 100%;
     max-width: 500px;
-    padding: var(--spacing-xl);
-    background-color: var(--white);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-md);
-}
-
-.login-header {
-    text-align: center;
-    margin-bottom: var(--spacing-xl);
-}
-
-.login-header h2 {
-    font-size: var(--font-size-xl);
-    color: var(--gray-800);
-    margin-bottom: var(--spacing-md);
-}
-
-.form-group {
-    margin-bottom: var(--spacing-lg);
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: var(--spacing-sm);
-    font-weight: 500;
-    color: var(--gray-700);
-}
-
-.form-group input {
-    width: 100%;
-    padding: var(--spacing-md);
-    font-size: var(--font-size-base);
-    border: var(--border-width) solid var(--border-color);
-    border-radius: var(--border-radius-sm);
-    transition: border-color var(--transition-speed) var(--transition-timing),
-                box-shadow var(--transition-speed) var(--transition-timing);
-}
-
-.form-group input:focus {
-    border-color: var(--primary-color);
-    outline: none;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.btn-login {
-    width: 100%;
-    padding: var(--spacing-md);
-    font-size: var(--font-size-base);
-    background-color: var(--success-color);
-    color: var(--white);
-    border: none;
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    transition: background-color var(--transition-speed) var(--transition-timing);
-}
-
-.btn-login:hover {
-    background-color: var(--success-dark);
-}
-
-.help-text {
-    margin-top: var(--spacing-lg);
-    text-align: center;
-    font-size: var(--font-size-sm);
-    color: var(--gray-600);
-}
-
-/* Alertes */
-.alert {
-    padding: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
-    border: var(--border-width) solid transparent;
-    border-radius: var(--border-radius-sm);
-}
-
-.alert-error {
-    background-color: rgba(220, 53, 69, 0.1);
-    border-color: var(--danger-color);
-    color: var(--danger-dark);
-}
-
-.alert-success {
-    background-color: rgba(40, 167, 69, 0.1);
-    border-color: var(--success-color);
-    color: var(--success-dark);
-}
-
-.alert-warning {
-    background-color: rgba(255, 193, 7, 0.1);
-    border-color: var(--warning-color);
-    color: var(--warning-dark);
-}
-
-/* Responsive */
-@media (max-width: 576px) {
-    .center-square {
-        margin: var(--spacing-md);
-        padding: var(--spacing-md);
-    }
-}
-.login-container {
-    max-width: 450px;
-    margin: 50px auto;
     padding: 30px;
     background-color: white;
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    margin: 0 auto;
+    text-align: center;
 }
 
 .login-header {
@@ -151,17 +49,17 @@
 
 .form-control {
     width: 100%;
-    padding: 12px;
+    padding: 12px; /* Ensure consistent height */
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 16px;
+    font-size: 16px; /* Ensure consistent text size */
     transition: border-color 0.3s ease;
 }
 
 .form-control:focus {
-    border-color: #007bff;
+    border-color: #007bff; /* Blue border on focus */
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0,123,255,.25);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); /* Blue shadow on focus */
 }
 
 .btn-primary {

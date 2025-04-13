@@ -90,6 +90,12 @@
     margin: 0 auto;
 }
 
+.features-grid ul {
+    margin-left: 20px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
 .feature-card {
     background-color: white;
     border-radius: 10px;
