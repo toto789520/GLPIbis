@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration Initiale | GLPIbis</title>
+    <link rel="stylesheet" href="/static/styles/styles.css">
+    <style>
+        .setup-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            background: #fff;
+        }
+        .setup-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .setup-header h1 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .setup-header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        .setup-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            border-left: 3px solid #3498db;
+            background: #f9f9f9;
+        }
+        .setup-section h2 {
+            font-size: 1.3em;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -10px;
+        }
+        .form-col {
+            flex: 1;
+            padding: 0 10px;
+            min-width: 250px;
+        }
+        .btn-setup {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.3s;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .btn-setup:hover {
+            background: #2980b9;
+        }
+        @media (max-width: 768px) {
+            .form-col {
+                flex: 100%;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <div class="setup-header">
+            <h1>Bienvenue sur GLPIbis</h1>
+            <p>Configuration initiale de votre système de gestion de tickets et d'inventaire</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="/setup">
+            <div class="setup-section">
+                <h2>Paramètres de l'entreprise</h2>
+                <div class="form-group">
+                    <label for="company_name">Nom de l'entreprise :</label>
+                    <input type="text" id="company_name" name="company_name" value="Mon Entreprise">
+                </div>
+            </div>
+
+            <div class="setup-section">
+                <h2>Base de données</h2>
+                <div class="form-group">
+                    <label for="db_type">Type de base de données :</label>
+                    <select name="db_type" id="db_type" required>
+                        <option value="sqlite">SQLite (recommandé pour les tests)</option>
+                        <option value="mysql">MySQL (recommandé pour la production)</option>
+                    </select>
+                    <small>SQLite est plus simple à configurer mais moins performant pour les grandes installations.</small>
+                </div>
+            </div>
+
+            <div class="setup-section">
+                <h2>Compte administrateur</h2>
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="admin_name">Nom complet :</label>
+                            <input type="text" id="admin_name" name="admin_name" placeholder="Jean Dupont" required>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="admin_email">Adresse email :</label>
+                            <input type="email" id="admin_email" name="admin_email" placeholder="admin@exemple.com" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="admin_password">Mot de passe :</label>
+                    <input type="password" id="admin_password" name="admin_password" required 
+                           pattern=".{8,}" title="Le mot de passe doit contenir au moins 8 caractères">
+                    <small>Utilisez un mot de passe fort d'au moins 8 caractères</small>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-setup">Configurer GLPIbis</button>
+        </form>
+    </div>
+
+    <script>
+        // Validation simple côté client
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const password = document.getElementById('admin_password').value;
+            if (password.length < 8) {
+                e.preventDefault();
+                alert('Le mot de passe doit contenir au moins 8 caractères.');
+            }
+        });
+    </script>
+</body>
+</html>
