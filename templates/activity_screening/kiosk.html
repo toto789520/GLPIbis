@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GLPIbis - Activités en direct</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Styles personnalisés -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/horizontal-buttons.css') }}">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        .kiosk-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        .kiosk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            background-color: #2d2d2d;
+            border-bottom: 1px solid #444;
+            height: 100px;
+        }
+        
+        .kiosk-logo {
+            display: flex;
+            align-items: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4a90e2;
+        }
+        
+        .kiosk-logo i {
+            margin-right: 10px;
+            font-size: 2.2rem;
+        }
+        
+        .kiosk-time {
+            font-size: 2.2rem;
+            font-weight: 300;
+            color: #fff;
+        }
+        
+        .kiosk-date {
+            font-size: 1.2rem;
+            color: #aaa;
+        }
+        
+        .kiosk-content {
+            flex: 1;
+            padding: 20px 30px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .kiosk-title {
+            font-size: 1.8rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: #4a90e2;
+        }
+        
+        .kiosk-activities {
+            height: calc(100vh - 200px);
+            overflow: hidden;
+        }
+        
+        .activities-scroll {
+            animation: scroll 60s linear infinite;
+            padding-bottom: 50px;
+        }
+        
+        @keyframes scroll {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(calc(-100% + 65vh)); }
+        }
+        
+        .kiosk-activity {
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #2d2d2d;
+            border-radius: 10px;
+            border-left: 5px solid #4a90e2;
+        }
+        
+        .kiosk-activity-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .kiosk-activity-user {
+            font-weight: 500;
+            color: #fff;
+        }
+        
+        .kiosk-activity-time {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        .kiosk-activity-text {
+            font-size: 1.2rem;
+            color: #ddd;
+        }
+        
+        .kiosk-activity-type {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            background-color: rgba(74, 144, 226, 0.3);
+            color: #4a90e2;
+        }
+        
+        .type-ticket {
+            background-color: rgba(255, 126, 95, 0.3);
+            color: #ff7e5f;
+        }
+        
+        .type-inventory {
+            background-color: rgba(109, 213, 237, 0.3);
+            color: #6dd5ed;
+        }
+        
+        .type-admin {
+            background-color: rgba(203, 53, 107, 0.3);
+            color: #cb356b;
+        }
+        
+        .kiosk-footer {
+            padding: 15px 30px;
+            background-color: #2d2d2d;
+            text-align: center;
+            color: #aaa;
+            font-size: 1rem;
+            border-top: 1px solid #444;
+        }
+        
+        /* Tableau d'information sur le côté droit */
+        .info-sidebar {
+            position: fixed;
+            top: 100px;
+            right: 0;
+            width: 300px;
+            height: calc(100vh - 160px);
+            background-color: #2d2d2d;
+            border-left: 1px solid #444;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-box {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #1a1a1a;
+            border-radius: 10px;
+        }
+        
+        .info-box-title {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+        
+        .info-box-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .text-primary { color: #4a90e2 !important; }
+        .text-success { color: #5cb85c !important; }
+        .text-warning { color: #f0ad4e !important; }
+        .text-danger { color: #d9534f !important; }
+    </style>
+</head>
+<body>
+    <div class="kiosk-container">
+        <!-- En-tête -->
+        <div class="kiosk-header">
+            <div class="kiosk-logo">
+                <i class="fas fa-ticket-alt"></i>
+                GLPIbis
+            </div>
+            <div class="text-end">
+                <div class="kiosk-time" id="current-time">00:00:00</div>
+                <div class="kiosk-date" id="current-date">Chargement de la date...</div>
+            </div>
+        </div>
+        
+        <!-- Contenu principal -->
+        <div class="kiosk-content">
+            <div class="row">
+                <div class="col-9">
+                    <h2 class="kiosk-title"><i class="fas fa-chart-line me-2"></i>Activités en temps réel</h2>
+                    
+                    <div class="kiosk-activities">
+                        <div class="activities-scroll">
+                            {% for activity in activities %}
+                            <div class="kiosk-activity">
+                                <div class="kiosk-activity-header">
+                                    <div class="kiosk-activity-user">{{ activity.user }}</div>
+                                    <div class="kiosk-activity-time">{{ activity.timestamp }}</div>
+                                </div>
+                                <div class="kiosk-activity-text">{{ activity.description }}</div>
+                                <div class="kiosk-activity-type {% if 'ticket' in activity.module %}type-ticket{% elif 'inventory' in activity.module %}type-inventory{% elif 'admin' in activity.module %}type-admin{% endif %}">
+                                    {{ activity.action_type }} - {{ activity.module }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tableau d'information latéral -->
+        <div class="info-sidebar">
+            <h3 class="mb-4 text-center text-light">Statistiques</h3>
+            
+            <div class="info-box">
+                <div class="info-box-title">Tickets ouverts</div>
+                <div class="info-box-value text-primary">{{ stats.tickets_ouverts }}</div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-box-title">Tickets résolus aujourd'hui</div>
+                <div class="info-box-value text-success">{{ stats.tickets_resolus_today }}</div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-box-title">Tickets urgents</div>
+                <div class="info-box-value text-danger">{{ stats.tickets_urgents }}</div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-box-title">Temps moyen de résolution</div>
+                <div class="info-box-value text-warning">{{ stats.temps_moyen_resolution }}</div>
+            </div>
+        </div>
+        
+        <!-- Pied de page -->
+        <div class="kiosk-footer">
+            GLPIbis - Système de gestion des tickets et inventaire informatique
+        </div>
+    </div>
+    
+    <script>
+        // Mettre à jour l'heure et la date
+        function updateDateTime() {
+            const now = new Date();
+            
+            // Formater l'heure
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('current-time').textContent = `${hours}:${minutes}:${seconds}`;
+            
+            // Formater la date
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('fr-FR', options);
+        }
+        
+        // Mettre à jour toutes les secondes
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+        
+        // Rafraîchir la page toutes les 5 minutes pour obtenir les dernières activités
+        setTimeout(function() {
+            location.reload();
+        }, 5 * 60 * 1000);
+    </script>
+</body>
+</html>

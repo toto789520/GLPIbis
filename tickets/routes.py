@@ -1,12 +1,14 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
-from utils.db import get_db, log_activity
+from utils.db_manager import get_db, log_activity
 from onekey.user import get_user_info, list_users
 from .ticket_service import (
-    create_ticket, list_tickets, get_ticket_info, get_ticket_comments, 
-    add_comment as add_ticket_comment, close_ticket, associate_hardware_to_ticket, 
-    disassociate_hardware_from_ticket, get_associated_hardware, get_available_hardware, SousTicketService
+    create_ticket, list_tickets, get_ticket_info, close_ticket, 
+    associate_hardware_to_ticket, disassociate_hardware_from_ticket, 
+    get_associated_hardware, get_available_hardware, SousTicketService
 )
+from .comment_service import CommentService
 from datetime import datetime
+import logging
 
 # Création du Blueprint pour les routes liées aux tickets
 tickets_bp = Blueprint('tickets', __name__, template_folder='templates')
@@ -22,13 +24,9 @@ def index():
     filter_type = request.args.get('filter', 'all')
     tickets = list_tickets(filter_type)
     
-    # Récupérer les types de tickets et matériels pour le filtrage
-    ticket_types = get_db("SELECT * FROM tiqué_type")
-    hardware_types = get_db("SELECT * FROM arder")
-    
-    # Formatter les noms pour le filtrage (remplacer les espaces par des underscores)
-    software_categories = [t[0].replace(" ", "_") for t in ticket_types] if ticket_types else []
-    hardware_categories = [h[0].replace(" ", "_") for h in hardware_types] if hardware_types else []
+    # Types prédéfinis au lieu d'essayer de récupérer d'une table inexistante
+    software_categories = ['os', 'office', 'email', 'browser', 'antivirus', 'erp', 'other_sw']
+    hardware_categories = ['desktop', 'laptop', 'printer', 'scanner', 'phone', 'peripheral', 'other_hw']
     
     return render_template('tickets/index.html', 
                           tickets=tickets, 
@@ -45,16 +43,31 @@ def create():
     if not user_id:
         return redirect(url_for('login'))
     
+    # Pour l'affichage du matériel disponible dans le formulaire
+    hardware_list = get_available_hardware()
+    
     if request.method == 'POST':
         titre = request.form.get('titre')
         description = request.form.get('description')
         gravite = request.form.get('gravite')
-        tags = request.form.get('tags')
+        ticket_type = request.form.get('type')
+        categorie = request.form.get('categorie')
+        tags = request.form.get('tags', '')
+        equipement = request.form.get('equipement')
         parent_ticket_id = request.form.get('parent_ticket_id')  # For sub-tickets
         
-        if not all([titre, description, gravite]):
+        # Construire les tags avec le type et la catégorie
+        if ticket_type and categorie:
+            tags_list = [tag.strip() for tag in tags.split(',')] if tags else []
+            if ticket_type not in tags_list:
+                tags_list.append(ticket_type)
+            if categorie not in tags_list:
+                tags_list.append(categorie)
+            tags = ','.join(tags_list)
+        
+        if not all([titre, description, gravite, ticket_type, categorie]):
             flash("Tous les champs obligatoires doivent être remplis", "error")
-            return render_template('tickets/create.html', now=datetime.now())
+            return render_template('tickets/create.html', hardware_list=hardware_list, now=datetime.now())
         
         try:
             if parent_ticket_id:
@@ -66,15 +79,20 @@ def create():
             else:
                 # Create a main ticket
                 ticket_id = create_ticket(user_id, titre, description, gravite, tags)
+                
+                # Si un équipement est sélectionné, l'associer au ticket
+                if equipement:
+                    associate_hardware_to_ticket(ticket_id, equipement)
+                    
                 log_activity(user_id, 'create', 'ticket', f"Ticket créé: {titre}")
             
             flash("Le ticket a été créé avec succès!", "success")
             return redirect(url_for('tickets.view', ticket_id=ticket_id))
         except Exception as e:
             flash(f"Erreur lors de la création du ticket: {str(e)}", "error")
-            return render_template('tickets/create.html', now=datetime.now())
+            return render_template('tickets/create.html', hardware_list=hardware_list, now=datetime.now())
     
-    return render_template('tickets/create.html', now=datetime.now())
+    return render_template('tickets/create.html', hardware_list=hardware_list, now=datetime.now())
 
 @tickets_bp.route('/view/<ticket_id>')
 def view(ticket_id):
@@ -84,36 +102,68 @@ def view(ticket_id):
         return redirect(url_for('login'))
     
     try:
-        ticket = get_ticket_info(ticket_id)
-        comments = get_ticket_comments(ticket_id)
+        print(f"DEBUG - view: Récupération des informations du ticket {ticket_id}")
+        ticket_tuple = get_ticket_info(ticket_id)
+        print(f"DEBUG - view: Informations du ticket récupérées : {ticket_tuple}")
         
-        # Récupérer le nom de l'utilisateur qui a créé le ticket
-        creator_name = ticket[-1] if ticket else "Utilisateur inconnu"  # Le nom est ajouté à la fin du tuple par get_ticket_info
+        if not ticket_tuple:
+            flash("Ticket non trouvé", "error")
+            return redirect(url_for('tickets.index'))
+        
+        # Convertir le tuple en dictionnaire avec des clés correspondant au template
+        ticket = {
+            "ID_tiqué": ticket_tuple[0],
+            "ID_user": ticket_tuple[1],
+            "titre": ticket_tuple[2],
+            "date_open": ticket_tuple[3],
+            "description": ticket_tuple[4] if ticket_tuple[4] is not None else "",
+            "gravite": int(ticket_tuple[5]) if ticket_tuple[5] is not None else 0,
+            "tag": ticket_tuple[6] if ticket_tuple[6] is not None else "",
+            "open": ticket_tuple[7],
+            "date_close": ticket_tuple[8] if len(ticket_tuple) > 8 else None,
+            "user_name": ticket_tuple[9] if len(ticket_tuple) > 9 else "Utilisateur inconnu",
+            "assigned_technician_id": ticket_tuple[10] if len(ticket_tuple) > 10 else None,
+            "assigned_technician_name": ticket_tuple[11] if len(ticket_tuple) > 11 else None
+        }
+        
+        print(f"DEBUG - view: Ticket formaté en dict : {ticket}")
+          print(f"DEBUG - view: Récupération des commentaires du ticket {ticket_id}")
+        comments = CommentService.get_comments(ticket_id)
+        print(f"DEBUG - view: {len(comments)} commentaires récupérés")
         
         # Récupérer la liste des utilisateurs pour l'assignation
         users = list_users()
         
         # Calculer la date de dernière mise à jour
-        last_update = ticket[2]  # Par défaut, date de création
+        last_update = ticket["date_open"]  # Par défaut, date de création
         if comments:
             # Prendre la date du commentaire le plus récent
             last_comment_date = comments[-1][1]  # Date du dernier commentaire
             last_update = last_comment_date
         
-        # Remplacer les IDs utilisateurs par les noms d'utilisateurs
+        # Remplacer les IDs utilisateurs par les noms d'utilisateurs et convertir en dict pour template
         formatted_comments = []
         for comment in comments:
-            user_name = get_user_info(comment[0])['name'] if get_user_info(comment[0]) else "Utilisateur inconnu"
-            comment_data = list(comment)
-            comment_data[0] = user_name
-            formatted_comments.append(tuple(comment_data))
+            user_info = get_user_info(comment[0])
+            user_name = user_info['name'] if user_info else "Utilisateur inconnu"
+            # Assuming comment tuple structure: (user_id, date, hour, commenter, gravité)
+            comment_dict = {
+                "user_name": user_name,
+                "date": comment[1],
+                "hour": comment[2],
+                "commenter": comment[3],
+                "gravité": comment[4] if len(comment) > 4 else 0
+            }
+            formatted_comments.append(comment_dict)
         
         # Récupérer le matériel associé à ce ticket
+        print(f"DEBUG - view: Récupération du matériel associé au ticket {ticket_id}")
         associated_hardware = get_associated_hardware(ticket_id)
         # Récupérer la liste de tout le matériel disponible
         available_hardware = get_available_hardware()
         
         # Récupérer les sous-tickets
+        print(f"DEBUG - view: Récupération des sous-tickets pour le ticket {ticket_id}")
         sous_tickets = SousTicketService.get_sous_tickets(ticket_id)
         
         return render_template('tickets/view.html', 
@@ -122,52 +172,78 @@ def view(ticket_id):
                               ticket_id=ticket_id,
                               associated_hardware=associated_hardware,
                               available_hardware=available_hardware,
-                              creator_name=creator_name,
+                              creator_name=ticket["user_name"],
                               last_update=last_update,
                               users=users,
                               sous_tickets=sous_tickets,
                               now=datetime.now())
     except Exception as e:
+        print(f"DEBUG - view: ERREUR lors de l'accès au ticket {ticket_id}: {str(e)}")
+        import traceback
+        print(f"DEBUG - view: Traceback complet: {traceback.format_exc()}")
         flash(f"Erreur lors de l'accès au ticket: {str(e)}", "error")
         return redirect(url_for('tickets.index'))
 
 @tickets_bp.route('/subticket/<subticket_id>')
 def view_subticket(subticket_id):
     """Récupère les détails d'un sous-ticket en JSON"""
-    sous_tickets = get_db("""
-        SELECT st.*, u1.name as createur_name, u2.name as assigne_name,
-               t.titre as ticket_parent_titre
-        FROM sous_tickets st
-        LEFT JOIN USEUR u1 ON st.createur_id = u1.ID
-        LEFT JOIN USEUR u2 ON st.assigne_a = u2.ID
-        LEFT JOIN tiqué t ON st.parent_ticket_id = t.ID_tiqué
-        WHERE st.id = %s
-    """, (subticket_id,))
-    
-    if not sous_tickets:
-        return jsonify({'error': 'Sous-ticket non trouvé'}), 404
-    
-    st = sous_tickets[0]
-    return jsonify({
-        'id': st[0],
-        'parent_ticket_id': st[1],
-        'titre': st[2],
-        'description': st[3],
-        'statut': st[4],
-        'priorite': st[5],
-        'date_creation': str(st[7]),
-        'date_modification': str(st[8]) if st[8] else None,
-        'date_resolution': str(st[9]) if st[9] else None,
-        'createur_name': st[11],
-        'assigne_name': st[12],
-        'ticket_parent_titre': st[13]
-    })
+    try:
+        # Vérifier d'abord si la table existe
+        check_query = "SELECT name FROM sqlite_master WHERE type='table' AND name='sous_tickets'"
+        tables = get_db(check_query)
+        
+        if not tables:
+            print("La table 'sous_tickets' n'existe pas encore. Création des tables requises...")
+            from tickets.create_sous_tickets_tables import create_sous_tickets_tables
+            create_sous_tickets_tables()
+            return jsonify({'error': 'Système de sous-tickets en cours d\'initialisation, veuillez réessayer.'}), 404
+        
+        sous_tickets = get_db("""
+            SELECT st.*, u1.name as createur_name, u2.name as assigne_name,
+                   t.titre as ticket_parent_titre
+            FROM sous_tickets st
+            LEFT JOIN USEUR u1 ON st.createur_id = u1.ID
+            LEFT JOIN USEUR u2 ON st.assigne_a = u2.ID
+            LEFT JOIN tiqué t ON st.parent_ticket_id = t.ID_tiqué
+            WHERE st.id = ?
+        """, (subticket_id,))
+        
+        if not sous_tickets:
+            return jsonify({'error': 'Sous-ticket non trouvé'}), 404
+        
+        st = sous_tickets[0]
+        return jsonify({
+            'id': st[0],
+            'parent_ticket_id': st[1],
+            'titre': st[2],
+            'description': st[3],
+            'statut': st[4],
+            'priorite': st[5],
+            'date_creation': str(st[7]),
+            'date_modification': str(st[8]) if st[8] else None,
+            'date_resolution': str(st[9]) if st[9] else None,
+            'createur_name': st[11],
+            'assigne_name': st[12],
+            'ticket_parent_titre': st[13]
+        })
+    except Exception as e:
+        print(f"Erreur lors de la récupération du sous-ticket: {e}")
+        return jsonify({'error': f'Erreur lors de la récupération du sous-ticket: {str(e)}'}), 500
 
 @tickets_bp.route('/<ticket_id>/subticket', methods=['POST'])
 def add_subticket(ticket_id):
     """Crée un nouveau sous-ticket"""
     if not session.get('user_id'):
         return redirect(url_for('login'))
+    
+    # Vérifier d'abord si les tables de sous-tickets existent
+    check_query = "SELECT name FROM sqlite_master WHERE type='table' AND name='sous_tickets'"
+    tables = get_db(check_query)
+    
+    if not tables:
+        print("La table 'sous_tickets' n'existe pas encore. Création des tables requises...")
+        from tickets.create_sous_tickets_tables import create_sous_tickets_tables
+        create_sous_tickets_tables()
     
     titre = request.form.get('titre')
     description = request.form.get('description')
@@ -263,16 +339,13 @@ def comment(ticket_id):
         return redirect(url_for('login'))
     
     comment_text = request.form.get('comment')
-    gravite = request.form.get('gravite', '0')  # Par défaut, gravité 0 si non fournie
-    
-    if not comment_text:
-        flash("Le commentaire ne peut pas être vide", "error")
-        return redirect(url_for('tickets.view', ticket_id=ticket_id))
+    gravite = request.form.get('gravite', '0')
     
     try:
-        add_ticket_comment(ticket_id, user_id, comment_text, gravite)  # Utiliser le nom renommé
-        log_activity(user_id, 'comment', 'ticket', f"Commentaire ajouté au ticket {ticket_id}")
+        CommentService.add_comment(ticket_id, user_id, comment_text, gravite)
         flash("Commentaire ajouté avec succès", "success")
+    except ValueError as e:
+        flash(str(e), "warning")
     except Exception as e:
         flash(f"Erreur lors de l'ajout du commentaire: {str(e)}", "error")
     
@@ -286,18 +359,51 @@ def add_comment(ticket_id):
 @tickets_bp.route('/close/<ticket_id>', methods=['POST'])
 def close(ticket_id):
     """Fermer un ticket"""
+    logger = logging.getLogger('glpibis')
+    logger.info(f"Début de la requête de fermeture pour le ticket {ticket_id}")
+    
     user_id = session.get('user_id')
     if not user_id:
-        return redirect(url_for('login'))
+        logger.warning("Tentative de fermeture de ticket sans authentification")
+        return jsonify({'error': 'Vous devez être connecté pour fermer un ticket'}), 401
+    
+    logger.debug(f"Utilisateur {user_id} authentifié")
     
     try:
+        # Vérifier d'abord si le ticket existe
+        ticket = get_db("SELECT * FROM tiqué WHERE ID_tiqué = ?", (ticket_id,))
+        if not ticket:
+            logger.warning(f"Tentative de fermeture d'un ticket inexistant: {ticket_id}")
+            return jsonify({'error': f"Le ticket {ticket_id} n'existe pas"}), 404
+        
+        logger.debug(f"Ticket trouvé, statut actuel: {ticket[0]}")
+        
+        # Appeler close_ticket
         close_ticket(ticket_id, user_id)
+        
+        # Vérifier que le ticket a bien été fermé
+        updated_ticket = get_db("SELECT open FROM tiqué WHERE ID_tiqué = ?", (ticket_id,))
+        if not updated_ticket or updated_ticket[0][0] != 0:
+            logger.error(f"La fermeture du ticket {ticket_id} n'a pas été effectuée correctement")
+            return jsonify({'error': 'La fermeture du ticket a échoué'}), 500
+            
+        logger.info(f"Ticket {ticket_id} fermé avec succès")
+        
+        # Enregistrer l'activité
         log_activity(user_id, 'close', 'ticket', f"Ticket {ticket_id} fermé")
-        flash("Le ticket a été fermé avec succès", "success")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Le ticket a été fermé avec succès'
+        })
+        
+    except ValueError as e:
+        logger.warning(f"Erreur de validation lors de la fermeture du ticket {ticket_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+        
     except Exception as e:
-        flash(f"Erreur lors de la fermeture du ticket: {str(e)}", "error")
-    
-    return redirect(url_for('tickets.view', ticket_id=ticket_id))
+        logger.exception(f"Erreur inattendue lors de la fermeture du ticket {ticket_id}")
+        return jsonify({'error': 'Une erreur est survenue lors de la fermeture du ticket'}), 500
 
 @tickets_bp.route('/api/tickets', methods=['GET'])
 def api_tickets():
@@ -415,16 +521,15 @@ def update(ticket_id):
                 return render_template('tickets/update.html', ticket=ticket, ticket_id=ticket_id, now=datetime.now())
             
             try:
-                # Mettre à jour le ticket dans la base de données
+                # Mettre à jour le ticket dans la base de données avec des requêtes préparées
                 conn = get_db('connect')
                 cursor = conn.cursor()
                 cursor.execute("""
                     UPDATE tiqué
-                    SET titre = ?, description = ?, gravite = ?, tags = ?
-                    WHERE ticket_id = ?
-                """, (titre, description, gravite, tags, ticket_id))
+                    SET titre = ?, description = ?, gravite = ?, tag = ?
+                    WHERE ID_tiqué = ?
+                """, (titre, description, int(gravite), tags, ticket_id))
                 conn.commit()
-                conn.close()
                 
                 log_activity(user_id, 'update', 'ticket', f"Ticket {ticket_id} mis à jour")
                 flash("Le ticket a été mis à jour avec succès!", "success")
@@ -456,11 +561,10 @@ def assign(ticket_id):
         cursor = conn.cursor()
         cursor.execute("""
             UPDATE tiqué
-            SET assigned_user_id = ?
-            WHERE ticket_id = ?
+            SET ID_technicien = ?
+            WHERE ID_tiqué = ?
         """, (assigned_user_id, ticket_id))
         conn.commit()
-        conn.close()
         
         log_activity(user_id, 'assign', 'ticket', f"Ticket {ticket_id} assigné à l'utilisateur {assigned_user_id}")
         flash("Le ticket a été assigné avec succès", "success")
@@ -482,11 +586,11 @@ def reopen(ticket_id):
         cursor = conn.cursor()
         cursor.execute("""
             UPDATE tiqué
-            SET status = 0
-            WHERE ticket_id = ?
+            SET open = 1,
+                date_close = NULL
+            WHERE ID_tiqué = ?
         """, (ticket_id,))
         conn.commit()
-        conn.close()
         
         log_activity(user_id, 'reopen', 'ticket', f"Ticket {ticket_id} réouvert")
         flash("Le ticket a été réouvert avec succès", "success")
@@ -494,3 +598,40 @@ def reopen(ticket_id):
         flash(f"Erreur lors de la réouverture du ticket: {str(e)}", "error")
     
     return redirect(url_for('tickets.view', ticket_id=ticket_id))
+
+@tickets_bp.route('/comment/<comment_id>/delete', methods=['POST'])
+def delete_comment(comment_id):
+    """Supprimer un commentaire"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+        
+    try:
+        CommentService.delete_comment(comment_id, user_id)
+        flash("Commentaire supprimé avec succès", "success")
+    except ValueError as e:
+        flash(str(e), "warning")
+    except Exception as e:
+        flash(f"Erreur lors de la suppression: {str(e)}", "error")
+        
+    return redirect(request.referrer or url_for('tickets.index'))
+    
+@tickets_bp.route('/comment/<comment_id>/edit', methods=['POST'])
+def edit_comment(comment_id):
+    """Modifier un commentaire"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+        
+    content = request.form.get('content')
+    gravite = request.form.get('gravite')
+    
+    try:
+        CommentService.update_comment(comment_id, user_id, content, gravite)
+        flash("Commentaire modifié avec succès", "success")
+    except ValueError as e:
+        flash(str(e), "warning")
+    except Exception as e:
+        flash(f"Erreur lors de la modification: {str(e)}", "error")
+        
+    return redirect(request.referrer or url_for('tickets.index'))

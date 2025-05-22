@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, Response, send_file
-from utils.db import get_db, log_activity
+from utils.db_manager import get_db, log_activity
 from .inventory_service import (add_item, delete_item, get_categories, get_sous_categories, 
                               get_sous_sous_categories, list_items, get_item_by_id,
                               add_location, get_locations, update_item_location,

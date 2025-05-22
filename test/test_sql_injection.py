@@ -8,7 +8,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
 from app import app
-from utils.db import get_db
+from utils.db_manager import get_db
 from onekey.auth import register_user, login_user
 
 @pytest.fixture
@@ -111,7 +111,7 @@ def test_user_creation_sql_injection():
         assert name_found, "Le nom avec injection SQL n'a pas été correctement stocké en tant que texte"
         
         # Vérifier qu'aucun utilisateur "hacker" n'a été créé par l'injection
-        hacker = get_db("SELECT * FROM USEUR WHERE email = %s", ("hack@example.com",))
+        hacker = get_db("SELECT * FROM USEUR WHERE email = ?", ("hack@example.com",))
         assert not hacker or len(hacker) == 0
     except Exception as e:
         pytest.fail(f"Erreur lors du test d'injection SQL: {e}")

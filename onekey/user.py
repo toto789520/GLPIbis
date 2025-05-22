@@ -1,4 +1,4 @@
-from utils.db import get_db
+from utils.db_manager import get_db
 
 def get_user_info(user_id):
     """
@@ -14,14 +14,14 @@ def get_user_info(user_id):
         return None
     
     # Récupération des informations de base
-    users = get_db("SELECT * FROM USEUR WHERE ID = %s", (user_id,))
+    users = get_db("SELECT * FROM USEUR WHERE ID = ?", (user_id,))
     if not users:
         return None
     
     user = users[0]
     
     # Récupération des statistiques
-    stats = get_db("SELECT * FROM state WHERE id_user = %s", (user_id,))
+    stats = get_db("SELECT * FROM state WHERE id_user = ?", (user_id,))
     
     # Construction de l'objet utilisateur
     user_info = {
@@ -52,12 +52,12 @@ def get_user_role(user_id):
         str: Rôle de l'utilisateur ('admin', 'technician', 'user')
     """
     # Vérifier si l'utilisateur est un admin
-    admin = get_db("SELECT * FROM admin WHERE id_user = %s", (user_id,))
+    admin = get_db("SELECT * FROM admin WHERE id_user = ?", (user_id,))
     if admin:
         return 'admin'
     
     # Vérifier si l'utilisateur est un technicien
-    tech = get_db("SELECT * FROM technicien WHERE id_user = %s", (user_id,))
+    tech = get_db("SELECT * FROM technicien WHERE id_user = ?", (user_id,))
     if tech:
         return 'technician'
     
@@ -81,7 +81,7 @@ def update_user_info(user_id, data):
     # Construire la requête SQL en fonction des champs à mettre à jour
     for field in ['name', 'age', 'tel', 'email']:
         if field in data and data[field]:
-            fields_to_update.append(f"{field} = %s")
+            fields_to_update.append(f"{field} = ?")
             params.append(data[field])
     
     if not fields_to_update:
@@ -94,7 +94,7 @@ def update_user_info(user_id, data):
     get_db(f"""
         UPDATE USEUR 
         SET {', '.join(fields_to_update)}
-        WHERE ID = %s
+        WHERE ID = ?
     """, params)
     
     return True
@@ -119,7 +119,7 @@ def change_password(user_id, current_password, new_password):
     import argon2
     
     # Vérifier le mot de passe actuel
-    users = get_db("SELECT * FROM USEUR WHERE ID = %s", (user_id,))
+    users = get_db("SELECT * FROM USEUR WHERE ID = ?", (user_id,))
     if not users:
         raise ValueError("Utilisateur non trouvé")
     
@@ -132,7 +132,7 @@ def change_password(user_id, current_password, new_password):
     new_hash = ph.hash(new_password)
     
     # Mettre à jour le mot de passe
-    get_db("UPDATE USEUR SET password = %s WHERE ID = %s", (new_hash, user_id))
+    get_db("UPDATE USEUR SET password = ? WHERE ID = ?", (new_hash, user_id))
     
     return True
 
@@ -152,7 +152,7 @@ def list_users(role=None):
         if not admin_ids:
             return []
         
-        placeholder = ', '.join(['%s'] * len(admin_ids))
+        placeholder = ', '.join(['?'] * len(admin_ids))
         admin_ids = [admin_id[0] for admin_id in admin_ids]
         
         users = get_db(f"SELECT * FROM USEUR WHERE ID IN ({placeholder})", admin_ids)
@@ -163,7 +163,7 @@ def list_users(role=None):
         if not tech_ids:
             return []
         
-        placeholder = ', '.join(['%s'] * len(tech_ids))
+        placeholder = ', '.join(['?'] * len(tech_ids))
         tech_ids = [tech_id[0] for tech_id in tech_ids]
         
         users = get_db(f"SELECT * FROM USEUR WHERE ID IN ({placeholder})", tech_ids)

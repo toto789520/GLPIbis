@@ -3,7 +3,7 @@ import secrets
 import csv
 import json
 from io import StringIO
-from utils.db import get_db, log_activity
+from utils.db_manager import get_db, log_activity
 
 def add_item(nom, categorie_id, sous_categorie_id, sous_sous_categorie_id, date_creation=None, qr_code=None):
     """

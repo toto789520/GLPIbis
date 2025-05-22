@@ -22,59 +22,73 @@
     <div class="row mb-4">
         <div class="col">
             <h1><i class="fas fa-tachometer-alt me-2"></i> Tableau de bord</h1>
+            <p class="text-muted">Bienvenue, {{ session.get('username', 'Utilisateur') }} ! Voici un aperçu de votre activité.</p>
         </div>
+    </div>
+
+    <!-- Navigation par boutons horizontaux -->
+    <div class="horizontal-buttons mb-5">
+        <a href="{{ url_for('tickets.index') }}" class="horizontal-button btn-tickets">
+            <i class="fas fa-ticket-alt"></i>
+            <span>Tickets</span>
+        </a>
+        <a href="{{ url_for('inventory.index') }}" class="horizontal-button btn-inventory">
+            <i class="fas fa-box"></i>
+            <span>Inventaire</span>
+        </a>
+.        <a href="{{ url_for('activity_screening.index') }}" class="horizontal-button btn-activity">
+            <i class="fas fa-chart-line"></i>
+            <span>Activités</span>
+        </a>
+        {% if session.get('role') == 'admin' %}
+        <a href="{{ url_for('admin.index') }}" class="horizontal-button btn-admin">
+            <i class="fas fa-cog"></i>
+            <span>Administration</span>
+        </a>
+        {% endif %}
+        <a href="{{ url_for('tickets.create') }}" class="horizontal-button">
+            <i class="fas fa-plus-circle"></i>
+            <span>Nouveau Ticket</span>
+        </a>
     </div>
 
     <!-- Cartes de statistiques -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Tickets ouverts</h5>
-                    <h2 class="mb-0">{{ stats.tickets_ouverts }}</h2>
-                    <small>dont {{ stats.tickets_urgents }} urgent(s)</small>
-                </div>
-            </div>
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-card-header">Tickets ouverts</div>
+            <div class="stat-card-value">{{ stats.tickets_ouverts }}</div>
+            <div class="stat-card-footer">dont {{ stats.tickets_urgents }} urgent(s)</div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Tickets résolus</h5>
-                    <h2>{{ stats.tickets_resolus }}</h2>
-                    <small>cette semaine</small>
-                </div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-card-header">Tickets résolus</div>
+            <div class="stat-card-value">{{ stats.tickets_resolus }}</div>
+            <div class="stat-card-footer">cette semaine</div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h5 class="card-title">En attente</h5>
-                    <h2>{{ stats.tickets_en_attente }}</h2>
-                    <small>nécessitant une action</small>
-                </div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-card-header">En attente</div>
+            <div class="stat-card-value">{{ stats.tickets_en_attente }}</div>
+            <div class="stat-card-footer">nécessitant une action</div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Temps moyen</h5>
-                    <h2>{{ stats.temps_moyen_resolution }}</h2>
-                    <small>de résolution</small>
-                </div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-card-header">Temps moyen</div>
+            <div class="stat-card-value">{{ stats.temps_moyen_resolution }}</div>
+            <div class="stat-card-footer">de résolution</div>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row mt-5">
         <!-- Tickets récents -->
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Tickets récents</h5>
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Tickets récents</h5>
+                        <a href="{{ url_for('tickets.index') }}" class="btn btn-sm btn-light">Voir tous</a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="custom-table">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -118,8 +132,11 @@
         <!-- Activités récentes -->
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Activités récentes</h5>
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Activités récentes</h5>
+                        <a href="#" class="btn btn-sm btn-light">Tout voir</a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="activity-feed">
@@ -132,6 +149,45 @@
                             </div>
                         </div>
                         {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Section de raccourcis rapides -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Actions rapides</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 col-6 mb-3">
+                            <a href="{{ url_for('tickets.create') }}" class="btn btn-outline-primary w-100 py-2">
+                                <i class="fas fa-plus-circle mb-2 d-block" style="font-size: 1.5rem;"></i>
+                                Nouveau ticket
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <a href="{{ url_for('inventory.index') }}" class="btn btn-outline-success w-100 py-2">
+                                <i class="fas fa-search mb-2 d-block" style="font-size: 1.5rem;"></i>
+                                Rechercher un équipement
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <a href="#" class="btn btn-outline-warning w-100 py-2">
+                                <i class="fas fa-file-export mb-2 d-block" style="font-size: 1.5rem;"></i>
+                                Exporter des données
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <a href="#" class="btn btn-outline-info w-100 py-2">
+                                <i class="fas fa-question-circle mb-2 d-block" style="font-size: 1.5rem;"></i>
+                                Aide et support
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

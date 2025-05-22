@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Gestionnaire pour le bouton d'export
     document.getElementById('exportBtn').addEventListener('click', function() {
-        window.location.href = "{{ url_for('activity.export_logs') }}";
+        window.location.href = "{{ url_for('activity_screening.export_logs') }}";
     });
     
     // Gestionnaire pour le bouton "Charger plus"

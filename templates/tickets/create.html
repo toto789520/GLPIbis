@@ -210,125 +210,122 @@
 
 {% block scripts %}
 <script>
-    function updateCategories() {
-        // Récupérer l'élément select des catégories
-        const categoriesSelect = document.getElementById('categorie');
-        // Récupérer le type sélectionné
-        const selectedType = document.getElementById('type').value;
-        
-        // Vider la liste des catégories
-        categoriesSelect.innerHTML = '';
-        
-        // Activer ou désactiver le select en fonction du choix
-        if (selectedType === '') {
-            categoriesSelect.disabled = true;
-            categoriesSelect.innerHTML = '<option value="" selected>Sélectionnez d\'abord un type</option>';
-            return;
-        } else {
-            categoriesSelect.disabled = false;
-        }
-        
-        // Définir les catégories en fonction du type sélectionné
-        let categories = [];
-        
-        switch(selectedType) {
-            case 'hardware':
-                categories = [
-                    {value: 'desktop', text: 'Ordinateur de bureau'},
-                    {value: 'laptop', text: 'Ordinateur portable'},
-                    {value: 'printer', text: 'Imprimante'},
-                    {value: 'scanner', text: 'Scanner'},
-                    {value: 'phone', text: 'Téléphone'},
-                    {value: 'peripheral', text: 'Périphérique'},
-                    {value: 'other_hw', text: 'Autre matériel'}
-                ];
-                break;
-            case 'software':
-                categories = [
-                    {value: 'os', text: 'Système d\'exploitation'},
-                    {value: 'office', text: 'Suite bureautique'},
-                    {value: 'email', text: 'Email / Messagerie'},
-                    {value: 'browser', text: 'Navigateur web'},
-                    {value: 'antivirus', text: 'Antivirus / Sécurité'},
-                    {value: 'erp', text: 'ERP / Logiciel métier'},
-                    {value: 'other_sw', text: 'Autre logiciel'}
-                ];
-                break;
-            case 'network':
-                categories = [
-                    {value: 'internet', text: 'Connexion Internet'},
-                    {value: 'wifi', text: 'Wi-Fi'},
-                    {value: 'lan', text: 'Réseau local (LAN)'},
-                    {value: 'vpn', text: 'VPN'},
-                    {value: 'other_net', text: 'Autre problème réseau'}
-                ];
-                break;
-            case 'security':
-                categories = [
-                    {value: 'password', text: 'Problème de mot de passe'},
-                    {value: 'access_denied', text: 'Accès refusé'},
-                    {value: 'virus', text: 'Virus / Malware'},
-                    {value: 'data_breach', text: 'Fuite de données'},
-                    {value: 'other_sec', text: 'Autre problème de sécurité'}
-                ];
-                break;
-            case 'access':
-                categories = [
-                    {value: 'new_account', text: 'Création de compte'},
-                    {value: 'permissions', text: 'Demande de permissions'},
-                    {value: 'software_install', text: 'Installation de logiciel'},
-                    {value: 'other_acc', text: 'Autre demande d\'accès'}
-                ];
-                break;
-            case 'other':
-                categories = [
-                    {value: 'training', text: 'Formation'},
-                    {value: 'consultation', text: 'Consultation'},
-                    {value: 'info', text: 'Demande d\'information'},
-                    {value: 'other_req', text: 'Autre demande'}
-                ];
-                break;
-        }
-        
-        // Ajouter les options au select
-        const defaultOption = document.createElement('option');
-        defaultOption.value = '';
-        defaultOption.textContent = 'Sélectionnez une catégorie';
-        defaultOption.selected = true;
-        defaultOption.disabled = true;
-        categoriesSelect.appendChild(defaultOption);
-        
-        // Ajouter les catégories
-        categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.value;
-            option.textContent = category.text;
-            categoriesSelect.appendChild(option);
-        });
-    }
-    
-    // Validation du formulaire avant soumission
+    // Solution directe avec jQuery (si disponible) ou vanilla JavaScript
     document.addEventListener('DOMContentLoaded', function() {
-        const form = document.querySelector('form');
+        const typeSelect = document.getElementById('type');
+        const categorieSelect = document.getElementById('categorie');
         
-        form.addEventListener('submit', function(event) {
-            const typeSelect = document.getElementById('type');
-            const categorieSelect = document.getElementById('categorie');
+        // Définition des catégories pour chaque type
+        const categoriesByType = {
+            'hardware': [
+                {value: 'desktop', text: 'Ordinateur de bureau'},
+                {value: 'laptop', text: 'Ordinateur portable'},
+                {value: 'printer', text: 'Imprimante'},
+                {value: 'scanner', text: 'Scanner'},
+                {value: 'phone', text: 'Téléphone'},
+                {value: 'peripheral', text: 'Périphérique'},
+                {value: 'other_hw', text: 'Autre matériel'}
+            ],
+            'software': [
+                {value: 'os', text: 'Système d\'exploitation'},
+                {value: 'office', text: 'Suite bureautique'},
+                {value: 'email', text: 'Email / Messagerie'},
+                {value: 'browser', text: 'Navigateur web'},
+                {value: 'antivirus', text: 'Antivirus / Sécurité'},
+                {value: 'erp', text: 'ERP / Logiciel métier'},
+                {value: 'other_sw', text: 'Autre logiciel'}
+            ],
+            'network': [
+                {value: 'internet', text: 'Connexion Internet'},
+                {value: 'wifi', text: 'Wi-Fi'},
+                {value: 'lan', text: 'Réseau local (LAN)'},
+                {value: 'vpn', text: 'VPN'},
+                {value: 'other_net', text: 'Autre problème réseau'}
+            ],
+            'security': [
+                {value: 'password', text: 'Problème de mot de passe'},
+                {value: 'access_denied', text: 'Accès refusé'},
+                {value: 'virus', text: 'Virus / Malware'},
+                {value: 'data_breach', text: 'Fuite de données'},
+                {value: 'other_sec', text: 'Autre problème de sécurité'}
+            ],
+            'access': [
+                {value: 'new_account', text: 'Création de compte'},
+                {value: 'permissions', text: 'Demande de permissions'},
+                {value: 'software_install', text: 'Installation de logiciel'},
+                {value: 'other_acc', text: 'Autre demande d\'accès'}
+            ],
+            'other': [
+                {value: 'training', text: 'Formation'},
+                {value: 'consultation', text: 'Consultation'},
+                {value: 'info', text: 'Demande d\'information'},
+                {value: 'other_req', text: 'Autre demande'}
+            ]
+        };
+        
+        // Fonction pour mettre à jour les options de catégorie
+        function updateCategorieOptions() {
+            const selectedType = typeSelect.value;
+            console.log('Type sélectionné:', selectedType);
             
-            // Vérifier si un type est sélectionné
-            if (typeSelect.value === '') {
-                event.preventDefault();
-                alert('Veuillez sélectionner un type de problème.');
+            // Vider le select de catégories
+            categorieSelect.innerHTML = '';
+            
+            // Désactiver si aucun type n'est sélectionné
+            if (!selectedType) {
+                categorieSelect.disabled = true;
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Sélectionnez d\'abord un type';
+                option.selected = true;
+                categorieSelect.appendChild(option);
                 return;
             }
             
-            // Vérifier si une catégorie est sélectionnée
-            if (categorieSelect.value === '') {
-                event.preventDefault();
-                alert('Veuillez sélectionner une catégorie.');
-                return;
-            }
+            // Activer le select
+            categorieSelect.disabled = false;
+            
+            // Ajouter l'option par défaut
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Sélectionnez une catégorie';
+            defaultOption.selected = true;
+            defaultOption.disabled = true;
+            categorieSelect.appendChild(defaultOption);
+            
+            // Ajouter les options correspondant au type
+            const categories = categoriesByType[selectedType] || [];
+            categories.forEach(function(category) {
+                const option = document.createElement('option');
+                option.value = category.value;
+                option.textContent = category.text;
+                categorieSelect.appendChild(option);
+            });
+            
+            console.log('Catégories mises à jour, champ désactivé?', categorieSelect.disabled);
+        }
+        
+        // Méthode directe : appliquer manuellement les gestionnaires d'événements
+        typeSelect.onchange = updateCategorieOptions;
+        
+        // Second gestionnaire en tant que plan de secours
+        typeSelect.addEventListener('change', function() {
+            setTimeout(updateCategorieOptions, 50); // Petite temporisation
         });
+        
+        // Vérification périodique pour contrer les problèmes de timing
+        setInterval(function() {
+            if (typeSelect.value && categorieSelect.disabled) {
+                console.log('Correction forcée: type sélectionné mais catégorie toujours désactivée');
+                categorieSelect.disabled = false;
+                updateCategorieOptions();
+            }
+        }, 500);
+        
+        // Si un type est déjà sélectionné au chargement
+        if (typeSelect.value) {
+            updateCategorieOptions();
+        }
     });
 </script>
 {% endblock %}

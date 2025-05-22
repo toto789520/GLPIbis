@@ -1,0 +1,234 @@
+/* Styles pour les boutons horizontaux */
+.horizontal-buttons {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.horizontal-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 160px;
+  height: 120px;
+  background: linear-gradient(135deg, #4a90e2, #3273c1);
+  color: white;
+  border-radius: 10px;
+  padding: 15px;
+  text-decoration: none;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.horizontal-button:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  background: linear-gradient(135deg, #3273c1, #205d9e);
+}
+
+.horizontal-button i {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+
+.horizontal-button span {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+/* Couleurs spécifiques pour différents types de boutons */
+.btn-tickets {
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+}
+
+.btn-tickets:hover {
+  background: linear-gradient(135deg, #ff6347, #ff7e5f);
+}
+
+.btn-inventory {
+  background: linear-gradient(135deg, #6dd5ed, #2193b0);
+}
+
+.btn-inventory:hover {
+  background: linear-gradient(135deg, #2193b0, #1c7c98);
+}
+
+.btn-activity {
+  background: linear-gradient(135deg, #a8e063, #56ab2f);
+}
+
+.btn-activity:hover {
+  background: linear-gradient(135deg, #56ab2f, #458a26);
+}
+
+.btn-admin {
+  background: linear-gradient(135deg, #cb356b, #bd3f32);
+}
+
+.btn-admin:hover {
+  background: linear-gradient(135deg, #bd3f32, #a83329);
+}
+
+/* Styles pour l'affichage des statistiques */
+.stats-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: 20px;
+  margin: 30px 0;
+}
+
+.stat-card {
+  background-color: white;
+  border-radius: 10px;
+  padding: 20px;
+  width: 220px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+
+.stat-card-header {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.stat-card-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.stat-card-footer {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+/* Styles pour les tableaux */
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+.custom-table thead th {
+  background-color: #4a90e2;
+  color: white;
+  padding: 12px 15px;
+  text-align: left;
+}
+
+.custom-table tbody tr {
+  border-bottom: 1px solid #dddddd;
+  transition: all 0.3s ease;
+}
+
+.custom-table tbody tr:nth-of-type(even) {
+  background-color: #f3f3f3;
+}
+
+.custom-table tbody tr:last-of-type {
+  border-bottom: 2px solid #4a90e2;
+}
+
+.custom-table tbody tr:hover {
+  background-color: #e9f3ff;
+}
+
+.custom-table tbody td {
+  padding: 12px 15px;
+}
+
+/* Mode kiosk pour les activités */
+.kiosk-mode {
+  background-color: #1a1a1a;
+  color: white;
+  padding: 20px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.kiosk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #444;
+}
+
+.kiosk-time {
+  font-size: 1.8rem;
+  font-weight: 300;
+}
+
+.kiosk-title {
+  font-size: 2.5rem;
+  font-weight: 500;
+}
+
+.kiosk-content {
+  overflow: hidden;
+  height: calc(100vh - 100px);
+}
+
+.kiosk-activities {
+  animation: scroll 30s linear infinite;
+}
+
+@keyframes scroll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-100%); }
+}
+
+.kiosk-activity {
+  padding: 15px 0;
+  border-bottom: 1px solid #333;
+}
+
+.kiosk-activity-time {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.kiosk-activity-text {
+  font-size: 1.2rem;
+  margin-top: 5px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .horizontal-button {
+    width: 130px;
+    height: 100px;
+    padding: 10px;
+  }
+  
+  .horizontal-button i {
+    font-size: 1.8rem;
+  }
+  
+  .horizontal-button span {
+    font-size: 0.9rem;
+  }
+  
+  .stat-card {
+    width: 100%;
+    max-width: 300px;
+  }
+}

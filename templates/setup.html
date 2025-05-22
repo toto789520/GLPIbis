@@ -82,7 +82,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">
+                <div class="alert alert-{{ category }}" style="background-color: {% if category == 'error' %}#f8d7da{% elif category == 'success' %}#d4edda{% elif category == 'warning' %}#fff3cd{% else %}#d1ecf1{% endif %}; color: {% if category == 'error' %}#721c24{% elif category == 'success' %}#155724{% elif category == 'warning' %}#856404{% else %}#0c5460{% endif %}; padding: 10px; margin-bottom: 15px; border-radius: 4px; border: 1px solid {% if category == 'error' %}#f5c6cb{% elif category == 'success' %}#c3e6cb{% elif category == 'warning' %}#ffeeba{% else %}#bee5eb{% endif %};">
                     {{ message }}
                 </div>
                 {% endfor %}
@@ -102,11 +102,47 @@
                 <h2>Base de données</h2>
                 <div class="form-group">
                     <label for="db_type">Type de base de données :</label>
-                    <select name="db_type" id="db_type" required>
+                    <select name="db_type" id="db_type" required onchange="toggleMySQLFields()">
                         <option value="sqlite">SQLite (recommandé pour les tests)</option>
                         <option value="mysql">MySQL (recommandé pour la production)</option>
                     </select>
                     <small>SQLite est plus simple à configurer mais moins performant pour les grandes installations.</small>
+                </div>
+                
+                <div id="mysql_fields" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc;">
+                    <h3>Paramètres MySQL</h3>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="mysql_host">Hôte MySQL :</label>
+                                <input type="text" id="mysql_host" name="mysql_host" placeholder="localhost ou 127.0.0.1" value="127.0.0.1">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="mysql_port">Port MySQL :</label>
+                                <input type="text" id="mysql_port" name="mysql_port" placeholder="3306" value="3306">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="mysql_db">Nom de la base de données :</label>
+                                <input type="text" id="mysql_db" name="mysql_db" placeholder="glpidb">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="mysql_user">Utilisateur MySQL :</label>
+                                <input type="text" id="mysql_user" name="mysql_user" placeholder="glpi">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="mysql_password">Mot de passe MySQL :</label>
+                        <input type="password" id="mysql_password" name="mysql_password" placeholder="Mot de passe pour l'utilisateur MySQL">
+                    </div>
                 </div>
             </div>
 
@@ -128,9 +164,12 @@
                 </div>
                 <div class="form-group">
                     <label for="admin_password">Mot de passe :</label>
-                    <input type="password" id="admin_password" name="admin_password" required 
-                           pattern=".{8,}" title="Le mot de passe doit contenir au moins 8 caractères">
-                    <small>Utilisez un mot de passe fort d'au moins 8 caractères</small>
+                    <input type="password" id="admin_password" name="admin_password" required>
+                    <small>Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial</small>
+                </div>
+                <div class="form-group">
+                    <label for="admin_password_confirm">Confirmez le mot de passe :</label>
+                    <input type="password" id="admin_password_confirm" name="admin_password_confirm" required>
                 </div>
             </div>
 
@@ -139,13 +178,160 @@
     </div>
 
     <script>
-        // Validation simple côté client
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const password = document.getElementById('admin_password').value;
-            if (password.length < 8) {
-                e.preventDefault();
-                alert('Le mot de passe doit contenir au moins 8 caractères.');
+        // Afficher/masquer les champs MySQL en fonction du type de base de données sélectionné
+        function toggleMySQLFields() {
+            const dbType = document.getElementById('db_type').value;
+            const mysqlFields = document.getElementById('mysql_fields');
+            
+            if (dbType === 'mysql') {
+                mysqlFields.style.display = 'block';
+                // Rendre les champs obligatoires
+                document.getElementById('mysql_host').required = true;
+                document.getElementById('mysql_db').required = true;
+                document.getElementById('mysql_user').required = true;
+            } else {
+                mysqlFields.style.display = 'none';
+                // Rendre les champs non obligatoires
+                document.getElementById('mysql_host').required = false;
+                document.getElementById('mysql_db').required = false;
+                document.getElementById('mysql_user').required = false;
             }
+        }
+        
+        // Initialiser l'affichage au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleMySQLFields();
+            
+            // Préparation du formulaire
+            const form = document.querySelector('form');
+            const submitBtn = document.querySelector('.btn-setup');
+            
+            form.addEventListener('submit', function(e) {
+                let hasErrors = false;
+                let errorMessages = [];
+                
+                // Récupérer les valeurs du formulaire
+                const password = document.getElementById('admin_password').value;
+                const passwordConfirm = document.getElementById('admin_password_confirm').value;
+                const adminName = document.getElementById('admin_name').value;
+                const adminEmail = document.getElementById('admin_email').value;
+                const dbType = document.getElementById('db_type').value;
+                
+                // Validation du nom admin
+                if (!adminName || adminName.length < 2) {
+                    hasErrors = true;
+                    errorMessages.push("Le nom d'administrateur est requis (minimum 2 caractères)");
+                    document.getElementById('admin_name').style.borderColor = 'red';
+                } else {
+                    document.getElementById('admin_name').style.borderColor = '';
+                }
+                
+                // Validation de l'email
+                if (!adminEmail || !adminEmail.includes('@')) {
+                    hasErrors = true;
+                    errorMessages.push("Une adresse email valide est requise");
+                    document.getElementById('admin_email').style.borderColor = 'red';
+                } else {
+                    document.getElementById('admin_email').style.borderColor = '';
+                }
+                
+                // Validation du mot de passe
+                if (!password) {
+                    hasErrors = true;
+                    errorMessages.push("Le mot de passe est requis");
+                    document.getElementById('admin_password').style.borderColor = 'red';
+                } else if (password.length < 8 || 
+                           !/[A-Z]/.test(password) || 
+                           !/[a-z]/.test(password) || 
+                           !/[0-9]/.test(password) || 
+                           !/[^A-Za-z0-9]/.test(password)) {
+                    hasErrors = true;
+                    errorMessages.push("Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial");
+                    document.getElementById('admin_password').style.borderColor = 'red';
+                } else {
+                    document.getElementById('admin_password').style.borderColor = '';
+                }
+                
+                // Validation de la confirmation du mot de passe
+                if (password !== passwordConfirm) {
+                    hasErrors = true;
+                    errorMessages.push("Les mots de passe ne correspondent pas");
+                    document.getElementById('admin_password_confirm').style.borderColor = 'red';
+                } else {
+                    document.getElementById('admin_password_confirm').style.borderColor = '';
+                }
+                
+                // Validation MySQL si sélectionné
+                if (dbType === 'mysql') {
+                    const mysqlHost = document.getElementById('mysql_host').value;
+                    const mysqlDb = document.getElementById('mysql_db').value;
+                    const mysqlUser = document.getElementById('mysql_user').value;
+                    
+                    if (!mysqlHost) {
+                        hasErrors = true;
+                        errorMessages.push("L'hôte MySQL est requis");
+                        document.getElementById('mysql_host').style.borderColor = 'red';
+                    } else {
+                        document.getElementById('mysql_host').style.borderColor = '';
+                    }
+                    
+                    if (!mysqlDb) {
+                        hasErrors = true;
+                        errorMessages.push("Le nom de la base de données MySQL est requis");
+                        document.getElementById('mysql_db').style.borderColor = 'red';
+                    } else {
+                        document.getElementById('mysql_db').style.borderColor = '';
+                    }
+                    
+                    if (!mysqlUser) {
+                        hasErrors = true;
+                        errorMessages.push("L'utilisateur MySQL est requis");
+                        document.getElementById('mysql_user').style.borderColor = 'red';
+                    } else {
+                        document.getElementById('mysql_user').style.borderColor = '';
+                    }
+                }
+                
+                // Afficher les erreurs ou soumettre le formulaire
+                if (hasErrors) {
+                    e.preventDefault();
+                    // Ajouter les messages d'erreur à la page
+                    const errorsContainer = document.createElement('div');
+                    errorsContainer.className = 'errors-container';
+                    errorsContainer.style.backgroundColor = '#f8d7da';
+                    errorsContainer.style.color = '#721c24';
+                    errorsContainer.style.padding = '10px';
+                    errorsContainer.style.marginBottom = '15px';
+                    errorsContainer.style.borderRadius = '4px';
+                    errorsContainer.style.border = '1px solid #f5c6cb';
+                    
+                    const errorTitle = document.createElement('h3');
+                    errorTitle.textContent = 'Veuillez corriger les erreurs suivantes :';
+                    errorTitle.style.fontSize = '16px';
+                    errorTitle.style.marginTop = '0';
+                    errorsContainer.appendChild(errorTitle);
+                    
+                    const errorList = document.createElement('ul');
+                    errorMessages.forEach(message => {
+                        const errorItem = document.createElement('li');
+                        errorItem.textContent = message;
+                        errorList.appendChild(errorItem);
+                    });
+                    errorsContainer.appendChild(errorList);
+                    
+                    // Insérer au début du formulaire
+                    const headerElement = document.querySelector('.setup-header');
+                    headerElement.insertAdjacentElement('afterend', errorsContainer);
+                    
+                    // Faire défiler vers le haut pour montrer les erreurs
+                    window.scrollTo(0, 0);
+                } else {
+                    // Tout est valide, afficher un indicateur de chargement
+                    submitBtn.textContent = "Configuration en cours...";
+                    submitBtn.style.backgroundColor = "#cccccc";
+                    submitBtn.disabled = true;
+                }
+            });
         });
     </script>
 </body>

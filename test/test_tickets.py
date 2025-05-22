@@ -9,7 +9,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
 from app import app
-from utils.db import get_db
+from utils.db_manager import get_db
 from onekey.auth import register_user
 from tickets.ticket_service import create_ticket, get_ticket_info, close_ticket, add_comment
 
@@ -48,7 +48,7 @@ def setup_test_user():
     
     # Nettoyage après les tests
     if user_id:
-        get_db("DELETE FROM USEUR WHERE ID = %s", (user_id,))
+        get_db("DELETE FROM USEUR WHERE ID = ?", (user_id,))
 
 @pytest.fixture
 def setup_test_ticket(setup_test_user):
@@ -82,7 +82,7 @@ def setup_test_ticket(setup_test_user):
             # Supprimer la table du ticket
             get_db(f"DROP TABLE IF EXISTS {ticket_id}")
             # Supprimer le ticket
-            get_db("DELETE FROM tiqué WHERE ID_tiqué = %s", (ticket_id,))
+            get_db("DELETE FROM tiqué WHERE ID_tiqué = ?", (ticket_id,))
         except Exception as e:
             print(f"Erreur lors du nettoyage du ticket de test: {e}")
 
@@ -106,7 +106,7 @@ def test_ticket_creation(setup_test_user):
         assert ticket_id is not None
         
         # Vérifier que le ticket existe dans la base de données
-        tickets = get_db("SELECT * FROM tiqué WHERE ID_tiqué = %s", (ticket_id,))
+        tickets = get_db("SELECT * FROM tiqué WHERE ID_tiqué = ?", (ticket_id,))
         assert tickets is not None
         assert len(tickets) > 0
         
@@ -153,7 +153,7 @@ def test_ticket_creation(setup_test_user):
                 # Supprimer la table du ticket
                 get_db(f"DROP TABLE IF EXISTS {ticket_id}")
                 # Supprimer le ticket
-                get_db("DELETE FROM tiqué WHERE ID_tiqué = %s", (ticket_id,))
+                get_db("DELETE FROM tiqué WHERE ID_tiqué = ?", (ticket_id,))
             except Exception as e:
                 print(f"Erreur lors du nettoyage du ticket: {e}")
 
@@ -174,7 +174,7 @@ def test_ticket_comment(setup_test_ticket):
         assert result is True
         
         # Vérifier que le commentaire existe dans la base de données
-        comments = get_db(f"SELECT * FROM {ticket_data['ticket_id']} WHERE commenter = %s", 
+        comments = get_db(f"SELECT * FROM {ticket_data['ticket_id']} WHERE commenter = ?", 
                          ("Voici un commentaire de test",))
         assert comments is not None
         assert len(comments) > 0
@@ -204,7 +204,7 @@ def test_close_ticket(setup_test_ticket):
         assert result is True
         
         # Vérifier que le ticket est maintenant fermé dans la base de données
-        tickets = get_db("SELECT * FROM tiqué WHERE ID_tiqué = %s", (ticket_data["ticket_id"],))
+        tickets = get_db("SELECT * FROM tiqué WHERE ID_tiqué = ?", (ticket_data["ticket_id"],))
         
         # Vérifier que le ticket est fermé
         assert tickets is not None and len(tickets) > 0

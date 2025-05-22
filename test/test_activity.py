@@ -9,7 +9,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
 from app import app
-from utils.db import get_db, log_activity
+from utils.db_manager import get_db, log_activity
 
 @pytest.fixture
 def client():

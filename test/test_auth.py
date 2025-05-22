@@ -9,7 +9,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
 from onekey.auth import register_user, login_user
-from utils.db import get_db
+from utils.db_manager import get_db
 
 @pytest.fixture
 def setup_test_db():

@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from utils.db import get_db, log_activity
+from utils.db_manager import get_db, log_activity
 from datetime import datetime
 import json
 import hashlib
@@ -47,7 +47,7 @@ def edit_user(user_id):
                 get_db("ALTER TABLE USEUR ADD COLUMN role VARCHAR(20) DEFAULT 'user'")
                 
             # Mettre à jour les informations de l'utilisateur
-            get_db("UPDATE USEUR SET name = %s, email = %s, role = %s WHERE ID = %s", 
+            get_db("UPDATE USEUR SET name = ?, email = ?, role = ? WHERE ID = ?", 
                   (name, email, role, user_id))
             
             # Création de la table user_permissions si elle n'existe pas
@@ -61,15 +61,15 @@ def edit_user(user_id):
             """)
             
             # Vérifier si une entrée de permission existe déjà pour cet utilisateur
-            existing_perm = get_db("SELECT * FROM user_permissions WHERE user_id = %s", (user_id,))
+            existing_perm = get_db("SELECT * FROM user_permissions WHERE user_id = ?", (user_id,))
             
             if existing_perm:
                 # Mettre à jour les permissions existantes
-                get_db("UPDATE user_permissions SET permissions = %s WHERE user_id = %s", 
+                get_db("UPDATE user_permissions SET permissions = ? WHERE user_id = ?", 
                       (permissions_json, user_id))
             else:
                 # Créer une nouvelle entrée de permissions
-                get_db("INSERT INTO user_permissions (user_id, permissions) VALUES (%s, %s)", 
+                get_db("INSERT INTO user_permissions (user_id, permissions) VALUES (?, ?)", 
                       (user_id, permissions_json))
             
             log_activity(session.get('user_id'), 'update', 'user', f"Mise à jour des informations de l'utilisateur {user_id}")
@@ -81,7 +81,7 @@ def edit_user(user_id):
         return redirect(url_for('admin.users'))
     
     # Méthode GET: Récupérer les informations de l'utilisateur pour affichage
-    user_data = get_db("SELECT * FROM USEUR WHERE ID = %s", (user_id,))
+    user_data = get_db("SELECT * FROM USEUR WHERE ID = ?", (user_id,))
     
     if not user_data:
         flash("Utilisateur non trouvé", "error")
@@ -99,7 +99,7 @@ def edit_user(user_id):
     
     # Récupérer les permissions actuelles de l'utilisateur
     try:
-        perms_data = get_db("SELECT permissions FROM user_permissions WHERE user_id = %s", (user_id,))
+        perms_data = get_db("SELECT permissions FROM user_permissions WHERE user_id = ?", (user_id,))
         permissions = json.loads(perms_data[0][0]) if perms_data else []
     except Exception as e:
         print(f"Erreur lors de la récupération des permissions: {e}")
@@ -146,7 +146,7 @@ def create_user():
             # Ajouter l'utilisateur dans la base de données
             get_db("""
                 INSERT INTO USEUR (name, email, hashed_password, role)
-                VALUES (%s, %s, %s, %s)
+                VALUES (?, ?, ?, ?)
             """, (name, email, hashed_password, role))
 
             log_activity(session.get('user_id'), 'create', 'user', f"Création de l'utilisateur {name} avec le rôle {role}")
@@ -179,7 +179,7 @@ def reset_password(user_id):
             hashed_password = hashlib.sha256(new_password.encode()).hexdigest()
             
             # Mettre à jour le mot de passe de l'utilisateur
-            get_db("UPDATE USEUR SET hashed_password = %s WHERE ID = %s", 
+            get_db("UPDATE USEUR SET hashed_password = ? WHERE ID = ?", 
                   (hashed_password, user_id))
             
             log_activity(session.get('user_id'), 'update', 'user', f"Réinitialisation du mot de passe pour l'utilisateur {user_id}")
@@ -247,12 +247,12 @@ def update_settings():
     try:
         for key, value in settings.items():
             if value is not None:  # Ne pas enregistrer les valeurs None
-                existing = get_db("SELECT * FROM system_settings WHERE setting_key = %s", (key,))
+                existing = get_db("SELECT * FROM system_settings WHERE setting_key = ?", (key,))
                 if existing:
-                    get_db("UPDATE system_settings SET setting_value = %s WHERE setting_key = %s",
+                    get_db("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?",
                           (value, key))
                 else:
-                    get_db("INSERT INTO system_settings (setting_key, setting_value) VALUES (%s, %s)",
+                    get_db("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?)",
                           (key, value))
         
         flash("Paramètres mis à jour avec succès", "success")
@@ -305,13 +305,13 @@ def update_ecoledirecte_settings():
         if settings_data:
             get_db("""
                 UPDATE system_settings 
-                SET setting_value = %s 
+                SET setting_value = ? 
                 WHERE setting_key = 'ecoledirecte_credentials'
             """, (settings_json,))
         else:
             get_db("""
                 INSERT INTO system_settings (setting_key, setting_value)
-                VALUES ('ecoledirecte_credentials', %s)
+                VALUES ('ecoledirecte_credentials', ?)
             """, (settings_json,))
         
         flash("Paramètres EcoleDirecte mis à jour avec succès", "success")
@@ -344,7 +344,7 @@ def sync_ecoledirecte():
                 
                 get_db("""
                     UPDATE system_settings 
-                    SET setting_value = %s 
+                    SET setting_value = ? 
                     WHERE setting_key = 'ecoledirecte_credentials'
                 """, (json.dumps(current_settings),))
         else:
@@ -365,7 +365,7 @@ def sync_ecoledirecte():
                 
                 get_db("""
                     UPDATE system_settings 
-                    SET setting_value = %s 
+                    SET setting_value = ? 
                     WHERE setting_key = 'ecoledirecte_credentials'
                 """, (json.dumps(current_settings),))
         else:

@@ -1,0 +1,38 @@
+2025-05-16 15:13:27,386 - glpibis - INFO - Dï¿½but de la requï¿½te de fermeture pour le ticket 1
+2025-05-16 15:13:27,408 - glpibis - ERROR - Erreur lors de la fermeture du ticket 1
+Traceback (most recent call last):
+  File "c:\Users\opm85\OneDrive\Documents\GitHub\GLPIbis\tickets\routes.py", line 382, in close
+    get_db("""
+  File "c:\Users\opm85\OneDrive\Documents\GitHub\GLPIbis\utils\db_manager.py", line 798, in get_db
+    return db_manager.execute_query(query, params, fetch)
+  File "c:\Users\opm85\OneDrive\Documents\GitHub\GLPIbis\utils\db_manager.py", line 85, in execute_query
+    raise e
+  File "c:\Users\opm85\OneDrive\Documents\GitHub\GLPIbis\utils\db_manager.py", line 72, in execute_query
+    cursor.execute(query, params)
+sqlite3.OperationalError: no such column: last_modified_by
+2025-05-16 15:13:30,782 - glpibis - INFO - Dï¿½but de la requï¿½te de fermeture pour le ticket 1
+2025-05-16 15:13:30,819 - glpibis - ERROR - Erreur lors de la fermeture du ticket 1
+Traceback (most recent call last):
+  File "c:\Users\opm85\OneDrive\Documents\GitHub\GLPIbis\tickets\routes.py", line 382, in close
+    get_db("""
+  File "c:\Users\opm85\OneDrive\Documents\GitHub\GLPIbis\utils\db_manager.py", line 798, in get_db
+    return db_manager.execute_query(query, params, fetch)
+  File "c:\Users\opm85\OneDrive\Documents\GitHub\GLPIbis\utils\db_manager.py", line 85, in execute_query
+    raise e
+  File "c:\Users\opm85\OneDrive\Documents\GitHub\GLPIbis\utils\db_manager.py", line 72, in execute_query
+    cursor.execute(query, params)
+sqlite3.OperationalError: no such column: last_modified_by
+2025-05-16 15:13:52,425 - glpibis - INFO - Dï¿½but de la requï¿½te de fermeture pour le ticket 1
+2025-05-16 15:13:52,440 - glpibis - ERROR - Erreur lors de la fermeture du ticket 1
+Traceback (most recent call last):
+  File "c:\Users\opm85\OneDrive\Documents\GitHub\GLPIbis\tickets\routes.py", line 382, in close
+    get_db("""
+  File "c:\Users\opm85\OneDrive\Documents\GitHub\GLPIbis\utils\db_manager.py", line 798, in get_db
+    return db_manager.execute_query(query, params, fetch)
+  File "c:\Users\opm85\OneDrive\Documents\GitHub\GLPIbis\utils\db_manager.py", line 85, in execute_query
+    raise e
+  File "c:\Users\opm85\OneDrive\Documents\GitHub\GLPIbis\utils\db_manager.py", line 72, in execute_query
+    cursor.execute(query, params)
+sqlite3.OperationalError: no such column: last_modified_by
+2025-05-16 15:34:45,469 - glpibis - INFO - Tentative de fermeture du ticket 1
+2025-05-16 15:34:45,538 - glpibis - INFO - Ticket 1 fermé avec succès

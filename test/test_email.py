@@ -6,7 +6,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 # Ajouter le dossier racine au chemin de recherche des modules
 sys.path.append(project_root)
 from onekey.auth import register_user
-from utils.db import get_db
+from utils.db_manager import get_db
 
 # Fonction utilitaire pour valider l'e-mail
 def is_valid_email(email):

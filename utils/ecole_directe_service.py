@@ -2,7 +2,7 @@ import requests
 from datetime import datetime, timedelta
 import json
 import time
-from utils.db import get_db, log_activity
+from utils.db_manager import get_db, log_activity
 
 class EcoleDirecteService:
     BASE_URL = "https://api.ecoledirecte.com/v3"

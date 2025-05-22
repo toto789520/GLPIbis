@@ -1,0 +1,391 @@
+/* Styles spécifiques pour le module d'activité */
+.activity-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Styles pour le mode Kiosk */
+.kiosk-mode {
+    background-color: #0f172a;
+    color: #f8fafc;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+}
+
+.kiosk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: rgba(15, 23, 42, 0.7);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.kiosk-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.kiosk-title i {
+    color: #4a6cf7;
+}
+
+.kiosk-datetime {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.kiosk-activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.kiosk-activity-item {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.8));
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #4a6cf7;
+    transform: translateX(-100%);
+    animation: slide-in 0.6s forwards;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.kiosk-activity-item:hover {
+    transform: scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+}
+
+.kiosk-activity-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at top right, rgba(74, 108, 247, 0.1), transparent 60%);
+    z-index: -1;
+}
+
+.kiosk-activity-icon {
+    background-color: rgba(74, 108, 247, 0.2);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: #4a6cf7;
+    flex-shrink: 0;
+}
+
+.kiosk-activity-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.kiosk-activity-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+.kiosk-activity-description {
+    font-size: 1rem;
+    color: #cbd5e1;
+}
+
+.kiosk-activity-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: #94a3b8;
+    margin-top: 0.5rem;
+}
+
+.kiosk-activity-user {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.kiosk-activity-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: #f8fafc;
+    font-weight: 600;
+}
+
+.kiosk-progress {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.kiosk-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4a6cf7, #38b2ac);
+    width: 0%;
+    transition: width 0.3s linear;
+}
+
+/* Animation pour le défilement automatique */
+@keyframes slide-in {
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes slide-out {
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.slide-out {
+    animation: slide-out 0.6s forwards;
+}
+
+/* Styles pour les statistiques utilisateur */
+.stats-dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stats-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.stats-card-highlight {
+    border-left: 4px solid #4a6cf7;
+}
+
+.stats-card-secondary {
+    border-left: 4px solid #38b2ac;
+}
+
+.stats-card-accent {
+    border-left: 4px solid #ed8936;
+}
+
+.chart-container {
+    width: 100%;
+    height: 300px;
+    position: relative;
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    margin-bottom: 2rem;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.chart-title {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.chart-filters {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.chart-filter-btn {
+    background-color: transparent;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chart-filter-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.chart-filter-btn.active {
+    background-color: #4a6cf7;
+    border-color: #4a6cf7;
+    color: white;
+}
+
+.activity-history {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.activity-history-item {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.activity-history-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.activity-history-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.icon-login {
+    background-color: rgba(74, 108, 247, 0.1);
+    color: #4a6cf7;
+}
+
+.icon-ticket {
+    background-color: rgba(56, 178, 172, 0.1);
+    color: #38b2ac;
+}
+
+.icon-inventory {
+    background-color: rgba(237, 137, 54, 0.1);
+    color: #ed8936;
+}
+
+.activity-history-content {
+    flex: 1;
+}
+
+.activity-history-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.activity-history-time {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+/* Styles pour le mode tableau de bord */
+.dashboard-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 1.5rem;
+}
+
+.dashboard-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.dashboard-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.popular-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.metric-pill {
+    background-color: #f3f4f6;
+    border-radius: 999px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4b5563;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.metric-pill:hover {
+    background-color: #4a6cf7;
+    color: white;
+}
+
+.metric-pill i {
+    font-size: 1rem;
+}
+
+/* Responsive design */
+@media (max-width: 992px) {
+    .dashboard-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-dashboard {
+        grid-template-columns: 1fr;
+    }
+    
+    .kiosk-activity-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .kiosk-activity-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

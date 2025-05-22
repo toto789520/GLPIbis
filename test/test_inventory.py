@@ -10,7 +10,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
 from app import app
-from utils.db import get_db
+from utils.db_manager import get_db
 from inventory.inventory_service import add_item, get_item_by_id, list_items
 from inventory.qr_service import QRCodeService  # Changer l'import pour utiliser la classe
 

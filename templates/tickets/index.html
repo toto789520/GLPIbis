@@ -128,7 +128,7 @@
                     <tbody>
                         {% for ticket in tickets %}
                         <tr>
-                            <td>{{ ticket[0]|truncate(8, True) }}</td>
+                            <td>{{ ticket[0]|string|truncate(8, True) }}</td>
                             <td>{{ ticket[5] }}</td>
                             <td>{{ ticket[2] }}</td>
                             <td>
