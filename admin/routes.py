@@ -3,7 +3,7 @@ from utils.db_manager import get_db, log_activity
 from onekey.auth import validate_session  # Corriger l'import
 from datetime import datetime
 import json
-import hashlib
+from argon2 import PasswordHasher
 
 # Création du Blueprint pour les routes liées à l'administration
 admin_bp = Blueprint('admin', __name__, template_folder='templates')
@@ -154,8 +154,9 @@ def create_user():
             return redirect(url_for('admin.create_user'))
 
         try:
-            # Hacher le mot de passe avec SHA256
-            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+            # Hacher le mot de passe avec Argon2
+            ph = PasswordHasher()
+            hashed_password = ph.hash(password)
 
             # Ajouter l'utilisateur dans la base de données
             get_db("""
