@@ -98,7 +98,7 @@ def register_user(name, age, tel, email, password, role='user'):
         elif role == 'technician':
             get_db("INSERT INTO technicien (id_user) VALUES (?)", (user_id,))
         
-        app_logger.info(f"INFO: Utilisateur {email} créé avec succès - ID: {user_id}")
+        app_logger.info(f"INFO: Utilisateur créé avec succès - ID: {user_id}")
         return user_id
         
     except Exception as e:
