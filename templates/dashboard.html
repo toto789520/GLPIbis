@@ -28,25 +28,25 @@
 
     <!-- Navigation par boutons horizontaux -->
     <div class="horizontal-buttons mb-5">
-        <a href="{{ url_for('tickets.index') }}" class="horizontal-button btn-tickets">
+        <a href="{{ safe_url_for('tickets.index') }}" class="horizontal-button btn-tickets">
             <i class="fas fa-ticket-alt"></i>
             <span>Tickets</span>
         </a>
-        <a href="{{ url_for('inventory.index') }}" class="horizontal-button btn-inventory">
+        <a href="{{ safe_url_for('inventory.index') }}" class="horizontal-button btn-inventory">
             <i class="fas fa-box"></i>
             <span>Inventaire</span>
         </a>
-.        <a href="{{ url_for('activity_screening.index') }}" class="horizontal-button btn-activity">
+        <a href="{{ safe_url_for('activity_screening.index') }}" class="horizontal-button btn-activity">
             <i class="fas fa-chart-line"></i>
             <span>Activités</span>
         </a>
         {% if session.get('role') == 'admin' %}
-        <a href="{{ url_for('admin.index') }}" class="horizontal-button btn-admin">
+        <a href="{{ safe_url_for('admin.index') }}" class="horizontal-button btn-admin">
             <i class="fas fa-cog"></i>
             <span>Administration</span>
         </a>
         {% endif %}
-        <a href="{{ url_for('tickets.create') }}" class="horizontal-button">
+        <a href="{{ safe_url_for('tickets.create_ticket') }}" class="horizontal-button">
             <i class="fas fa-plus-circle"></i>
             <span>Nouveau Ticket</span>
         </a>
@@ -56,22 +56,22 @@
     <div class="stats-container">
         <div class="stat-card">
             <div class="stat-card-header">Tickets ouverts</div>
-            <div class="stat-card-value">{{ stats.tickets_ouverts }}</div>
-            <div class="stat-card-footer">dont {{ stats.tickets_urgents }} urgent(s)</div>
+            <div class="stat-card-value">{{ stats.tickets_ouverts if stats else '0' }}</div>
+            <div class="stat-card-footer">dont {{ stats.tickets_urgents if stats else '0' }} urgent(s)</div>
         </div>
         <div class="stat-card">
             <div class="stat-card-header">Tickets résolus</div>
-            <div class="stat-card-value">{{ stats.tickets_resolus }}</div>
+            <div class="stat-card-value">{{ stats.tickets_resolus if stats else '0' }}</div>
             <div class="stat-card-footer">cette semaine</div>
         </div>
         <div class="stat-card">
             <div class="stat-card-header">En attente</div>
-            <div class="stat-card-value">{{ stats.tickets_en_attente }}</div>
+            <div class="stat-card-value">{{ stats.tickets_en_attente if stats else '0' }}</div>
             <div class="stat-card-footer">nécessitant une action</div>
         </div>
         <div class="stat-card">
             <div class="stat-card-header">Temps moyen</div>
-            <div class="stat-card-value">{{ stats.temps_moyen_resolution }}</div>
+            <div class="stat-card-value">{{ stats.temps_moyen_resolution if stats else 'N/A' }}</div>
             <div class="stat-card-footer">de résolution</div>
         </div>
     </div>
@@ -83,7 +83,7 @@
                 <div class="card-header bg-primary text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Tickets récents</h5>
-                        <a href="{{ url_for('tickets.index') }}" class="btn btn-sm btn-light">Voir tous</a>
+                        <a href="{{ safe_url_for('tickets.index') }}" class="btn btn-sm btn-light">Voir tous</a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -100,28 +100,34 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for ticket in tickets_recents %}
-                                <tr>
-                                    <td>{{ ticket.id }}</td>
-                                    <td>
-                                        <a href="{{ url_for('tickets.view', ticket_id=ticket.id) }}">
-                                            {{ ticket.titre }}
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{{ ticket.priorite_class }}">
-                                            {{ ticket.priorite }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{{ ticket.statut_class }}">
-                                            {{ ticket.statut }}
-                                        </span>
-                                    </td>
-                                    <td>{{ ticket.assigne_a or 'Non assigné' }}</td>
-                                    <td>{{ ticket.derniere_maj }}</td>
-                                </tr>
-                                {% endfor %}
+                                {% if tickets_recents %}
+                                    {% for ticket in tickets_recents %}
+                                    <tr>
+                                        <td>{{ ticket.id }}</td>
+                                        <td>
+                                            <a href="{{ safe_url_for('tickets.view', ticket_id=ticket.id) }}">
+                                                {{ ticket.titre }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ ticket.priorite_class }}">
+                                                {{ ticket.priorite }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ ticket.statut_class }}">
+                                                {{ ticket.statut }}
+                                            </span>
+                                        </td>
+                                        <td>{{ ticket.assigne_a or 'Non assigné' }}</td>
+                                        <td>{{ ticket.derniere_maj }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">Aucun ticket récent</td>
+                                    </tr>
+                                {% endif %}
                             </tbody>
                         </table>
                     </div>
@@ -140,15 +146,19 @@
                 </div>
                 <div class="card-body">
                     <div class="activity-feed">
-                        {% for activity in activites_recentes %}
-                        <div class="activity-item">
-                            <small class="text-muted">{{ activity.timestamp }}</small>
-                            <div class="ms-2">
-                                <strong>{{ activity.user }}</strong>
-                                {{ activity.description }}
+                        {% if activites_recentes %}
+                            {% for activity in activites_recentes %}
+                            <div class="activity-item">
+                                <small class="text-muted">{{ activity.timestamp }}</small>
+                                <div class="ms-2">
+                                    <strong>{{ activity.user }}</strong>
+                                    {{ activity.description }}
+                                </div>
                             </div>
-                        </div>
-                        {% endfor %}
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted">Aucune activité récente</div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -165,13 +175,13 @@
                 <div class="card-body">
                     <div class="row text-center">
                         <div class="col-md-3 col-6 mb-3">
-                            <a href="{{ url_for('tickets.create') }}" class="btn btn-outline-primary w-100 py-2">
+                            <a href="{{ safe_url_for('tickets.create_ticket') }}" class="btn btn-outline-primary w-100 py-2">
                                 <i class="fas fa-plus-circle mb-2 d-block" style="font-size: 1.5rem;"></i>
                                 Nouveau ticket
                             </a>
                         </div>
                         <div class="col-md-3 col-6 mb-3">
-                            <a href="{{ url_for('inventory.index') }}" class="btn btn-outline-success w-100 py-2">
+                            <a href="{{ safe_url_for('inventory.index') }}" class="btn btn-outline-success w-100 py-2">
                                 <i class="fas fa-search mb-2 d-block" style="font-size: 1.5rem;"></i>
                                 Rechercher un équipement
                             </a>

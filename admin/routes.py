@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from utils.db_manager import get_db, log_activity
+from onekey.auth import validate_session  # Corriger l'import
 from datetime import datetime
 import json
 import hashlib
@@ -7,12 +8,25 @@ import hashlib
 # Création du Blueprint pour les routes liées à l'administration
 admin_bp = Blueprint('admin', __name__, template_folder='templates')
 
-@admin_bp.before_request
 def check_admin():
     """Vérifie que l'utilisateur est un admin avant d'accéder aux routes d'administration"""
-    if session.get('role') != 'admin':
+    # Vérifier la session utilisateur
+    token = session.get('token')
+    if not token or not validate_session(token):
+        flash("Vous devez être connecté pour accéder à cette page.", "error")
+        return redirect(url_for('login'))
+    
+    # Vérifier le rôle admin (cette logique dépend de votre système de rôles)
+    user_id = session.get('user_id')
+    admin_check = get_db("SELECT * FROM admin WHERE id_user = ?", (user_id,))
+    if not admin_check:
         flash("Vous n'avez pas les permissions nécessaires pour accéder à cette page.", "error")
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
+
+@admin_bp.before_request
+def before_request():
+    """Vérifie l'authentification avant chaque requête"""
+    return check_admin()
 
 @admin_bp.route('/')
 def index():

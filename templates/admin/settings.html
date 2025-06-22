@@ -1,299 +1,155 @@
 {% extends "base.html" %}
 
-{% block title %}Paramètres du Système{% endblock %}
+{% block title %}Paramètres Système - GLPIbis{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col">
-            <h1><i class="fas fa-cogs me-2"></i> Paramètres du Système</h1>
-            <p class="lead">Configurez les paramètres globaux du système GLPI.</p>
-        </div>
-        <div class="col-auto">
-            <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left"></i> Retour à l'administration
-            </a>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header bg-success text-white">
-            <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i> Configuration Générale</h5>
-        </div>
-        <div class="card-body">
-            <form action="{{ url_for('admin.update_settings') }}" method="post">
-                <div class="row">
-                    <!-- Paramètres généraux -->
-                    <div class="col-md-6 mb-4">
-                        <h5>Paramètres Généraux</h5>
-                        <hr>
-                        
-                        <div class="mb-3">
-                            <label for="system_name" class="form-label">Nom du Système</label>
-                            <input type="text" class="form-control" id="system_name" name="system_name" 
-                                   value="{{ settings.get('system_name', 'GLPI') }}">
-                        </div>
-                        
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="allow_registration" name="allow_registration" value="1"
-                                   {% if settings.get('allow_registration') == '1' %}checked{% endif %}>
-                            <label class="form-check-label" for="allow_registration">
-                                Autoriser l'inscription des nouveaux utilisateurs
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <!-- Paramètres des tickets -->
-                    <div class="col-md-6 mb-4">
-                        <h5>Paramètres des Tickets</h5>
-                        <hr>
-                        
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="allow_ticket_creation" name="allow_ticket_creation" value="1"
-                                   {% if settings.get('allow_ticket_creation') == '1' %}checked{% endif %}>
-                            <label class="form-check-label" for="allow_ticket_creation">
-                                Autoriser tous les utilisateurs à créer des tickets
-                            </label>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="default_user_role" class="form-label">Rôle par défaut des nouveaux utilisateurs</label>
-                            <select class="form-select" id="default_user_role" name="default_user_role">
-                                <option value="user" {% if settings.get('default_user_role') == 'user' %}selected{% endif %}>
-                                    Utilisateur standard
-                                </option>
-                                <option value="tech" {% if settings.get('default_user_role') == 'tech' %}selected{% endif %}>
-                                    Technicien
-                                </option>
-                                <option value="readonly" {% if settings.get('default_user_role') == 'readonly' %}selected{% endif %}>
-                                    Lecture seule
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- Paramètres d'email -->
-                    <div class="col-md-6 mb-4">
-                        <h5>Paramètres de Notification</h5>
-                        <hr>
-                        
-                        <div class="mb-3">
-                            <label for="smtp_server" class="form-label">Serveur SMTP</label>
-                            <input type="text" class="form-control" id="smtp_server" name="smtp_server"
-                                   value="{{ settings.get('smtp_server', '') }}">
-                        </div>
-                        
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-cog mr-2"></i>
+                        Paramètres Système
+                    </h3>
+                    <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left mr-1"></i>
+                        Retour
+                    </a>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="smtp_port" class="form-label">Port SMTP</label>
-                                    <input type="number" class="form-control" id="smtp_port" name="smtp_port"
-                                           value="{{ settings.get('smtp_port', '587') }}">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">Paramètres généraux</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            <label for="app_name">Nom de l'application</label>
+                                            <input type="text" class="form-control" id="app_name" name="app_name" value="GLPIbis">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="app_version">Version</label>
+                                            <input type="text" class="form-control" id="app_version" name="app_version" value="1.0.0" readonly>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="debug_mode">Mode debug</label>
+                                            <select class="form-control" id="debug_mode" name="debug_mode">
+                                                <option value="0">Désactivé</option>
+                                                <option value="1">Activé</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                            
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="smtp_security" class="form-label">Sécurité</label>
-                                    <select class="form-select" id="smtp_security" name="smtp_security">
-                                        <option value="none" {% if settings.get('smtp_security') == 'none' %}selected{% endif %}>Aucune</option>
-                                        <option value="tls" {% if settings.get('smtp_security') == 'tls' %}selected{% endif %}>TLS</option>
-                                        <option value="ssl" {% if settings.get('smtp_security') == 'ssl' %}selected{% endif %}>SSL</option>
-                                    </select>
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">Paramètres de sécurité</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            <label for="session_timeout">Délai d'expiration de session (minutes)</label>
+                                            <input type="number" class="form-control" id="session_timeout" name="session_timeout" value="30">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="max_login_attempts">Tentatives de connexion max</label>
+                                            <input type="number" class="form-control" id="max_login_attempts" name="max_login_attempts" value="5">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="require_password_change">Forcer changement mot de passe</label>
+                                            <select class="form-control" id="require_password_change" name="require_password_change">
+                                                <option value="0">Non</option>
+                                                <option value="1">Oui</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="smtp_username" class="form-label">Nom d'utilisateur SMTP</label>
-                            <input type="text" class="form-control" id="smtp_username" name="smtp_username"
-                                   value="{{ settings.get('smtp_username', '') }}">
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">Paramètres de notification</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            <label for="email_notifications">Notifications par email</label>
+                                            <select class="form-control" id="email_notifications" name="email_notifications">
+                                                <option value="0">Désactivées</option>
+                                                <option value="1">Activées</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="smtp_server">Serveur SMTP</label>
+                                            <input type="text" class="form-control" id="smtp_server" name="smtp_server" placeholder="smtp.example.com">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="smtp_port">Port SMTP</label>
+                                            <input type="number" class="form-control" id="smtp_port" name="smtp_port" value="587">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">Paramètres de maintenance</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            <label for="maintenance_mode">Mode maintenance</label>
+                                            <select class="form-control" id="maintenance_mode" name="maintenance_mode">
+                                                <option value="0">Désactivé</option>
+                                                <option value="1">Activé</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="backup_frequency">Fréquence de sauvegarde</label>
+                                            <select class="form-control" id="backup_frequency" name="backup_frequency">
+                                                <option value="daily">Quotidienne</option>
+                                                <option value="weekly">Hebdomadaire</option>
+                                                <option value="monthly">Mensuelle</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="log_level">Niveau de log</label>
+                                            <select class="form-control" id="log_level" name="log_level">
+                                                <option value="DEBUG">DEBUG</option>
+                                                <option value="INFO" selected>INFO</option>
+                                                <option value="WARNING">WARNING</option>
+                                                <option value="ERROR">ERROR</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="smtp_password" class="form-label">Mot de passe SMTP</label>
-                            <input type="password" class="form-control" id="smtp_password" name="smtp_password"
-                                   value="{{ settings.get('smtp_password', '') }}" placeholder="••••••••">
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-save mr-2"></i>
+                                        Sauvegarder les paramètres
+                                    </button>
+                                    <button type="reset" class="btn btn-secondary btn-lg ml-2">
+                                        <i class="fas fa-undo mr-2"></i>
+                                        Réinitialiser
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="sender_email" class="form-label">Email d'expédition</label>
-                            <input type="email" class="form-control" id="sender_email" name="sender_email"
-                                   value="{{ settings.get('sender_email', '') }}" placeholder="noreply@exemple.com">
-                        </div>
-                    </div>
-                    
-                    <!-- Paramètres d'apparence -->
-                    <div class="col-md-6 mb-4">
-                        <h5>Apparence</h5>
-                        <hr>
-                        
-                        <div class="mb-3">
-                            <label for="primary_color" class="form-label">Couleur principale</label>
-                            <input type="color" class="form-control form-control-color" id="primary_color" name="primary_color"
-                                   value="{{ settings.get('primary_color', '#007bff') }}">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="secondary_color" class="form-label">Couleur secondaire</label>
-                            <input type="color" class="form-control form-control-color" id="secondary_color" name="secondary_color"
-                                   value="{{ settings.get('secondary_color', '#6c757d') }}">
-                        </div>
-                        
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="dark_mode" name="dark_mode" value="1"
-                                   {% if settings.get('dark_mode') == '1' %}checked{% endif %}>
-                            <label class="form-check-label" for="dark_mode">
-                                Activer le mode sombre par défaut
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-success btn-lg">
-                        <i class="fas fa-save me-2"></i> Enregistrer les paramètres
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Paramètres EcoleDirecte -->
-    <div class="card mt-4">
-        <div class="card-header bg-success text-white">
-            <h5 class="mb-0">Intégration EcoleDirecte</h5>
-        </div>
-        <div class="card-body">
-            <form action="{{ url_for('admin.update_ecoledirecte_settings') }}" method="post">
-                <div class="mb-3">
-                    <label for="ecoledirecte_username" class="form-label">Identifiant EcoleDirecte</label>
-                    <input type="text" class="form-control" id="ecoledirecte_username" 
-                           name="ecoledirecte_username" 
-                           value="{{ ecoledirecte_settings.get('username', '') }}">
-                </div>
-
-                <div class="mb-3">
-                    <label for="ecoledirecte_password" class="form-label">Mot de passe</label>
-                    <input type="password" class="form-control" id="ecoledirecte_password" 
-                           name="ecoledirecte_password" 
-                           placeholder="••••••••">
-                    <div class="form-text">
-                        Laissez vide pour conserver le mot de passe actuel
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Synchronisation automatique</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" 
-                               id="sync_salles" name="sync_salles" value="1"
-                               {% if ecoledirecte_settings.get('sync_salles') == '1' %}checked{% endif %}>
-                        <label class="form-check-label" for="sync_salles">
-                            Synchroniser les salles
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" 
-                               id="sync_edt" name="sync_edt" value="1"
-                               {% if ecoledirecte_settings.get('sync_edt') == '1' %}checked{% endif %}>
-                        <label class="form-check-label" for="sync_edt">
-                            Synchroniser l'emploi du temps
-                        </label>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="sync_frequency" class="form-label">Fréquence de synchronisation</label>
-                    <select class="form-select" id="sync_frequency" name="sync_frequency">
-                        <option value="hourly" {% if ecoledirecte_settings.get('sync_frequency') == 'hourly' %}selected{% endif %}>
-                            Toutes les heures
-                        </option>
-                        <option value="daily" {% if ecoledirecte_settings.get('sync_frequency') == 'daily' %}selected{% endif %}>
-                            Une fois par jour
-                        </option>
-                        <option value="weekly" {% if ecoledirecte_settings.get('sync_frequency') == 'weekly' %}selected{% endif %}>
-                            Une fois par semaine
-                        </option>
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label for="sync_delay" class="form-label">Délai de temporisation (secondes)</label>
-                    <input type="number" class="form-control" id="sync_delay" name="sync_delay" 
-                           min="0" max="3600" value="{{ ecoledirecte_settings.get('sync_delay', '30') }}"
-                           aria-describedby="sync_delay_help">
-                    <div id="sync_delay_help" class="form-text">
-                        Temps d'attente entre chaque requête à EcoleDirecte (0-3600 secondes)
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-between">
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-save me-2"></i> Enregistrer
-                    </button>
-                    <button type="button" class="btn btn-outline-primary" onclick="syncNow()">
-                        <i class="fas fa-sync me-2"></i> Synchroniser maintenant
-                    </button>
-                </div>
-            </form>
-
-            <hr>
-
-            <div class="mt-3">
-                <h6>Dernière synchronisation</h6>
-                <ul class="list-unstyled">
-                    <li>
-                        <small>
-                            <i class="fas fa-door-open me-2"></i>
-                            Salles: {{ ecoledirecte_settings.get('last_sync_salles', 'Jamais') }}
-                        </small>
-                    </li>
-                    <li>
-                        <small>
-                            <i class="fas fa-calendar-alt me-2"></i>
-                            Emploi du temps: {{ ecoledirecte_settings.get('last_sync_edt', 'Jamais') }}
-                        </small>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Rapport de synchronisation -->
-    <div class="card mt-4">
-        <div class="card-header bg-info text-white">
-            <h5 class="mb-0">Rapport de synchronisation</h5>
-        </div>
-        <div class="card-body">
-            <div class="row text-center">
-                <div class="col-6">
-                    <h3>{{ ecoledirecte_stats.get('nb_salles', 0) }}</h3>
-                    <p class="text-muted">Salles synchronisées</p>
-                </div>
-                <div class="col-6">
-                    <h3>{{ ecoledirecte_stats.get('nb_cours', 0) }}</h3>
-                    <p class="text-muted">Cours synchronisés</p>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function syncNow() {
-    if (confirm('Lancer la synchronisation maintenant ?')) {
-        fetch('{{ url_for("admin.sync_ecoledirecte") }}', {
-            method: 'POST'
-        }).then(response => {
-            if (response.ok) {
-                window.location.reload();
-            } else {
-                alert('Erreur lors de la synchronisation');
-            }
-        });
-    }
-}
-</script>
 {% endblock %}

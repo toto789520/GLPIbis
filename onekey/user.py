@@ -23,20 +23,20 @@ def get_user_info(user_id):
     # Récupération des statistiques
     stats = get_db("SELECT * FROM state WHERE id_user = ?", (user_id,))
     
-    # Construction de l'objet utilisateur
+    # Construction de l'objet utilisateur avec gestion flexible de la structure
     user_info = {
-        'id': user[0],
-        'name': user[1],
-        'age': user[2],
-        'tel': user[3],
-        'email': user[5],
-        'creation_date': user[6],
+        'id': user[0],           # ID
+        'name': user[1] if len(user) > 1 else '',         # name
+        'age': user[2] if len(user) > 2 else None,        # age
+        'tel': user[3] if len(user) > 3 else '',          # tel
+        'email': user[5] if len(user) > 5 else (user[2] if len(user) > 2 else ''),  # email
+        'creation_date': user[6] if len(user) > 6 else '',  # creation_date
+        'role': user[7] if len(user) > 7 else get_user_role(user_id),  # role ou récupération
         'stats': {
-            'tickets_created': stats[0][1] if stats else 0,
-            'tickets_participated': stats[0][2] if stats else 0,
-            'comments': stats[0][3] if stats else 0
-        },
-        'role': get_user_role(user_id)
+            'tickets_created': stats[0][2] if stats and len(stats[0]) > 2 else 0,      # tickets_created
+            'tickets_participated': stats[0][3] if stats and len(stats[0]) > 3 else 0, # tickets_participated
+            'comments': stats[0][4] if stats and len(stats[0]) > 4 else 0              # comments
+        }
     }
     
     return user_info
@@ -115,20 +115,29 @@ def change_password(user_id, current_password, new_password):
         ValueError: Si le mot de passe actuel est incorrect ou si le nouveau mot de passe est invalide
     """
     # Importer ici pour éviter les imports circulaires
-    from .auth import login_user, validate_password
+    from .auth import validate_password
     import argon2
     
     # Vérifier le mot de passe actuel
-    users = get_db("SELECT * FROM USEUR WHERE ID = ?", (user_id,))
+    users = get_db("SELECT ID, password FROM USEUR WHERE ID = ?", (user_id,))
     if not users:
         raise ValueError("Utilisateur non trouvé")
+    
+    user = users[0]
+    current_hash = user[1]  # password est en position 1 dans cette requête
+    
+    # Vérifier le mot de passe actuel
+    ph = argon2.PasswordHasher()
+    try:
+        ph.verify(current_hash, current_password)
+    except argon2.exceptions.VerifyMismatchError:
+        raise ValueError("Mot de passe actuel incorrect")
     
     # Vérifier si le nouveau mot de passe est valide
     if not validate_password(new_password):
         raise ValueError("Le nouveau mot de passe ne respecte pas les critères de complexité")
     
     # Hasher le nouveau mot de passe
-    ph = argon2.PasswordHasher()
     new_hash = ph.hash(new_password)
     
     # Mettre à jour le mot de passe
@@ -155,7 +164,7 @@ def list_users(role=None):
         placeholder = ', '.join(['?'] * len(admin_ids))
         admin_ids = [admin_id[0] for admin_id in admin_ids]
         
-        users = get_db(f"SELECT * FROM USEUR WHERE ID IN ({placeholder})", admin_ids)
+        users = get_db(f"SELECT ID, name, age, tel, email, creation_date, role FROM USEUR WHERE ID IN ({placeholder})", admin_ids)
     
     elif role == 'technician':
         # Récupération des techniciens
@@ -166,11 +175,11 @@ def list_users(role=None):
         placeholder = ', '.join(['?'] * len(tech_ids))
         tech_ids = [tech_id[0] for tech_id in tech_ids]
         
-        users = get_db(f"SELECT * FROM USEUR WHERE ID IN ({placeholder})", tech_ids)
+        users = get_db(f"SELECT ID, name, age, tel, email, creation_date, role FROM USEUR WHERE ID IN ({placeholder})", tech_ids)
     
     else:
-        # Récupération de tous les utilisateurs
-        users = get_db("SELECT * FROM USEUR")
+        # Récupération de tous les utilisateurs (sans password)
+        users = get_db("SELECT ID, name, age, tel, email, creation_date, role FROM USEUR")
     
     # Formatage des résultats
     formatted_users = []
@@ -180,9 +189,9 @@ def list_users(role=None):
             'name': user[1],
             'age': user[2],
             'tel': user[3],
-            'email': user[5],
-            'creation_date': user[6],
-            'role': get_user_role(user[0])
+            'email': user[4],
+            'creation_date': user[5],
+            'role': user[6] if len(user) > 6 and user[6] else get_user_role(user[0])
         }
         formatted_users.append(user_info)
     

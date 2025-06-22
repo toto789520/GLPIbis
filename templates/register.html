@@ -77,15 +77,46 @@
     </main>
 
     <script>
-        const password = document.getElementById('password');
-        const passwordConfirm = document.getElementById('password_confirm');
-        const form = document.querySelector('form');
-        
-        form.addEventListener('submit', function(event) {
-            if (password.value !== passwordConfirm.value) {
-                event.preventDefault();
-                alert('Les mots de passe ne correspondent pas!');
-            }
+        document.addEventListener('DOMContentLoaded', function() {
+            const password = document.getElementById('password');
+            const passwordConfirm = document.getElementById('password_confirm');
+            const form = document.querySelector('form');
+            
+            // Validation en temps réel du mot de passe
+            password.addEventListener('input', function() {
+                const value = password.value;
+                const requirements = document.querySelector('.password-requirements');
+                
+                if (value.length >= 8 && 
+                    /[A-Z]/.test(value) && 
+                    /[a-z]/.test(value) && 
+                    /[0-9]/.test(value) && 
+                    /[^A-Za-z0-9]/.test(value)) {
+                    requirements.style.color = 'green';
+                } else {
+                    requirements.style.color = 'red';
+                }
+            });
+            
+            // Validation lors de la soumission
+            form.addEventListener('submit', function(event) {
+                if (password.value !== passwordConfirm.value) {
+                    event.preventDefault();
+                    alert('Les mots de passe ne correspondent pas!');
+                    return;
+                }
+                
+                // Validation de la complexité
+                if (password.value.length < 8 || 
+                    !/[A-Z]/.test(password.value) || 
+                    !/[a-z]/.test(password.value) || 
+                    !/[0-9]/.test(password.value) || 
+                    !/[^A-Za-z0-9]/.test(password.value)) {
+                    event.preventDefault();
+                    alert('Le mot de passe ne respecte pas les critères de sécurité');
+                    return;
+                }
+            });
         });
     </script>
 </body>

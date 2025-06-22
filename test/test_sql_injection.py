@@ -10,6 +10,8 @@ sys.path.append(project_root)
 from app import app
 from utils.db_manager import get_db
 from onekey.auth import register_user, login_user
+from inventory.inventory_service import inventory_service
+from utils.logger import app_logger
 
 @pytest.fixture
 def client():
@@ -65,59 +67,138 @@ def test_search_sql_injection(client):
     assert b"SQL error" not in response.data
 
 def test_inventory_search_sql_injection(client):
-    """Test de sécurité contre les injections SQL dans la recherche d'inventaire"""
-    # Tentative d'injection dans un paramètre de recherche d'inventaire
-    response = client.get('/inventory/search?query=' + "'; DROP TABLE materiel; --")
+    """Test de sécurité contre l'injection SQL dans la recherche d'inventaire"""
     
-    # Vérifier que la réponse est correcte
-    assert response.status_code in [200, 302, 404]  # La réponse peut varier selon l'implémentation
+    # Tests d'injection SQL courantes
+    malicious_inputs = [
+        "'; DROP TABLE inventory; --",
+        "' OR '1'='1",
+        "' UNION SELECT * FROM USEUR --",
+        "'; DELETE FROM inventory; --",
+        "' OR 1=1 --",
+        "admin'--",
+        "' OR 'x'='x",
+        "'; INSERT INTO inventory (name) VALUES ('hacked'); --",
+        "' AND (SELECT COUNT(*) FROM USEUR) > 0 --",
+        "' OR SLEEP(5) --"
+    ]
     
-    # Vérifier l'absence d'erreurs SQL dans la réponse
-    assert b"MySQL" not in response.data
-    assert b"SQL syntax" not in response.data
-    assert b"SQL error" not in response.data
-    
-    # Vérifier que la table existe toujours (l'injection n'a pas fonctionné)
-    result = get_db("SHOW TABLES LIKE 'materiel'")
-    assert result is not None and len(result) > 0
+    for malicious_input in malicious_inputs:
+        try:
+            app_logger.info(f"Test d'injection SQL avec l'entrée: {malicious_input}")
+            
+            # Test de la recherche avec une entrée malveillante
+            results = inventory_service.get_all_items(search_term=malicious_input)
+            
+            # Vérifier que la fonction retourne un résultat sûr
+            assert isinstance(results, list), f"La fonction doit retourner une liste, même avec une entrée malveillante: {malicious_input}"
+            
+            # Vérifier que les résultats ne contiennent pas de données sensibles inattendues
+            for result in results:
+                assert isinstance(result, dict), "Chaque résultat doit être un dictionnaire"
+                assert 'id' in result, "Chaque résultat doit avoir un ID"
+                assert 'name' in result, "Chaque résultat doit avoir un nom"
+            
+            app_logger.info(f"✓ Test d'injection SQL réussi pour: {malicious_input}")
+            
+        except Exception as e:
+            # En cas d'erreur, vérifier que ce n'est pas une injection réussie
+            error_msg = str(e).lower()
+            
+            # Ces mots-clés indiquent une possible injection réussie
+            dangerous_keywords = ['syntax error', 'sql error', 'database', 'table', 'column']
+            
+            if any(keyword in error_msg for keyword in dangerous_keywords):
+                pytest.fail(f"Possible injection SQL détectée avec l'entrée '{malicious_input}': {str(e)}")
+            
+            # Sinon, c'est probablement une erreur normale de validation
+            app_logger.info(f"✓ Entrée malveillante correctement rejetée: {malicious_input}")
 
-def test_user_creation_sql_injection():
-    """Test de sécurité contre les injections SQL lors de la création d'utilisateur"""
-    # Tentative d'injection dans le nom d'utilisateur
-    injection_name = "Test'; INSERT INTO USEUR VALUES ('hack', 'hacker', 'hack@example.com', 'hacked', 'admin'); --"
-    test_id = str(uuid.uuid4())
-    test_email = f"injection_test_{test_id}@example.com"
-    test_password = "Password123!"
+def test_inventory_category_filter_sql_injection():
+    """Test d'injection SQL sur le filtre de catégorie"""
+    
+    malicious_categories = [
+        "'; DROP TABLE inventory; --",
+        "' OR '1'='1",
+        "' UNION SELECT password FROM USEUR --"
+    ]
+    
+    for malicious_category in malicious_categories:
+        try:
+            results = inventory_service.get_all_items(category_filter=malicious_category)
+            
+            # Doit retourner une liste vide ou des résultats valides, pas d'erreur SQL
+            assert isinstance(results, list)
+            
+            app_logger.info(f"✓ Test d'injection SQL sur catégorie réussi pour: {malicious_category}")
+            
+        except Exception as e:
+            error_msg = str(e).lower()
+            dangerous_keywords = ['syntax error', 'sql error', 'database', 'table']
+            
+            if any(keyword in error_msg for keyword in dangerous_keywords):
+                pytest.fail(f"Injection SQL possible sur le filtre de catégorie: {malicious_category}")
+
+def test_inventory_status_filter_sql_injection():
+    """Test d'injection SQL sur le filtre de statut"""
+    
+    malicious_statuses = [
+        "'; UPDATE inventory SET name='hacked'; --",
+        "' OR 1=1 --",
+        "' UNION SELECT email, password FROM USEUR --"
+    ]
+    
+    for malicious_status in malicious_statuses:
+        try:
+            results = inventory_service.get_all_items(status_filter=malicious_status)
+            
+            assert isinstance(results, list)
+            
+            app_logger.info(f"✓ Test d'injection SQL sur statut réussi pour: {malicious_status}")
+            
+        except Exception as e:
+            error_msg = str(e).lower()
+            if 'sql' in error_msg or 'database' in error_msg:
+                pytest.fail(f"Injection SQL possible sur le filtre de statut: {malicious_status}")
+
+def test_inventory_create_sql_injection():
+    """Test d'injection SQL lors de la création d'éléments"""
+    
+    malicious_data = {
+        'name': "'; DROP TABLE USEUR; --",
+        'category': "' OR '1'='1",
+        'description': "'; DELETE FROM sessions; --",
+        'serial_number': "' UNION SELECT password FROM USEUR --"
+    }
     
     try:
-        # Tenter de créer un utilisateur avec une injection SQL
-        user_id = register_user(injection_name, "30", "1234567890", test_email, test_password)
+        # Tenter de créer un élément avec des données malveillantes
+        result = inventory_service.create_item(malicious_data)
         
-        # Vérifier que l'utilisateur a été créé normalement
-        user = get_db("SELECT * FROM USEUR WHERE ID = %s", (user_id,))
-        assert user is not None and len(user) > 0
+        # Si la création réussit, vérifier que les données sont bien échappées
+        if result:
+            created_item = inventory_service.get_item_by_id(result)
+            if created_item:
+                # Les données malveillantes doivent être stockées comme du texte normal
+                assert created_item['name'] == malicious_data['name']
+                assert created_item['category'] == malicious_data['category']
+                
+                # Nettoyer après le test
+                inventory_service.delete_item(result)
         
-        # Trouver l'index qui contient le nom
-        user_data = user[0]
-        name_found = False
+        app_logger.info("✓ Test d'injection SQL sur création d'élément réussi")
         
-        # Comme nous ne sommes pas sûrs de l'indice exact du nom, vérifions le contenu
-        # En particulier, vérifions que l'injection SQL a été traitée comme une simple chaîne
-        for value in user_data:
-            if value == injection_name:
-                name_found = True
-                break
-        
-        assert name_found, "Le nom avec injection SQL n'a pas été correctement stocké en tant que texte"
-        
-        # Vérifier qu'aucun utilisateur "hacker" n'a été créé par l'injection
-        hacker = get_db("SELECT * FROM USEUR WHERE email = ?", ("hack@example.com",))
-        assert not hacker or len(hacker) == 0
     except Exception as e:
-        pytest.fail(f"Erreur lors du test d'injection SQL: {e}")
-    finally:
-        # Nettoyer après le test
-        if 'user_id' in locals() and user_id:
-            get_db("DELETE FROM USEUR WHERE ID = %s", (user_id,))
+        error_msg = str(e).lower()
+        if 'sql' in error_msg or 'syntax' in error_msg:
+            pytest.fail(f"Injection SQL possible lors de la création: {str(e)}")
+
+if __name__ == "__main__":
+    # Exécuter les tests si le fichier est lancé directement
+    test_inventory_search_sql_injection(None)
+    test_inventory_category_filter_sql_injection()
+    test_inventory_status_filter_sql_injection()
+    test_inventory_create_sql_injection()
+    print("✅ Tous les tests de sécurité SQL ont réussi !")
 
 

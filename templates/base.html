@@ -18,8 +18,10 @@
     {% endif %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}GLPIbis - Gestion de Tickets{% endblock %}</title>
+    <title>{% block title %}GLPIbis{% endblock %}</title>    
     <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+    <!-- Préchargement de la page waiting -->
+    <link rel="prefetch" href="{{ url_for('waiting') }}">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -108,7 +110,7 @@
 </head>
 <body>
     <!-- Barre de navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light navbar-custom">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
                 <i class="fas fa-ticket-alt me-2"></i>GLPIbis
@@ -117,29 +119,43 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if session.get('user_id') %}
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('dashboard') }}">
-                            <i class="fas fa-home me-1"></i>Tableau de bord
+                            <i class="fas fa-tachometer-alt"></i> Tableau de bord
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('tickets.index') }}">
-                            <i class="fas fa-ticket-alt me-1"></i>Tickets
+                        <a class="nav-link" href="{{ safe_url_for('tickets.index') }}">
+                            <i class="fas fa-ticket-alt"></i> Tickets
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('inventory.index') }}">
-                            <i class="fas fa-box me-1"></i>Inventaire
+                        <a class="nav-link" href="{{ safe_url_for('inventory.index') }}">
+                            <i class="fas fa-boxes"></i> Inventaire
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ safe_url_for('activity_screening.index') }}">
+                            <i class="fas fa-chart-line"></i> Activité
+                        </a>
+                    </li>
+                    {% if session.role == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ safe_url_for('admin.index') }}">
+                            <i class="fas fa-cog"></i> Administration
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                  <ul class="navbar-nav ms-auto">
+                    {% if session.get('user_id') %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle me-1"></i>{{ session.get('username', 'Utilisateur') }}
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user me-1"></i>{{ session.get('username', 'Utilisateur') }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">
+                            <li><a class="dropdown-item" href="{{ url_for('profile') }}">
                                 <i class="fas fa-user me-2"></i>Profil
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
@@ -198,12 +214,40 @@
                 </div>
             </div>
         </div>
-    </footer>
-
-    <!-- Scripts -->
+    </footer>    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+      <!-- Service Worker pour la gestion offline -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('[SW] Enregistrement réussi:', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('[SW] Échec de l\'enregistrement:', error);
+                        // Essayer la route alternative
+                        navigator.serviceWorker.register('{{ url_for("static", filename="sw.js") }}')
+                            .then(function(registration) {
+                                console.log('[SW] Enregistrement réussi (route alternative):', registration.scope);
+                            })
+                            .catch(function(error2) {
+                                console.log('[SW] Échec total de l\'enregistrement:', error2);
+                            });
+                    });
+            });
+            
+            // Écouter les messages du service worker
+            navigator.serviceWorker.addEventListener('message', function(event) {
+                if (event.data && event.data.action === 'go-to-waiting-offline') {
+                    window.location.href = '/waiting';
+                }
+            });
+        }
+    </script>
+    
     {% block scripts %}{% endblock %}
 </body>
 </html>

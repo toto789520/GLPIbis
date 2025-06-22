@@ -2,7 +2,6 @@
 import os
 import json
 from utils.db_manager import init_db_manager
-from tickets.create_db import create_tickets_table, migrate_comments
 
 def main():
     # Lecture de la configuration
@@ -22,6 +21,8 @@ def main():
         raise RuntimeError("Impossible d'initialiser le gestionnaire de base de données")
     
     print("Création des tables des tickets...")
+    # Importer directement les fonctions nécessaires
+    from tickets.create_db import create_tickets_table, migrate_comments
     create_tickets_table()
     print("Migration des commentaires...")
     migrate_comments()

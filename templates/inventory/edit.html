@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier {{ item[1] }} - Inventaire{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8 col-lg-6 mx-auto">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit"></i> Modifier l'élément
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ safe_url_for('inventory.edit_item', item_id=item[0]) }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">
+                                        <i class="fas fa-tag"></i> Nom de l'élément *
+                                    </label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           value="{{ item[1] }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">
+                                        <i class="fas fa-folder"></i> Catégorie *
+                                    </label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Sélectionner une catégorie</option>
+                                        <option value="Ordinateur" {{ 'selected' if item[2] == 'Ordinateur' else '' }}>Ordinateur</option>
+                                        <option value="Périphérique" {{ 'selected' if item[2] == 'Périphérique' else '' }}>Périphérique</option>
+                                        <option value="Réseau" {{ 'selected' if item[2] == 'Réseau' else '' }}>Équipement réseau</option>
+                                        <option value="Mobile" {{ 'selected' if item[2] == 'Mobile' else '' }}>Appareil mobile</option>
+                                        <option value="Imprimante" {{ 'selected' if item[2] == 'Imprimante' else '' }}>Imprimante</option>
+                                        <option value="Serveur" {{ 'selected' if item[2] == 'Serveur' else '' }}>Serveur</option>
+                                        <option value="Accessoire" {{ 'selected' if item[2] == 'Accessoire' else '' }}>Accessoire</option>
+                                        <option value="Autre" {{ 'selected' if item[2] == 'Autre' else '' }}>Autre</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="location" class="form-label">
+                                        <i class="fas fa-map-marker-alt"></i> Emplacement
+                                    </label>
+                                    <input type="text" class="form-control" id="location" name="location" 
+                                           value="{{ item[3] or '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">
+                                        <i class="fas fa-circle"></i> Statut
+                                    </label>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="active" {{ 'selected' if item[4] == 'active' else '' }}>Actif</option>
+                                        <option value="maintenance" {{ 'selected' if item[4] == 'maintenance' else '' }}>En maintenance</option>
+                                        <option value="retired" {{ 'selected' if item[4] == 'retired' else '' }}>Retiré du service</option>
+                                        <option value="storage" {{ 'selected' if item[4] == 'storage' else '' }}>En stock</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="serial_number" class="form-label">
+                                        <i class="fas fa-barcode"></i> Numéro de série
+                                    </label>
+                                    <input type="text" class="form-control" id="serial_number" name="serial_number" 
+                                           value="{{ item[5] or '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="purchase_date" class="form-label">
+                                        <i class="fas fa-calendar"></i> Date d'achat
+                                    </label>
+                                    <input type="date" class="form-control" id="purchase_date" name="purchase_date" 
+                                           value="{{ item[6] or '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="warranty_end" class="form-label">
+                                        <i class="fas fa-shield-alt"></i> Fin de garantie
+                                    </label>
+                                    <input type="date" class="form-control" id="warranty_end" name="warranty_end" 
+                                           value="{{ item[7] or '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-align-left"></i> Description
+                            </label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ item[8] or '' }}</textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ safe_url_for('inventory.view_item', item_id=item[0]) }}" 
+                               class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save"></i> Enregistrer les modifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

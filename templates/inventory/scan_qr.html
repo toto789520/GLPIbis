@@ -117,6 +117,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Gestion du scan par caméra
     startButton.addEventListener('click', () => {
+        if (typeof ZXing === 'undefined') {
+            alert('Erreur: Bibliothèque de scan QR non chargée');
+            return;
+        }
+        
         codeReader = new ZXing.BrowserQRCodeReader();
         videoContainer.classList.remove('d-none');
         startButton.classList.add('d-none');
@@ -126,11 +131,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Extraire l'ID de l'équipement de l'URL dans le QR code
                 const url = result.text;
                 const hardwareId = url.split('/').pop();
-                window.location.href = `/inventory/hardware/${hardwareId}`;
+                
+                // Vérifier si l'URL est valide
+                if (url.includes('/inventory/hardware/')) {
+                    window.location.href = `/inventory/hardware/${hardwareId}`;
+                } else {
+                    alert('QR code non reconnu pour cet inventaire');
+                }
             }
             if (err && !(err instanceof ZXing.NotFoundException)) {
-                console.error(err);
+                console.error('Erreur de scan:', err);
             }
+        }).catch(error => {
+            console.error('Erreur d\'accès à la caméra:', error);
+            alert('Impossible d\'accéder à la caméra. Veuillez vérifier les permissions.');
+            stopButton.click();
         });
     });
     
@@ -157,9 +172,11 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         dropZone.style.borderColor = '#ccc';
         
-        if (e.dataTransfer.files.length) {
+        if (e.dataTransfer.files.length && e.dataTransfer.files[0].type.startsWith('image/')) {
             fileInput.files = e.dataTransfer.files;
             submitBtn.style.display = 'inline-block';
+        } else {
+            alert('Veuillez déposer un fichier image (JPG, PNG)');
         }
     });
     

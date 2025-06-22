@@ -9,13 +9,13 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <section class="hero" style="background-image: url('{{ url_for('static', filename='images/fond.jpg') }}');">
+    <section class="hero" style="background-image: url({{ url_for('static', filename='images/fond.jpg') }});">
         <div class="hero-content">
             <h1>GLPI-Bis</h1>
             <p>Une solution libre de gestion et d'inventaire de parc informatique</p>
             <div class="cta-buttons" style="justify-content: center;">
-                <a href="{{ url_for('login') }}" class="btn btn-primary">Se connecter</a>
-                <a href="{{ url_for('register') }}" class="btn btn-outline">Créer un compte</a>
+                <a href="{{ url_for('main.login') }}" class="btn btn-primary">Se connecter</a>
+                <a href="{{ url_for('main.register') }}" class="btn btn-outline">Créer un compte</a>
             </div>
         </div>
     </section>
@@ -108,7 +108,14 @@
         <div class="cta-content">
             <h2>Vous n'avez pas de compte ?</h2>
             <p><i class="fas fa-arrow-down"></i> Cliquez sur le bouton en dessous pour créer un compte <i class="fas fa-arrow-down"></i></p>
-            <a href="{{ url_for('register') }}" class="cta-btn">Créer un compte</a>
+            <a href="{{ url_for('main.register') }}" class="cta-btn">Créer un compte</a>
+            
+            <!-- Ajouter un bouton pour accéder directement aux tickets -->
+            <div class="mt-4">
+                <a href="{{ url_for('tickets.index') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-ticket-alt"></i> Voir les tickets
+                </a>
+            </div>
         </div>
     </section>
 </body>

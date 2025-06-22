@@ -9,7 +9,6 @@ import sqlite3
 # Ajout du répertoire parent au chemin pour les importations
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tickets.create_sous_tickets_tables import create_sous_tickets_tables
 from utils.db_manager import get_db
 
 class TestSousTicketsTables(unittest.TestCase):
@@ -18,6 +17,7 @@ class TestSousTicketsTables(unittest.TestCase):
     def test_create_tables(self):
         """Test si les tables sont correctement créées"""
         # Créer les tables
+        from tickets.create_sous_tickets_tables import create_sous_tickets_tables
         result = create_sous_tickets_tables()
         self.assertTrue(result, "La création des tables a échoué")
         

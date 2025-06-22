@@ -113,11 +113,13 @@ def test_login_wrong_password(setup_test_db):
     assert result.get('status') == 'error'
 
 def test_login_nonexistent_user():
-    """Test d'un login avec un utilisateur inexistant"""
-    test_email = f"nonexistent_{uuid.uuid4()}@example.com"
+    """Test de connexion avec un utilisateur qui n'existe pas"""
+    from onekey.auth import login_user
     
     # Tenter de se connecter avec un email qui n'existe pas
-    result = login_user(test_email, "AnyPassword123!")
+    result = login_user("utilisateur_inexistant@example.com", "motdepasse123")
     
     # Vérifier que la connexion a échoué
-    assert result.get('status') == 'error'
+    assert result['status'] == 'error'
+    assert 'utilisateur' in result['message'].lower() or 'existe' in result['message'].lower()
+    assert result['user_id'] is None

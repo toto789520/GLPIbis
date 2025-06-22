@@ -1,2 +1,1 @@
-# Module de gestion des tickets
-# Ce module permet de créer, gérer et suivre des tickets d'assistance
+# Ce fichier rend le dossier tickets un module Python

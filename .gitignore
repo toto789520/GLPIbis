@@ -21,3 +21,9 @@
 *.pyc
 *.pyc
 /admin/__pycache__
+*.sqlite
+/.env
+/.env.local
+/__pycache__/
+/logs
+*.db

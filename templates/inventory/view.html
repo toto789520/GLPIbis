@@ -1,0 +1,647 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item[1] }} - Inventaire{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-eye"></i> Détails de l'élément
+                    </h4>
+                    <div>
+                        <a href="{{ safe_url_for('inventory.edit_item', item_id=item[0]) }}" 
+                           class="btn btn-light btn-sm">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                        <a href="{{ safe_url_for('inventory.index') }}" 
+                           class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-primary">
+                                <i class="fas fa-info-circle"></i> Informations générales
+                            </h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong><i class="fas fa-tag text-muted"></i> Nom :</strong></td>
+                                    <td><span class="badge bg-primary fs-6">{{ item[1] }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong><i class="fas fa-folder text-muted"></i> Catégorie :</strong></td>
+                                    <td>
+                                        <span class="badge bg-info">{{ item[2] }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong><i class="fas fa-map-marker-alt text-muted"></i> Emplacement :</strong></td>
+                                    <td>
+                                        {% if item[3] %}
+                                            <i class="fas fa-building text-success"></i> {{ item[3] }}
+                                        {% else %}
+                                            <span class="text-muted"><i class="fas fa-question-circle"></i> Non défini</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong><i class="fas fa-circle text-muted"></i> Statut :</strong></td>
+                                    <td>
+                                        {% if item[4] == 'active' %}
+                                            <span class="badge bg-success"><i class="fas fa-check"></i> Actif</span>
+                                        {% elif item[4] == 'maintenance' %}
+                                            <span class="badge bg-warning"><i class="fas fa-tools"></i> En maintenance</span>
+                                        {% elif item[4] == 'retired' %}
+                                            <span class="badge bg-danger"><i class="fas fa-times"></i> Retiré</span>
+                                        {% elif item[4] == 'storage' %}
+                                            <span class="badge bg-secondary"><i class="fas fa-box"></i> En stock</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ item[4] }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary">
+                                <i class="fas fa-cog"></i> Informations techniques
+                            </h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong><i class="fas fa-barcode text-muted"></i> N° de série :</strong></td>
+                                    <td>
+                                        {% if item[5] %}
+                                            <code>{{ item[5] }}</code>
+                                        {% else %}
+                                            <span class="text-muted">Non renseigné</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong><i class="fas fa-calendar-alt text-muted"></i> Date d'achat :</strong></td>
+                                    <td>
+                                        {% if item[6] %}
+                                            <i class="fas fa-shopping-cart text-primary"></i> {{ item[6] }}
+                                        {% else %}
+                                            <span class="text-muted">Non renseigné</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong><i class="fas fa-shield-alt text-muted"></i> Fin de garantie :</strong></td>
+                                    <td>
+                                        {% if item[7] %}
+                                            {{ item[7] }}
+                                            {% set warranty_date = item[7] %}
+                                            {% if warranty_date < now.strftime('%Y-%m-%d') %}
+                                                <span class="badge bg-danger ms-1"><i class="fas fa-exclamation-triangle"></i> Expirée</span>
+                                            {% else %}
+                                                <span class="badge bg-success ms-1"><i class="fas fa-check-circle"></i> Active</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Non renseigné</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong><i class="fas fa-clock text-muted"></i> Ajouté le :</strong></td>
+                                    <td>
+                                        {% if item[9] %}
+                                            <i class="fas fa-plus-circle text-success"></i> {{ item[9] }}
+                                        {% else %}
+                                            <span class="text-muted">Non disponible</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if item[8] %}
+                    <hr>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">
+                                <i class="fas fa-align-left"></i> Description
+                            </h5>
+                            <div class="border rounded p-3 bg-light">
+                                <div class="description-content">
+                                    {{ item[8] | replace('\n', '<br>') | safe }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Section QR Code (si activé) -->
+                    <hr>
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h5 class="text-primary">
+                                <i class="fas fa-qrcode"></i> QR Code
+                            </h5>
+                            <div class="text-center p-3 border rounded bg-light">
+                                <div id="qrcode-{{ item[0] }}" class="mb-2"></div>
+                                <small class="text-muted">Scannez pour accéder aux détails</small>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="downloadQRCode()">
+                                        <i class="fas fa-download"></i> Télécharger QR Code
+                                    </button>
+                                    <button type="button" class="btn btn-success btn-sm" onclick="printQRCode()">
+                                        <i class="fas fa-print"></i> Imprimer QR Code
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary">
+                                <i class="fas fa-history"></i> Actions rapides
+                            </h5>
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-outline-primary" onclick="printInfo()">
+                                    <i class="fas fa-print"></i> Imprimer la fiche
+                                </button>
+                                <button type="button" class="btn btn-outline-info" onclick="exportToCSV()">
+                                    <i class="fas fa-file-csv"></i> Exporter en CSV
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="generateQRCodeLabel()">
+                                    <i class="fas fa-tag"></i> Créer étiquette QR Code
+                                </button>
+                                {% if item[4] == 'active' %}
+                                <button type="button" class="btn btn-outline-warning" onclick="changeStatus('maintenance')">
+                                    <i class="fas fa-tools"></i> Mettre en maintenance
+                                </button>
+                                {% elif item[4] == 'maintenance' %}
+                                <button type="button" class="btn btn-outline-success" onclick="changeStatus('active')">
+                                    <i class="fas fa-check"></i> Remettre en service
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions principales -->
+                    <hr>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ safe_url_for('inventory.index') }}" 
+                                   class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Retour à l'inventaire
+                                </a>
+                                <div>
+                                    <a href="{{ safe_url_for('inventory.edit_item', item_id=item[0]) }}" 
+                                       class="btn btn-warning me-2">
+                                        <i class="fas fa-edit"></i> Modifier
+                                    </a>
+                                    <button type="button" class="btn btn-danger" 
+                                            onclick="confirmDelete({{ item[0] }})">
+                                        <i class="fas fa-trash"></i> Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour prévisualiser l'étiquette QR Code -->
+<div class="modal fade" id="qrLabelModal" tabindex="-1" aria-labelledby="qrLabelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="qrLabelModalLabel">
+                    <i class="fas fa-tag"></i> Étiquette QR Code - {{ item[1] }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="qr-label-preview" class="border p-4 bg-white" style="display: inline-block;">
+                    <!-- Le contenu de l'étiquette sera généré ici -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Fermer
+                </button>
+                <button type="button" class="btn btn-primary" onclick="downloadQRLabel()">
+                    <i class="fas fa-download"></i> Télécharger étiquette
+                </button>
+                <button type="button" class="btn btn-success" onclick="printQRLabel()">
+                    <i class="fas fa-print"></i> Imprimer étiquette
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inclure la bibliothèque QRCode.js -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<!-- Inclure html2canvas pour capturer le QR code -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<script>
+let qrCodeCanvas = null;
+
+// Générer le QR Code
+document.addEventListener('DOMContentLoaded', function() {
+    const qrData = {
+        id: {{ item[0] }},
+        name: "{{ item[1] }}",
+        category: "{{ item[2] }}",
+        serial: "{{ item[5] or 'N/A' }}",
+        url: window.location.href
+    };
+    
+    QRCode.toCanvas(document.getElementById('qrcode-{{ item[0] }}'), JSON.stringify(qrData), {
+        width: 150,
+        height: 150,
+        margin: 2,
+        color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+        }
+    }, function (error, canvas) {
+        if (error) {
+            console.error('Erreur génération QR Code:', error);
+            document.getElementById('qrcode-{{ item[0] }}').innerHTML = 
+                '<i class="fas fa-exclamation-circle text-danger"></i><br>Erreur QR Code';
+        } else {
+            qrCodeCanvas = canvas;
+        }
+    });
+});
+
+// Télécharger le QR Code
+function downloadQRCode() {
+    if (!qrCodeCanvas) {
+        alert('Le QR Code n\'est pas encore généré. Veuillez patienter.');
+        return;
+    }
+    
+    // Créer un lien de téléchargement
+    const link = document.createElement('a');
+    link.download = 'QRCode_{{ item[1] | replace(" ", "_") }}_{{ item[0] }}.png';
+    link.href = qrCodeCanvas.toDataURL();
+    link.click();
+}
+
+// Imprimer uniquement le QR Code
+function printQRCode() {
+    if (!qrCodeCanvas) {
+        alert('Le QR Code n\'est pas encore généré. Veuillez patienter.');
+        return;
+    }
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>QR Code - {{ item[1] }}</title>
+            <style>
+                body { 
+                    margin: 0; 
+                    padding: 20px; 
+                    text-align: center; 
+                    font-family: Arial, sans-serif; 
+                }
+                .qr-container {
+                    display: inline-block;
+                    border: 2px solid #000;
+                    padding: 20px;
+                    background: white;
+                }
+                .item-info {
+                    margin-top: 10px;
+                    font-size: 14px;
+                    font-weight: bold;
+                }
+                @media print {
+                    body { margin: 0; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="qr-container">
+                <img src="${qrCodeCanvas.toDataURL()}" alt="QR Code">
+                <div class="item-info">
+                    {{ item[1] }}<br>
+                    ID: {{ item[0] }} | {{ item[2] }}
+                    {% if item[5] %}<br>S/N: {{ item[5] }}{% endif %}
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Générer une étiquette QR Code complète
+function generateQRCodeLabel() {
+    if (!qrCodeCanvas) {
+        alert('Le QR Code n\'est pas encore généré. Veuillez patienter.');
+        return;
+    }
+    
+    // Créer le contenu de l'étiquette
+    const labelContent = `
+        <div style="width: 300px; border: 2px solid #000; padding: 15px; background: white; font-family: Arial, sans-serif;">
+            <div style="text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 10px;">
+                <h4 style="margin: 0; color: #333;">{{ item[1] }}</h4>
+                <small style="color: #666;">{{ item[2] }}</small>
+            </div>
+            
+            <div style="text-align: center; margin: 15px 0;">
+                <img src="${qrCodeCanvas.toDataURL()}" style="width: 120px; height: 120px;" alt="QR Code">
+            </div>
+            
+            <table style="width: 100%; font-size: 11px; margin-top: 10px;">
+                <tr>
+                    <td><strong>ID:</strong></td>
+                    <td>{{ item[0] }}</td>
+                </tr>
+                {% if item[5] %}
+                <tr>
+                    <td><strong>N° Série:</strong></td>
+                    <td>{{ item[5] }}</td>
+                </tr>
+                {% endif %}
+                {% if item[3] %}
+                <tr>
+                    <td><strong>Emplacement:</strong></td>
+                    <td>{{ item[3] }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td><strong>Statut:</strong></td>
+                    <td>
+                        {% if item[4] == 'active' %}Actif
+                        {% elif item[4] == 'maintenance' %}En maintenance
+                        {% elif item[4] == 'retired' %}Retiré
+                        {% elif item[4] == 'storage' %}En stock
+                        {% else %}{{ item[4] }}{% endif %}
+                    </td>
+                </tr>
+            </table>
+            
+            <div style="text-align: center; margin-top: 10px; font-size: 10px; color: #666;">
+                Généré le ${new Date().toLocaleDateString('fr-FR')}
+            </div>
+        </div>
+    `;
+    
+    // Afficher dans le modal
+    document.getElementById('qr-label-preview').innerHTML = labelContent;
+    const modal = new bootstrap.Modal(document.getElementById('qrLabelModal'));
+    modal.show();
+}
+
+// Télécharger l'étiquette QR Code
+function downloadQRLabel() {
+    const labelElement = document.getElementById('qr-label-preview');
+    
+    html2canvas(labelElement, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'Etiquette_QR_{{ item[1] | replace(" ", "_") }}_{{ item[0] }}.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }).catch(error => {
+        console.error('Erreur lors de la génération de l\'étiquette:', error);
+        alert('Erreur lors de la génération de l\'étiquette');
+    });
+}
+
+// Imprimer l'étiquette QR Code
+function printQRLabel() {
+    const labelElement = document.getElementById('qr-label-preview');
+    
+    html2canvas(labelElement, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true
+    }).then(canvas => {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Étiquette QR Code - {{ item[1] }}</title>
+                <style>
+                    body { 
+                        margin: 0; 
+                        padding: 20px; 
+                        text-align: center; 
+                    }
+                    @media print {
+                        body { margin: 0; padding: 10px; }
+                    }
+                </style>
+            </head>
+            <body>
+                <img src="${canvas.toDataURL()}" style="max-width: 100%; height: auto;" alt="Étiquette QR Code">
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }).catch(error => {
+        console.error('Erreur lors de l\'impression de l\'étiquette:', error);
+        alert('Erreur lors de l\'impression de l\'étiquette');
+    });
+}
+
+// Fonction pour confirmer la suppression
+function confirmDelete(itemId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet élément de l\'inventaire ?\n\nCette action est irréversible.')) {
+        // Créer un formulaire pour la suppression POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ safe_url_for("inventory.index") }}';
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'action';
+        input.value = 'delete';
+        
+        const itemIdInput = document.createElement('input');
+        itemIdInput.type = 'hidden';
+        itemIdInput.name = 'item_id';
+        itemIdInput.value = itemId;
+        
+        form.appendChild(input);
+        form.appendChild(itemIdInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Fonction pour changer le statut
+function changeStatus(newStatus) {
+    if (confirm(`Voulez-vous vraiment changer le statut vers "${newStatus}" ?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ safe_url_for("inventory.edit_item", item_id=item[0]) }}';
+        
+        const statusInput = document.createElement('input');
+        statusInput.type = 'hidden';
+        statusInput.name = 'status';
+        statusInput.value = newStatus;
+        
+        // Copier les autres valeurs actuelles
+        const inputs = [
+            {name: 'name', value: '{{ item[1] }}'},
+            {name: 'category', value: '{{ item[2] }}'},
+            {name: 'location', value: '{{ item[3] or "" }}'},
+            {name: 'serial_number', value: '{{ item[5] or "" }}'},
+            {name: 'purchase_date', value: '{{ item[6] or "" }}'},
+            {name: 'warranty_end', value: '{{ item[7] or "" }}'},
+            {name: 'description', value: '{{ item[8] or "" }}'}
+        ];
+        
+        inputs.forEach(inp => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = inp.name;
+            input.value = inp.value;
+            form.appendChild(input);
+        });
+        
+        form.appendChild(statusInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Fonction pour imprimer la fiche
+function printInfo() {
+    const printContent = document.querySelector('.card').cloneNode(true);
+    
+    // Supprimer les boutons d'action pour l'impression
+    const buttons = printContent.querySelectorAll('.btn, button');
+    buttons.forEach(btn => btn.remove());
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Fiche Inventaire - {{ item[1] }}</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+            <style>
+                @media print {
+                    .no-print { display: none !important; }
+                    body { font-size: 12px; }
+                    .card { border: 1px solid #000; }
+                }
+            </style>
+        </head>
+        <body class="p-3">
+            <div class="text-center mb-3">
+                <h2>Fiche d'Inventaire</h2>
+                <p class="text-muted">Générée le ${new Date().toLocaleDateString('fr-FR')}</p>
+            </div>
+            ${printContent.outerHTML}
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Fonction pour exporter en CSV
+function exportToCSV() {
+    const csvData = [
+        ['Propriété', 'Valeur'],
+        ['ID', '{{ item[0] }}'],
+        ['Nom', '{{ item[1] }}'],
+        ['Catégorie', '{{ item[2] }}'],
+        ['Emplacement', '{{ item[3] or "Non défini" }}'],
+        ['Statut', '{{ item[4] }}'],
+        ['Numéro de série', '{{ item[5] or "Non renseigné" }}'],
+        ['Date d\'achat', '{{ item[6] or "Non renseigné" }}'],
+        ['Fin de garantie', '{{ item[7] or "Non renseigné" }}'],
+        ['Description', '{{ item[8] or "Aucune" }}'],
+        ['Date de création', '{{ item[9] or "Non disponible" }}']
+    ];
+    
+    const csvContent = csvData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'inventaire_{{ item[1] | replace(" ", "_") }}.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+</script>
+
+<style>
+.description-content {
+    line-height: 1.6;
+    font-size: 1.1em;
+}
+
+.table td {
+    padding: 0.75rem 0.5rem;
+    vertical-align: middle;
+}
+
+.badge.fs-6 {
+    font-size: 1.1em !important;
+}
+
+#qrcode-{{ item[0] }} canvas {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+.modal-lg {
+    max-width: 600px;
+}
+
+#qr-label-preview {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn-group .btn {
+    margin: 2px;
+}
+
+@media (max-width: 768px) {
+    .card-header .btn {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}

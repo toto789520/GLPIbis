@@ -1,110 +1,132 @@
 {% extends "base.html" %}
 
-{% block title %}Gestion des Utilisateurs{% endblock %}
+{% block title %}Gestion des Utilisateurs - GLPIbis{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col">
-            <h1><i class="fas fa-users me-2"></i> Gestion des Utilisateurs</h1>
-            <p class="lead">Gérez les utilisateurs et leurs permissions dans le système.</p>
-        </div>
-        <div class="col-auto">
-            <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left"></i> Retour à l'administration
-            </a>
-        </div>
-    </div>
-
-    <!-- Liste des utilisateurs -->
-    <div class="card">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-user-cog me-2"></i> Liste des Utilisateurs</h5>
-            <span class="badge bg-light text-dark">{{ users|length }} utilisateur(s)</span>
-        </div>
-        <div class="card-body p-0">
-            {% if users|length > 0 %}
-            <div class="table-responsive">
-                <table class="table table-striped table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nom</th>
-                            <th>Email</th>
-                            <th>Rôle</th>
-                            <th>Date de création</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in users %}
-                        <tr>
-                            <td>{{ user[0]|truncate(8, True) }}</td>
-                            <td>{{ user[3] }}</td>
-                            <td>{{ user[5] }}</td>
-                            <td>
-                                {% set role = user[5] if user|length > 5 else 'user' %}
-                                {% if role == 'admin' %}
-                                    <span class="badge bg-danger">Administrateur</span>
-                                {% elif role == 'tech' %}
-                                    <span class="badge bg-warning">Technicien</span>
-                                {% else %}
-                                    <span class="badge bg-info">Utilisateur</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ user[1] }}</td>
-                            <td>
-                                <a href="{{ url_for('admin.edit_user', user_id=user[0]) }}" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-edit"></i> Modifier
-                                </a>
-                                {% if user[0] != session.get('user_id') %}
-                                <button onclick="confirmDelete('{{ user[0] }}')" class="btn btn-sm btn-danger">
-                                    <i class="fas fa-trash"></i> Supprimer
-                                </button>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-users mr-2"></i>
+                        Gestion des Utilisateurs
+                    </h3>
+                    <div>
+                        <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i>
+                            Retour
+                        </a>
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addUserModal">
+                            <i class="fas fa-plus mr-1"></i>
+                            Ajouter un utilisateur
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Email</th>
+                                    <th>Nom</th>
+                                    <th>Prénom</th>
+                                    <th>Rôle</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user[0] }}</td>
+                                    <td>{{ user[1] }}</td>
+                                    <td>{{ user[2] or '-' }}</td>
+                                    <td>{{ user[3] or '-' }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if user[4] == 'admin' %}danger{% elif user[4] == 'technicien' %}warning{% else %}secondary{% endif %}">
+                                            {{ user[4] or 'user' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-warning" onclick="editUser({{ user[0] }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteUser({{ user[0] }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Aucun utilisateur trouvé.
+                    </div>
+                    {% endif %}
+                </div>
             </div>
-            {% else %}
-            <div class="alert alert-warning m-3">
-                Aucun utilisateur trouvé dans le système.
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
 
-<!-- Modal de confirmation de suppression -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+<!-- Modal Ajouter Utilisateur -->
+<div class="modal fade" id="addUserModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteModalLabel">Confirmation de suppression</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter un utilisateur</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
             </div>
-            <div class="modal-body">
-                Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <form id="deleteForm" action="" method="post">
-                    <button type="submit" class="btn btn-danger">Confirmer la suppression</button>
-                </form>
-            </div>
+            <form method="POST" action="#">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nom">Nom</label>
+                        <input type="text" class="form-control" id="nom" name="nom">
+                    </div>
+                    <div class="form-group">
+                        <label for="date de création">Date de création</label>
+                        <input type="text" class="form-control" id="date_creation" name="date_creation">
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Rôle</label>
+                        <select class="form-control" id="role" name="role">
+                            <option value="user">Utilisateur</option>
+                            <option value="technicien">Technicien</option>
+                            <option value="admin">Administrateur</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
-    function confirmDelete(userId) {
-        document.getElementById('deleteForm').action = '/admin/users/delete/' + userId;
-        var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        deleteModal.show();
+function editUser(userId) {
+    // TODO: Implémenter l'édition d'utilisateur
+    alert('Fonction d\'édition à implémenter');
+}
+
+function deleteUser(userId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+        // TODO: Implémenter la suppression d'utilisateur
+        alert('Fonction de suppression à implémenter');
     }
+}
 </script>
 {% endblock %}

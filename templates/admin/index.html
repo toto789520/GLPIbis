@@ -1,122 +1,195 @@
 {% extends "base.html" %}
 
-{% block title %}Administration du système{% endblock %}
+{% block title %}Administration - GLPIbis{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col">
-            <h1><i class="fas fa-cog me-2"></i> Administration du système</h1>
-            <p class="lead">Gérez les paramètres et les utilisateurs du système GLPI depuis cette interface.</p>
-        </div>
-    </div>
-
     <div class="row">
-        <!-- Carte pour la gestion des utilisateurs -->
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-users me-2"></i> Gestion des Utilisateurs</h5>
-                </div>
-                <div class="card-body">
-                    <p>Gérez les utilisateurs, leurs rôles et leurs permissions d'accès au système.</p>
-                    <ul>
-                        <li>Modifier les informations des utilisateurs</li>
-                        <li>Attribuer des rôles (admin, technicien, utilisateur)</li>
-                        <li>Gérer les permissions spécifiques</li>
-                        <li>Activer/Désactiver des comptes</li>
-                    </ul>
-                </div>
-                <div class="card-footer bg-light">
-                    <a href="{{ url_for('admin.users') }}" class="btn btn-primary">
-                        <i class="fas fa-user-cog"></i> Gérer les Utilisateurs
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Carte pour les paramètres système -->
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i> Paramètres Système</h5>
-                </div>
-                <div class="card-body">
-                    <p>Configurez les paramètres généraux du système GLPI.</p>
-                    <ul>
-                        <li>Paramètres d'inscription des utilisateurs</li>
-                        <li>Configuration des notifications</li>
-                        <li>Personnalisation de l'interface</li>
-                        <li>Paramètres de sécurité</li>
-                    </ul>
-                </div>
-                <div class="card-footer bg-light">
-                    <a href="{{ url_for('admin.settings') }}" class="btn btn-success">
-                        <i class="fas fa-cogs"></i> Configurer les Paramètres
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Carte pour les journaux d'activité -->
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i> Journaux d'Activité</h5>
-                </div>
-                <div class="card-body">
-                    <p>Consultez les journaux d'activité du système pour surveiller et auditer les actions.</p>
-                    <ul>
-                        <li>Journaux de connexion utilisateur</li>
-                        <li>Actions sur les tickets</li>
-                        <li>Modifications de l'inventaire</li>
-                        <li>Actions administratives</li>
-                    </ul>
-                </div>
-                <div class="card-footer bg-light">
-                    <a href="{{ url_for('admin.logs') }}" class="btn btn-info">
-                        <i class="fas fa-search"></i> Consulter les Journaux
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mt-4">
-        <!-- Statistiques du système -->
         <div class="col-12">
             <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i> Statistiques du Système</h5>
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-tachometer-alt mr-2"></i>
+                        Tableau de Bord Administration
+                    </h3>
                 </div>
                 <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <div class="stat-item">
-                                <h4>Utilisateurs</h4>
-                                <div class="display-4">{{ get_db("SELECT COUNT(*) FROM USEUR")[0][0] }}</div>
-                                <small class="text-muted">Comptes enregistrés</small>
+                    <div class="row">
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-primary">
+                                <div class="inner">
+                                    <h3>{{ stats.total_tickets }}</h3>
+                                    <p>Tickets</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-ticket-alt"></i>
+                                </div>
+                                <a href="{{ url_for('tickets.index') }}" class="small-box-footer">
+                                    Plus d'infos <i class="fas fa-arrow-circle-right"></i>
+                                </a>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="stat-item">
-                                <h4>Tickets</h4>
-                                <div class="display-4">{{ get_db("SELECT COUNT(*) FROM tiqué")[0][0] }}</div>
-                                <small class="text-muted">Tickets créés</small>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3>{{ stats.total_inventory }}</h3>
+                                    <p>Équipements</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-laptop"></i>
+                                </div>
+                                <a href="{{ url_for('inventory.index') }}" class="small-box-footer">
+                                    Plus d'infos <i class="fas fa-arrow-circle-right"></i>
+                                </a>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="stat-item">
-                                <h4>Matériel</h4>
-                                <div class="display-4">{{ get_db("SELECT COUNT(*) FROM materiel")[0][0] }}</div>
-                                <small class="text-muted">Éléments d'inventaire</small>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3>{{ stats.total_users }}</h3>
+                                    <p>Utilisateurs</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <a href="{{ url_for('admin.users') }}" class="small-box-footer">
+                                    Plus d'infos <i class="fas fa-arrow-circle-right"></i>
+                                </a>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="stat-item">
-                                <h4>Activités</h4>
-                                <div class="display-4">{{ get_db("SELECT COUNT(*) FROM activity_logs")[0][0] }}</div>
-                                <small class="text-muted">Actions enregistrées</small>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <h3>{{ "%.1f"|format(stats.database_size / 1024 / 1024) }} MB</h3>
+                                    <p>Base de Données</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                                <a href="{{ url_for('admin.database') }}" class="small-box-footer">
+                                    Plus d'infos <i class="fas fa-arrow-circle-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Actions rapides</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3 col-sm-6 col-12 mb-2">
+                                            <a href="{{ url_for('admin.users') }}" class="btn btn-primary btn-block">
+                                                <i class="fas fa-users mr-2"></i>
+                                                Gérer les utilisateurs
+                                            </a>
+                                        </div>
+                                        <div class="col-md-3 col-sm-6 col-12 mb-2">
+                                            <a href="{{ url_for('admin.database') }}" class="btn btn-info btn-block">
+                                                <i class="fas fa-database mr-2"></i>
+                                                Base de données
+                                            </a>
+                                        </div>
+                                        <div class="col-md-3 col-sm-6 col-12 mb-2">
+                                            <a href="{{ url_for('admin.logs') }}" class="btn btn-warning btn-block">
+                                                <i class="fas fa-file-alt mr-2"></i>
+                                                Consulter les logs
+                                            </a>
+                                        </div>
+                                        <div class="col-md-3 col-sm-6 col-12 mb-2">
+                                            <a href="{{ url_for('admin.settings') }}" class="btn btn-secondary btn-block">
+                                                <i class="fas fa-cog mr-2"></i>
+                                                Paramètres
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-3 col-sm-6 col-12 mb-2">
+                                            <a href="{{ url_for('admin.system_info') }}" class="btn btn-dark btn-block">
+                                                <i class="fas fa-server mr-2"></i>
+                                                Infos système
+                                            </a>
+                                        </div>
+                                        <div class="col-md-3 col-sm-6 col-12 mb-2">
+                                            <a href="{{ url_for('activity.index') }}" class="btn btn-success btn-block">
+                                                <i class="fas fa-chart-line mr-2"></i>
+                                                Activités
+                                            </a>
+                                        </div>
+                                        <div class="col-md-3 col-sm-6 col-12 mb-2">
+                                            <button class="btn btn-danger btn-block" onclick="confirmMaintenance()">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                Mode maintenance
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 col-sm-6 col-12 mb-2">
+                                            <button class="btn btn-outline-primary btn-block" onclick="refreshStats()">
+                                                <i class="fas fa-sync-alt mr-2"></i>
+                                                Actualiser
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Statistiques détaillées</h3>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Total tickets:</strong></td>
+                                            <td>{{ stats.total_tickets }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Total équipements:</strong></td>
+                                            <td>{{ stats.total_inventory }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Total utilisateurs:</strong></td>
+                                            <td>{{ stats.total_users }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Total activités:</strong></td>
+                                            <td>{{ stats.total_activities }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Informations système</h3>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Taille base de données:</strong></td>
+                                            <td>{{ "%.2f"|format(stats.database_size / 1024 / 1024) }} MB</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Dernière mise à jour:</strong></td>
+                                            <td>{{ current_time.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Version GLPIbis:</strong></td>
+                                            <td>1.0.0</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Statut:</strong></td>
+                                            <td><span class="badge badge-success">Opérationnel</span></td>
+                                        </tr>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -125,4 +198,16 @@
         </div>
     </div>
 </div>
+
+<script>
+function confirmMaintenance() {
+    if (confirm('Êtes-vous sûr de vouloir activer le mode maintenance ?')) {
+        alert('Mode maintenance activé (fonctionnalité à implémenter)');
+    }
+}
+
+function refreshStats() {
+    location.reload();
+}
+</script>
 {% endblock %}

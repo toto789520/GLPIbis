@@ -2,6 +2,7 @@
 import os
 import json
 from utils.db_manager import init_db_manager, get_db
+from app import app_logger
 
 def main():
     # Initialisation
@@ -9,7 +10,7 @@ def main():
     
     # Vérifier les tables
     tables = get_db("SELECT name FROM sqlite_master WHERE type='table'")
-    print("\nTables dans la base de données:")
+    app_logger.("\nTables dans la base de données:")
     for table in tables:
         print(f"- {table[0]}")
         # Afficher la structure de la table

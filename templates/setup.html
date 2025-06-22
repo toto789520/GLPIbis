@@ -178,159 +178,56 @@
     </div>
 
     <script>
-        // Afficher/masquer les champs MySQL en fonction du type de base de données sélectionné
+        // Fonctions de validation et gestion des événements
         function toggleMySQLFields() {
             const dbType = document.getElementById('db_type').value;
             const mysqlFields = document.getElementById('mysql_fields');
             
             if (dbType === 'mysql') {
                 mysqlFields.style.display = 'block';
-                // Rendre les champs obligatoires
                 document.getElementById('mysql_host').required = true;
                 document.getElementById('mysql_db').required = true;
                 document.getElementById('mysql_user').required = true;
             } else {
                 mysqlFields.style.display = 'none';
-                // Rendre les champs non obligatoires
                 document.getElementById('mysql_host').required = false;
                 document.getElementById('mysql_db').required = false;
                 document.getElementById('mysql_user').required = false;
             }
         }
         
-        // Initialiser l'affichage au chargement de la page
         document.addEventListener('DOMContentLoaded', function() {
             toggleMySQLFields();
             
-            // Préparation du formulaire
+            // Validation du formulaire
             const form = document.querySelector('form');
             const submitBtn = document.querySelector('.btn-setup');
             
             form.addEventListener('submit', function(e) {
-                let hasErrors = false;
-                let errorMessages = [];
-                
-                // Récupérer les valeurs du formulaire
                 const password = document.getElementById('admin_password').value;
                 const passwordConfirm = document.getElementById('admin_password_confirm').value;
-                const adminName = document.getElementById('admin_name').value;
-                const adminEmail = document.getElementById('admin_email').value;
-                const dbType = document.getElementById('db_type').value;
                 
-                // Validation du nom admin
-                if (!adminName || adminName.length < 2) {
-                    hasErrors = true;
-                    errorMessages.push("Le nom d'administrateur est requis (minimum 2 caractères)");
-                    document.getElementById('admin_name').style.borderColor = 'red';
-                } else {
-                    document.getElementById('admin_name').style.borderColor = '';
-                }
-                
-                // Validation de l'email
-                if (!adminEmail || !adminEmail.includes('@')) {
-                    hasErrors = true;
-                    errorMessages.push("Une adresse email valide est requise");
-                    document.getElementById('admin_email').style.borderColor = 'red';
-                } else {
-                    document.getElementById('admin_email').style.borderColor = '';
-                }
-                
-                // Validation du mot de passe
-                if (!password) {
-                    hasErrors = true;
-                    errorMessages.push("Le mot de passe est requis");
-                    document.getElementById('admin_password').style.borderColor = 'red';
-                } else if (password.length < 8 || 
-                           !/[A-Z]/.test(password) || 
-                           !/[a-z]/.test(password) || 
-                           !/[0-9]/.test(password) || 
-                           !/[^A-Za-z0-9]/.test(password)) {
-                    hasErrors = true;
-                    errorMessages.push("Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial");
-                    document.getElementById('admin_password').style.borderColor = 'red';
-                } else {
-                    document.getElementById('admin_password').style.borderColor = '';
-                }
-                
-                // Validation de la confirmation du mot de passe
+                // Validation des mots de passe
                 if (password !== passwordConfirm) {
-                    hasErrors = true;
-                    errorMessages.push("Les mots de passe ne correspondent pas");
-                    document.getElementById('admin_password_confirm').style.borderColor = 'red';
-                } else {
-                    document.getElementById('admin_password_confirm').style.borderColor = '';
-                }
-                
-                // Validation MySQL si sélectionné
-                if (dbType === 'mysql') {
-                    const mysqlHost = document.getElementById('mysql_host').value;
-                    const mysqlDb = document.getElementById('mysql_db').value;
-                    const mysqlUser = document.getElementById('mysql_user').value;
-                    
-                    if (!mysqlHost) {
-                        hasErrors = true;
-                        errorMessages.push("L'hôte MySQL est requis");
-                        document.getElementById('mysql_host').style.borderColor = 'red';
-                    } else {
-                        document.getElementById('mysql_host').style.borderColor = '';
-                    }
-                    
-                    if (!mysqlDb) {
-                        hasErrors = true;
-                        errorMessages.push("Le nom de la base de données MySQL est requis");
-                        document.getElementById('mysql_db').style.borderColor = 'red';
-                    } else {
-                        document.getElementById('mysql_db').style.borderColor = '';
-                    }
-                    
-                    if (!mysqlUser) {
-                        hasErrors = true;
-                        errorMessages.push("L'utilisateur MySQL est requis");
-                        document.getElementById('mysql_user').style.borderColor = 'red';
-                    } else {
-                        document.getElementById('mysql_user').style.borderColor = '';
-                    }
-                }
-                
-                // Afficher les erreurs ou soumettre le formulaire
-                if (hasErrors) {
                     e.preventDefault();
-                    // Ajouter les messages d'erreur à la page
-                    const errorsContainer = document.createElement('div');
-                    errorsContainer.className = 'errors-container';
-                    errorsContainer.style.backgroundColor = '#f8d7da';
-                    errorsContainer.style.color = '#721c24';
-                    errorsContainer.style.padding = '10px';
-                    errorsContainer.style.marginBottom = '15px';
-                    errorsContainer.style.borderRadius = '4px';
-                    errorsContainer.style.border = '1px solid #f5c6cb';
-                    
-                    const errorTitle = document.createElement('h3');
-                    errorTitle.textContent = 'Veuillez corriger les erreurs suivantes :';
-                    errorTitle.style.fontSize = '16px';
-                    errorTitle.style.marginTop = '0';
-                    errorsContainer.appendChild(errorTitle);
-                    
-                    const errorList = document.createElement('ul');
-                    errorMessages.forEach(message => {
-                        const errorItem = document.createElement('li');
-                        errorItem.textContent = message;
-                        errorList.appendChild(errorItem);
-                    });
-                    errorsContainer.appendChild(errorList);
-                    
-                    // Insérer au début du formulaire
-                    const headerElement = document.querySelector('.setup-header');
-                    headerElement.insertAdjacentElement('afterend', errorsContainer);
-                    
-                    // Faire défiler vers le haut pour montrer les erreurs
-                    window.scrollTo(0, 0);
-                } else {
-                    // Tout est valide, afficher un indicateur de chargement
-                    submitBtn.textContent = "Configuration en cours...";
-                    submitBtn.style.backgroundColor = "#cccccc";
-                    submitBtn.disabled = true;
+                    alert('Les mots de passe ne correspondent pas');
+                    return;
                 }
+                
+                // Validation de la complexité du mot de passe
+                if (password.length < 8 || 
+                    !/[A-Z]/.test(password) || 
+                    !/[a-z]/.test(password) || 
+                    !/[0-9]/.test(password) || 
+                    !/[^A-Za-z0-9]/.test(password)) {
+                    e.preventDefault();
+                    alert('Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial');
+                    return;
+                }
+                
+                // Afficher un indicateur de chargement
+                submitBtn.textContent = "Configuration en cours...";
+                submitBtn.disabled = true;
             });
         });
     </script>

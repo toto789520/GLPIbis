@@ -1,184 +1,134 @@
 {% extends "base.html" %}
 
-{% block title %}Journaux d'Activité{% endblock %}
+{% block title %}Logs Système - GLPIbis{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col">
-            <h1><i class="fas fa-list-alt me-2"></i> Journaux d'Activité</h1>
-            <p class="lead">Visualisez toutes les actions effectuées dans le système.</p>
-        </div>
-        <div class="col-auto">
-            <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left"></i> Retour à l'administration
-            </a>
-        </div>
-    </div>
-
-    <!-- Filtres -->
-    <div class="card mb-4">
-        <div class="card-header bg-info text-white">
-            <h5 class="mb-0"><i class="fas fa-filter me-2"></i> Filtres</h5>
-        </div>
-        <div class="card-body">
-            <form action="{{ url_for('admin.logs') }}" method="get">
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="mb-3">
-                            <label for="user" class="form-label">Utilisateur</label>
-                            <select class="form-select" id="user" name="user">
-                                <option value="">Tous les utilisateurs</option>
-                                {% set users = get_db("SELECT ID, name FROM USEUR") %}
-                                {% for user in users %}
-                                <option value="{{ user[0] }}">{{ user[1] }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="mb-3">
-                            <label for="action" class="form-label">Type d'action</label>
-                            <select class="form-select" id="action" name="action">
-                                <option value="">Toutes les actions</option>
-                                <option value="create">Création</option>
-                                <option value="update">Modification</option>
-                                <option value="delete">Suppression</option>
-                                <option value="auth">Authentification</option>
-                                <option value="view">Consultation</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="mb-3">
-                            <label for="module" class="form-label">Module</label>
-                            <select class="form-select" id="module" name="module">
-                                <option value="">Tous les modules</option>
-                                <option value="ticket">Tickets</option>
-                                <option value="inventory">Inventaire</option>
-                                <option value="user">Utilisateurs</option>
-                                <option value="activity">Activités</option>
-                                <option value="settings">Paramètres</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="mb-3">
-                            <label for="date" class="form-label">Date</label>
-                            <input type="date" class="form-control" id="date" name="date">
-                        </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-file-alt mr-2"></i>
+                        Logs Système
+                    </h3>
+                    <div>
+                        <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i>
+                            Retour
+                        </a>
+                        <button type="button" class="btn btn-info" onclick="refreshLogs()">
+                            <i class="fas fa-sync-alt mr-1"></i>
+                            Actualiser
+                        </button>
                     </div>
                 </div>
-                <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search me-2"></i> Filtrer
-                    </button>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="logLevel">Filtrer par niveau:</label>
+                                <select class="form-control" id="logLevel" onchange="filterLogs()">
+                                    <option value="">Tous</option>
+                                    <option value="DEBUG">DEBUG</option>
+                                    <option value="INFO">INFO</option>
+                                    <option value="WARNING">WARNING</option>
+                                    <option value="ERROR">ERROR</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="searchLog">Rechercher:</label>
+                                <input type="text" class="form-control" id="searchLog" placeholder="Rechercher dans les logs..." onkeyup="searchLogs()">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if logs %}
+                    <div class="log-container" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 15px; max-height: 600px; overflow-y: auto;">
+                        <pre id="logContent" style="margin: 0; font-size: 12px; line-height: 1.4;">{% for log_line in logs %}{{ log_line }}{% endfor %}</pre>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Aucun log disponible.
+                    </div>
+                    {% endif %}
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Liste des journaux -->
-    <div class="card">
-        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i> Journal des Activités</h5>
-            <button class="btn btn-light btn-sm" onclick="exportLogs()">
-                <i class="fas fa-file-export me-1"></i> Exporter
-            </button>
-        </div>
-        <div class="card-body p-0">
-            {% if logs %}
-            <div class="table-responsive">
-                <table class="table table-striped table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Utilisateur</th>
-                            <th>Action</th>
-                            <th>Module</th>
-                            <th>Description</th>
-                            <th>Date et heure</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for log in logs %}
-                        <tr>
-                            <td>{{ log[0] }}</td>
-                            <td>{{ log[2] if log[2] else 'Utilisateur inconnu' }}</td>
-                            <td>
-                                {% if log[3] == 'create' %}
-                                    <span class="badge bg-success">Création</span>
-                                {% elif log[3] == 'update' %}
-                                    <span class="badge bg-warning text-dark">Modification</span>
-                                {% elif log[3] == 'delete' %}
-                                    <span class="badge bg-danger">Suppression</span>
-                                {% elif log[3] == 'auth' %}
-                                    <span class="badge bg-primary">Authentification</span>
-                                {% elif log[3] == 'view' %}
-                                    <span class="badge bg-info">Consultation</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ log[3] }}</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ log[4]|capitalize }}</td>
-                            <td>{{ log[5] }}</td>
-                            <td>{{ log[6] }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
             </div>
-            
-            <!-- Pagination -->
-            <div class="d-flex justify-content-center p-3">
-                <nav>
-                    <ul class="pagination">
-                        {% if page > 1 %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('admin.logs', page=page-1) }}" aria-label="Précédent">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        {% for p in range(1, total_pages + 1) %}
-                        <li class="page-item {% if p == page %}active{% endif %}">
-                            <a class="page-link" href="{{ url_for('admin.logs', page=p) }}">{{ p }}</a>
-                        </li>
-                        {% endfor %}
-                        
-                        {% if page < total_pages %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('admin.logs', page=page+1) }}" aria-label="Suivant">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            </div>
-            
-            {% else %}
-            <div class="alert alert-info m-3">
-                Aucune activité enregistrée ou correspondant aux filtres sélectionnés.
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+<style>
+.log-line {
+    margin: 0;
+    padding: 2px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.log-line:last-child {
+    border-bottom: none;
+}
+
+.log-DEBUG { color: #6c757d; }
+.log-INFO { color: #17a2b8; }
+.log-WARNING { color: #ffc107; background-color: #fff3cd; }
+.log-ERROR { color: #dc3545; background-color: #f8d7da; }
+</style>
+
 <script>
-    function exportLogs() {
-        // Récupération des paramètres actuels
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // Ajout du paramètre export
-        urlParams.set('export', 'csv');
-        
-        // Redirection vers la même page avec le paramètre d'export
-        window.location.href = "{{ url_for('admin.logs') }}?" + urlParams.toString();
+function refreshLogs() {
+    location.reload();
+}
+
+function filterLogs() {
+    const level = document.getElementById('logLevel').value;
+    const logContent = document.getElementById('logContent');
+    const lines = logContent.innerHTML.split('\n');
+    
+    let filteredLines = lines;
+    if (level) {
+        filteredLines = lines.filter(line => line.includes(' - ' + level + ' - '));
     }
+    
+    logContent.innerHTML = filteredLines.join('\n');
+}
+
+function searchLogs() {
+    const searchTerm = document.getElementById('searchLog').value.toLowerCase();
+    const logContent = document.getElementById('logContent');
+    const originalText = logContent.textContent;
+    
+    if (searchTerm === '') {
+        // Réinitialiser le contenu original
+        location.reload();
+        return;
+    }
+    
+    const lines = originalText.split('\n');
+    const filteredLines = lines.filter(line => 
+        line.toLowerCase().includes(searchTerm)
+    );
+    
+    logContent.textContent = filteredLines.join('\n');
+}
+
+// Coloration syntaxique des logs
+document.addEventListener('DOMContentLoaded', function() {
+    const logContent = document.getElementById('logContent');
+    if (logContent) {
+        let content = logContent.innerHTML;
+        
+        // Colorer les différents niveaux de log
+        content = content.replace(/( - DEBUG - .*)/g, '<span class="log-DEBUG">$1</span>');
+        content = content.replace(/( - INFO - .*)/g, '<span class="log-INFO">$1</span>');
+        content = content.replace(/( - WARNING - .*)/g, '<span class="log-WARNING">$1</span>');
+        content = content.replace(/( - ERROR - .*)/g, '<span class="log-ERROR">$1</span>');
+        
+        logContent.innerHTML = content;
+    }
+});
 </script>
 {% endblock %}

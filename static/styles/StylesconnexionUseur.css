@@ -1,9 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import 'variables.css';
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: "Montserrat", sans-serif;
+    font-family: var(--font-family-base);
 }
 
 /* Conteneur principal de connexion */
@@ -19,120 +21,134 @@
     min-height: 100vh;
     width: 100%;
     max-width: 500px;
-    padding: 30px;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: var(--spacing-xl);
+    background-color: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
     margin: 0 auto;
     text-align: center;
 }
 
 .login-header {
     text-align: center;
-    margin-bottom: 25px;
+    margin-bottom: var(--spacing-xl);
 }
 
 .login-header img {
     max-width: 120px;
-    margin-bottom: 15px;
+    margin-bottom: var(--spacing-md);
+    filter: drop-shadow(var(--shadow-sm));
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: var(--spacing-lg);
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: var(--spacing-xs);
     font-weight: 500;
+    color: var(--gray-700);
+    font-size: var(--font-size-sm);
 }
 
 .form-control {
     width: 100%;
-    padding: 12px; /* Ensure consistent height */
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px; /* Ensure consistent text size */
-    transition: border-color 0.3s ease;
+    padding: var(--spacing-md);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-base);
+    color: var(--gray-800);
+    background-color: var(--white);
+    transition: all var(--transition-speed) var(--transition-timing);
 }
 
 .form-control:focus {
-    border-color: #007bff; /* Blue border on focus */
+    border-color: var(--primary-color);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); /* Blue shadow on focus */
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 0, 123, 255), 0.25);
 }
 
 .btn-primary {
     width: 100%;
-    padding: 12px;
-    background-color: #007bff;
-    color: white;
+    padding: var(--spacing-md);
+    background-color: var(--primary-color);
+    color: var(--white);
     border: none;
-    border-radius: 4px;
-    font-size: 16px;
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-base);
+    font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all var(--transition-speed) var(--transition-timing);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-    background-color: #0069d9;
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .login-footer {
     text-align: center;
-    margin-top: 20px;
+    margin-top: var(--spacing-lg);
 }
 
 .login-footer a {
-    color: #007bff;
+    color: var(--primary-color);
     text-decoration: none;
+    font-weight: 500;
+    transition: color var(--transition-speed) var(--transition-timing);
 }
 
 .login-footer a:hover {
+    color: var(--primary-dark);
     text-decoration: underline;
 }
 
 .alert {
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 4px;
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    border-left: 4px solid transparent;
 }
 
 .alert-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background-color: rgba(var(--success-color-rgb, 40, 167, 69), 0.1);
+    color: var(--success-dark);
+    border-left-color: var(--success-color);
 }
 
 .alert-warning {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeeba;
+    background-color: rgba(var(--warning-color-rgb, 255, 193, 7), 0.1);
+    color: var(--warning-dark);
+    border-left-color: var(--warning-color);
 }
 
 .alert-error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: rgba(var(--danger-color-rgb, 220, 53, 69), 0.1);
+    color: var(--danger-dark);
+    border-left-color: var(--danger-color);
 }
 
 .onekey-benefits {
-    margin-top: 30px;
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 10px;
+    margin-top: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background-color: var(--gray-100);
+    border-radius: var(--border-radius-lg);
 }
 
 .onekey-benefits h3 {
-    color: #007bff;
-    margin-bottom: 15px;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
     text-align: center;
+    font-family: var(--font-family-heading);
 }
 
 .benefits-list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
+    gap: var(--spacing-md);
 }
 
 .benefit-item {
@@ -140,11 +156,23 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 15px;
+    padding: var(--spacing-md);
 }
 
 .benefit-icon {
     font-size: 2em;
-    color: #007bff;
-    margin-bottom: 10px;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .center-square {
+        padding: var(--spacing-lg);
+        margin: var(--spacing-md);
+    }
+    
+    .benefits-list {
+        grid-template-columns: 1fr;
+    }
 }

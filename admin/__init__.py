@@ -1,1 +1,1 @@
-# Fichier d'initialisation pour le module d'administration
+# Ce fichier rend le dossier admin un module Python

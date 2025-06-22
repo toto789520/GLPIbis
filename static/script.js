@@ -162,10 +162,187 @@ document.addEventListener("DOMContentLoaded", function() {
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
-            })
-            .catch(error => {
+            })            .catch(error => {
                 console.error('Erreur:', error);
             });
         }
-    };
+    };    // Vérification de la connexion avec health (retourne : 'status': 'ok', 'timestamp': datetime.now().isoformat()) sinon envoyer utilisateur vers la page d'attente /waiting tout les 5s
+    // Préchargement de la page waiting en cas de problème
+    const waitingUrl = '/waiting';
+    
+    // Fonction pour précharger la page waiting
+    function preloadWaitingPage() {
+        // Précharger via link prefetch
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = waitingUrl;
+        document.head.appendChild(link);
+        
+        // Précharger via fetch pour mise en cache
+        fetch(waitingUrl, { method: 'HEAD' }).catch(() => {
+            console.log('[Preload] Page waiting non accessible pour préchargement');
+        });
+    }
+    
+    // Précharger la page dès le chargement
+    preloadWaitingPage();
+      // Fonction pour rediriger vers waiting de manière fiable
+    function redirectToWaiting() {
+        try {
+            // Si service worker disponible, lui demander d'aider
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    action: 'redirect-to-waiting'
+                });
+            }
+            
+            // Essayer de rediriger normalement
+            window.location.href = waitingUrl;
+        } catch (error) {
+            // En cas d'erreur, essayer les méthodes alternatives
+            console.log('[Redirect] Erreur lors de la redirection, tentative de forçage');
+            try {
+                window.location.replace(waitingUrl);
+            } catch (replaceError) {
+                // Si tout échoue, créer une page d'attente inline
+                console.log('[Redirect] Toutes les redirections ont échoué, création inline');
+                createInlineWaitingPage();
+            }
+        }
+    }
+    
+    // Fonction pour créer une page d'attente directement dans le DOM
+    function createInlineWaitingPage() {
+        document.body.innerHTML = `
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+                    color: white;
+                }
+                .container {
+                    text-align: center;
+                    padding: 2rem;
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 15px;
+                    backdrop-filter: blur(10px);
+                    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+                }
+                .spinner {
+                    border: 4px solid rgba(255, 255, 255, 0.3);
+                    border-radius: 50%;
+                    border-top: 4px solid #fff;
+                    width: 40px;
+                    height: 40px;
+                    animation: spin 1s linear infinite;
+                    margin: 20px auto;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                .status {
+                    margin-top: 20px;
+                    font-size: 14px;
+                    opacity: 0.8;
+                }
+                .retry-count {
+                    font-size: 12px;
+                    margin-top: 10px;
+                    opacity: 0.6;
+                }
+            </style>
+            <div class="container">
+                <h1>GLPIbis</h1>
+                <div class="spinner"></div>
+                <p>Serveur indisponible - Mode d'urgence</p>
+                <p class="status" id="status">Tentative de reconnexion...</p>
+                <p class="retry-count" id="retryCount">Tentative: 1</p>
+                <p style="margin-top: 20px; font-size: 12px; opacity: 0.7;">
+                    Actualisez la page manuellement une fois le serveur redémarré
+                </p>
+            </div>
+        `;
+        
+        // Relancer la vérification de santé sur la nouvelle page
+        let retryCount = 1;
+        const maxRetries = 60;
+        
+        function updateStatus(message) {
+            const statusEl = document.getElementById('status');
+            if (statusEl) statusEl.textContent = message;
+        }
+        
+        function updateRetryCount() {
+            const retryEl = document.getElementById('retryCount');
+            if (retryEl) retryEl.textContent = `Tentative: ${retryCount}`;
+        }
+        
+        function checkServerInline() {
+            fetch('/health', { cache: 'no-cache' })
+                .then(response => {
+                    if (response.ok) {
+                        updateStatus('Serveur disponible ! Rechargement...');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        throw new Error('Serveur non disponible');
+                    }
+                })
+                .catch(error => {
+                    retryCount++;
+                    updateRetryCount();
+                    
+                    if (retryCount > maxRetries) {
+                        updateStatus('Le serveur met trop de temps à redémarrer. Veuillez actualiser manuellement.');
+                        return;
+                    }
+                    
+                    updateStatus('Serveur non disponible, nouvelle tentative dans 5s...');
+                    setTimeout(checkServerInline, 5000);
+                });
+        }
+        
+        // Commencer la vérification après 2 secondes
+        setTimeout(checkServerInline, 2000);
+    }
+    
+    // Variable pour éviter les redirections multiples
+    let isRedirecting = false;
+    
+    setInterval(function() {
+        // Éviter les redirections multiples
+        if (isRedirecting) return;
+        
+        fetch('/health')
+            .then(response => {
+                if (!response.ok) {
+                    // Si la réponse n'est pas OK (503 par exemple), rediriger vers waiting
+                    console.log('Application en pause ou erreur - redirection vers /waiting');
+                    isRedirecting = true;
+                    redirectToWaiting();
+                    return;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.status !== 'ok') {
+                    console.log('Status de santé non OK - redirection vers /waiting');
+                    isRedirecting = true;
+                    redirectToWaiting();
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la vérification de santé:', error);
+                // En cas d'erreur de connexion, rediriger vers waiting
+                isRedirecting = true;
+                redirectToWaiting();
+            });
+    }, 5000);
 });

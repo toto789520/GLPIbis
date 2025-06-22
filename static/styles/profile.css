@@ -1,0 +1,169 @@
+/* Styles pour les pages de profil utilisateur */
+
+.profile-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.profile-card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.profile-card:hover {
+    transform: translateY(-2px);
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0 auto 1rem;
+}
+
+.stats-card {
+    border-left: 4px solid #007bff;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.stats-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.form-section {
+    padding: 1.5rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    margin-bottom: 1.5rem;
+}
+
+.form-section h5 {
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.profile-actions {
+    position: sticky;
+    top: 20px;
+}
+
+.security-warning {
+    border-left: 4px solid #ffc107;
+    background: #fff3cd;
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+.password-strength {
+    height: 5px;
+    border-radius: 3px;
+    margin-top: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.password-strength.weak {
+    background: #dc3545;
+    width: 25%;
+}
+
+.password-strength.medium {
+    background: #ffc107;
+    width: 50%;
+}
+
+.password-strength.strong {
+    background: #fd7e14;
+    width: 75%;
+}
+
+.password-strength.very-strong {
+    background: #28a745;
+    width: 100%;
+}
+
+.requirement-list {
+    list-style: none;
+    padding: 0;
+}
+
+.requirement-list li {
+    padding: 0.25rem 0;
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.requirement-list li:before {
+    content: "✗";
+    position: absolute;
+    left: 0;
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.requirement-list li.valid:before {
+    content: "✓";
+    color: #28a745;
+}
+
+.btn-profile-action {
+    border-radius: 25px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-profile-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.profile-info-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.profile-info-item:last-child {
+    border-bottom: none;
+}
+
+.profile-info-label {
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.profile-info-value {
+    font-size: 1.1rem;
+    color: #212529;
+}
+
+.quick-actions-grid {
+    display: grid;
+    gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .profile-container {
+        padding: 0 1rem;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+    }
+    
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        font-size: 1.5rem;
+    }
+}

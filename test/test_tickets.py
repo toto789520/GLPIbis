@@ -11,7 +11,8 @@ sys.path.append(project_root)
 from app import app
 from utils.db_manager import get_db
 from onekey.auth import register_user
-from tickets.ticket_service import create_ticket, get_ticket_info, close_ticket, add_comment
+from tickets.ticket_service import create_ticket, get_ticket_info, close_ticket
+from tickets.comment_service import CommentService
 
 @pytest.fixture
 def client():
@@ -163,7 +164,7 @@ def test_ticket_comment(setup_test_ticket):
     
     # Ajouter un commentaire
     try:
-        result = add_comment(
+        result = CommentService.add_comment(
             ticket_id=ticket_data["ticket_id"],
             user_id=ticket_data["user_id"],
             comment_text="Voici un commentaire de test",
@@ -187,7 +188,7 @@ def test_close_ticket(setup_test_ticket):
     
     try:
         # Ajouter d'abord un commentaire (car un utilisateur doit avoir participé pour fermer)
-        add_comment(
+        CommentService.add_comment(
             ticket_id=ticket_data["ticket_id"],
             user_id=ticket_data["user_id"],
             comment_text="Voici un commentaire avant fermeture",

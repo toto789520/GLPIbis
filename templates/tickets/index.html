@@ -10,8 +10,8 @@
             <p class="lead">Gérez tous vos tickets de support depuis cette interface.</p>
         </div>
         <div class="col-auto">
-            <a href="{{ url_for('tickets.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus-circle"></i> Créer un ticket
+            <a href="{{ url_for('tickets.create_ticket') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Créer un ticket
             </a>
         </div>
     </div>
@@ -53,6 +53,7 @@
                 <div class="col-md-3">
                     <label class="form-label small text-muted">Par catégorie logicielle:</label>
                     <div class="d-flex flex-wrap gap-1">
+                        {% set software_categories = ['outlook', 'office', 'windows', 'antivirus', 'browser'] %}
                         {% for category in software_categories %}
                         <a href="{{ url_for('tickets.filter_tickets', filter_type='software_' + category) }}" 
                            class="badge bg-info text-decoration-none">
@@ -64,6 +65,7 @@
                 <div class="col-md-3">
                     <label class="form-label small text-muted">Par catégorie matérielle:</label>
                     <div class="d-flex flex-wrap gap-1">
+                        {% set hardware_categories = ['computer', 'printer', 'phone', 'network', 'server'] %}
                         {% for category in hardware_categories %}
                         <a href="{{ url_for('tickets.filter_tickets', filter_type='hardware_' + category) }}" 
                            class="badge bg-warning text-dark text-decoration-none">
@@ -119,6 +121,8 @@
                         <tr>
                             <th>#</th>
                             <th>Titre</th>
+                            <th>Créé par</th>
+                            <th>Assigné à</th>
                             <th>Date d'ouverture</th>
                             <th>Gravité</th>
                             <th>État</th>
@@ -128,11 +132,13 @@
                     <tbody>
                         {% for ticket in tickets %}
                         <tr>
-                            <td>{{ ticket[0]|string|truncate(8, True) }}</td>
-                            <td>{{ ticket[5] }}</td>
+                            <td>{{ ticket[0] }}</td>
                             <td>{{ ticket[2] }}</td>
+                            <td>{{ ticket[1] if ticket[1] else 'Utilisateur inconnu' }}</td>
+                            <td>{{ ticket[5] if ticket[5] else 'Ticket non assigné' }}</td>
+                            <td>{{ ticket[3] }}</td>
                             <td>
-                                {% set gravity = ticket[6]|int %}
+                                {% set gravity = ticket[9]|int %}
                                 <div class="d-flex align-items-center">
                                     {% for i in range(1, 6) %}
                                         {% if i <= gravity %}
@@ -144,7 +150,7 @@
                                 </div>
                             </td>
                             <td>
-                                {% if ticket[8] == 1 %}
+                                {% if ticket[7] == 1 %}
                                 <span class="badge bg-success">Ouvert</span>
                                 {% else %}
                                 <span class="badge bg-danger">Fermé</span>
@@ -166,7 +172,7 @@
                     <i class="fas fa-ticket-alt fa-5x text-muted"></i>
                 </div>
                 <p class="lead mt-3">Aucun ticket ne correspond à votre recherche.</p>
-                <a href="{{ url_for('tickets.create') }}" class="btn btn-primary mt-2">
+                <a href="{{ url_for('tickets.create_ticket') }}" class="btn btn-primary mt-2">
                     <i class="fas fa-plus"></i> Créer un nouveau ticket
                 </a>
             </div>

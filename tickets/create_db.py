@@ -2,7 +2,12 @@
 Script de création et mise à jour de la structure des tickets
 """
 import os
+import sys
 import json
+
+# Ajouter le répertoire parent au path pour permettre les imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from utils.db_manager import DBManager, get_db, init_db_manager
 
 def load_config():
@@ -66,5 +71,14 @@ def migrate_comments():
     get_db("CREATE INDEX IF NOT EXISTS idx_comment_user ON ticket_comments(user_id)")
 
 if __name__ == '__main__':
-    create_tickets_table()
-    migrate_comments()
+    print("=== CRÉATION DES TABLES TICKETS ===")
+    try:
+        create_tickets_table()
+        print("Table tickets créée avec succès")
+        
+        migrate_comments()
+        print("Table commentaires créée avec succès")
+        
+    except Exception as e:
+        print(f"Erreur lors de la création des tables: {e}")
+    print("=== FIN DE LA CRÉATION DES TABLES ===")

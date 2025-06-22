@@ -1,192 +1,240 @@
 {% extends "base.html" %}
 
-{% block title %}Inventaire du Matériel{% endblock %}
+{% block title %}Inventaire{% endblock %}
 
 {% block content %}
-<div class="inventory-container mt-4">
+<div class="container-fluid mt-4">
+    <!-- En-tête avec statistiques -->
     <div class="row mb-4">
-        <div class="col">
-            <h1>Inventaire du Matériel</h1>
-            <p class="lead">Gestion de tout le matériel de l'organisation</p>
-        </div>
-        <div class="col-auto">
-            <div class="btn-group me-2">
-                <button type="button" class="btn-inventory outline-primary dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="fas fa-file-export"></i> Exporter
-                </button>
-                <ul class="dropdown-menu">
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('inventory.export_inventory', format='csv') }}">
-                            <i class="fas fa-file-csv"></i> Format CSV
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('inventory.export_inventory', format='json') }}">
-                            <i class="fas fa-file-code"></i> Format JSON
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            <button type="button" class="btn-inventory outline-success me-2" onclick="document.getElementById('importFile').click()">
-                <i class="fas fa-file-import"></i> Importer
-            </button>
-            <a href="{{ url_for('inventory.add_hardware') }}" class="btn-inventory primary me-2">
-                <i class="fas fa-plus"></i> Ajouter du matériel
-            </a>
-            <a href="{{ url_for('inventory.generate_qr_codes') }}" class="btn-inventory outline-secondary">
-                <i class="fas fa-qrcode"></i> Générer QR codes
-            </a>
-        </div>
-    </div>
-
-    <!-- Formulaire d'import caché -->
-    <form id="importForm" action="{{ url_for('inventory.import_inventory') }}" method="post" enctype="multipart/form-data" style="display: none;">
-        <input type="file" id="importFile" name="file" accept=".csv" onchange="this.form.submit()">
-    </form>
-
-    <!-- Filtres -->
-    <div class="inventory-card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">Filtrer l'inventaire</h5>
-        </div>
-        <div class="card-body">
-            <form action="{{ url_for('inventory.index') }}" method="get" class="inventory-form">
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <label for="categorie" class="form-label">Catégorie</label>
-                        <select class="form-select" id="categorie" name="categorie">
-                            <option value="">Toutes les catégories</option>
-                            {% for cat in categories %}
-                            <option value="{{ cat[0] }}" {% if request.args.get('categorie') == cat[0]|string %}selected{% endif %}>
-                                {{ cat[1] }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label for="sous_categorie" class="form-label">Sous-catégorie</label>
-                        <select class="form-select" id="sous_categorie" name="sous_categorie">
-                            <option value="">Toutes les sous-catégories</option>
-                            <!-- Options chargées dynamiquement par JavaScript -->
-                        </select>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="search" class="form-label">Recherche</label>
-                        <input type="text" class="form-control" id="search" name="search" 
-                               value="{{ request.args.get('search', '') }}" placeholder="Nom, code QR...">
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end mb-3">
-                        <button type="submit" class="btn-inventory primary w-100">
-                            <i class="fas fa-search"></i> Filtrer
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Liste du matériel -->
-    <div class="inventory-card">
-        <div class="card-header">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h5 class="mb-0">Matériel</h5>
-                </div>
-                <div class="col-auto">
-                    <span class="badge-qr secondary">{{ hardware|length }} élément(s)</span>
-                </div>
-            </div>
-        </div>
-        <div class="card-body p-0">
-            {% if hardware and hardware|length > 0 %}
-            <div class="table-responsive">
-                <table class="inventory-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nom</th>
-                            <th>Catégorie</th>
-                            <th>Sous-catégorie</th>
-                            <th>Date d'ajout</th>
-                            <th>Code QR</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in hardware %}
-                        <tr>
-                            <td>{{ item[0] }}</td>
-                            <td>{{ item[1] }}</td>
-                            <td>{{ item[2] }}</td>
-                            <td>{{ item[3] }} / {{ item[4] }}</td>
-                            <td>{{ item[5] }}</td>
-                            <td>
-                                {% if item[6] %}
-                                <span class="badge-qr success">{{ item[6] }}</span>
-                                {% else %}
-                                <span class="badge-qr secondary">Non défini</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group">
-                                    <a href="{{ url_for('inventory.view_hardware', hardware_id=item[0]) }}" class="btn-inventory outline-primary sm">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{{ url_for('inventory.edit_hardware', hardware_id=item[0]) }}" class="btn-inventory outline-warning sm">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="{{ url_for('inventory.download_qr_code', qr_code=item[6]) }}" class="btn-inventory outline-info sm">
-                                        <i class="fas fa-qrcode"></i>
-                                    </a>
-                                    <form action="{{ url_for('inventory.delete_hardware', hardware_id=item[0]) }}" method="post" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet élément ?');">
-                                        <button type="submit" class="btn-inventory outline-danger sm">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="text-center py-5">
-                <img src="{{ url_for('static', filename='images/empty.svg') }}" alt="Aucun matériel" class="img-fluid mb-3" style="max-width: 200px;">
-                <h5>Aucun matériel trouvé</h5>
-                <p class="text-muted">Commencez par ajouter du matériel à l'inventaire.</p>
-                <a href="{{ url_for('inventory.add_hardware') }}" class="btn-inventory primary">
-                    <i class="fas fa-plus"></i> Ajouter du matériel
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-boxes"></i> Inventaire</h2>
+                <a href="{{ safe_url_for('inventory.create_item') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Ajouter un élément
                 </a>
             </div>
-            {% endif %}
+        </div>
+    </div>
+
+    <!-- Cartes de statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.total_elements }}</h4>
+                            <p class="mb-0">Total des éléments</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-boxes fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.elements_actifs }}</h4>
+                            <p class="mb-0">Éléments actifs</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.en_maintenance }}</h4>
+                            <p class="mb-0">En maintenance</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-tools fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.garantie_expiree }}</h4>
+                            <p class="mb-0">Garantie expirée</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Recherche</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search }}" placeholder="Nom, description, n° série...">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="category" class="form-label">Catégorie</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">Toutes les catégories</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat }}" {{ 'selected' if category_filter == cat else '' }}>
+                                    {{ cat }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Statut</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">Tous les statuts</option>
+                                <option value="active" {{ 'selected' if status_filter == 'active' else '' }}>Actif</option>
+                                <option value="maintenance" {{ 'selected' if status_filter == 'maintenance' else '' }}>En maintenance</option>
+                                <option value="retired" {{ 'selected' if status_filter == 'retired' else '' }}>Retiré</option>
+                                <option value="storage" {{ 'selected' if status_filter == 'storage' else '' }}>En stock</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Rechercher
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des éléments -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        Éléments d'inventaire 
+                        {% if inventory_items %}
+                            ({{ inventory_items|length }} résultat{% if inventory_items|length > 1 %}s{% endif %})
+                        {% else %}
+                            (0 résultats)
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if inventory_items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th>Catégorie</th>
+                                        <th>Emplacement</th>
+                                        <th>Statut</th>
+                                        <th>N° Série</th>
+                                        <th>Garantie</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in inventory_items %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ item[1] }}</strong>
+                                            {% if item[8] %}
+                                            <br><small class="text-muted">{{ item[8][:50] }}{% if item[8]|length > 50 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ item[2] }}</span>
+                                        </td>
+                                        <td>{{ item[3] or '<span class="text-muted">Non défini</span>' | safe }}</td>
+                                        <td>
+                                            {% if item[4] == 'active' %}
+                                                <span class="badge bg-success">Actif</span>
+                                            {% elif item[4] == 'maintenance' %}
+                                                <span class="badge bg-warning">En maintenance</span>
+                                            {% elif item[4] == 'retired' %}
+                                                <span class="badge bg-danger">Retiré</span>
+                                            {% elif item[4] == 'storage' %}
+                                                <span class="badge bg-secondary">En stock</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ item[4] }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ item[5] or '<span class="text-muted">Non renseigné</span>' | safe }}</td>
+                                        <td>
+                                            {% if item[7] %}
+                                                {{ item[7] }}
+                                                {% if item[7] < now.strftime('%Y-%m-%d') %}
+                                                    <span class="badge bg-danger ms-1">Expirée</span>
+                                                {% else %}
+                                                    <span class="badge bg-success ms-1">Active</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">Non renseigné</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{{ safe_url_for('inventory.view_item', item_id=item[0]) }}" 
+                                                   class="btn btn-outline-primary" title="Voir">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ safe_url_for('inventory.edit_item', item_id=item[0]) }}" 
+                                                   class="btn btn-outline-warning" title="Modifier">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <h5>Aucun élément trouvé</h5>
+                            <p class="text-muted">Aucun élément ne correspond à vos critères de recherche.</p>
+                            <a href="{{ safe_url_for('inventory.create_item') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Ajouter le premier élément
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- JavaScript pour la gestion dynamique des sous-catégories -->
 <script>
-document.getElementById('categorie').addEventListener('change', function() {
-    const categorieId = this.value;
-    const sousCategorie = document.getElementById('sous_categorie');
-    
-    // Vider les options actuelles
-    sousCategorie.innerHTML = '<option value="">Toutes les sous-catégories</option>';
-    
-    if (categorieId) {
-        // Faire une requête AJAX pour obtenir les sous-catégories
-        fetch(`/inventory/api/sous_categories/${categorieId}`)
-            .then(response => response.json())
-            .then(data => {
-                data.sous_categories.forEach(sc => {
-                    const option = document.createElement('option');
-                    option.value = sc[0];
-                    option.textContent = sc[1];
-                    sousCategorie.appendChild(option);
-                });
-            })
-            .catch(error => console.error('Erreur:', error));
-    }
+// Auto-submit du formulaire de recherche avec un délai
+let searchTimeout;
+document.getElementById('search').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        this.form.submit();
+    }, 500);
 });
 </script>
 {% endblock %}

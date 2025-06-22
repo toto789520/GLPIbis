@@ -1,595 +1,303 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, Response, send_file
-from utils.db_manager import get_db, log_activity
-from .inventory_service import (add_item, delete_item, get_categories, get_sous_categories, 
-                              get_sous_sous_categories, list_items, get_item_by_id,
-                              add_location, get_locations, update_item_location,
-                              create_loan, return_item, get_active_loans, get_item_loan_history,
-                              add_intervention, get_item_interventions, close_intervention,
-                              export_inventory_csv, export_inventory_json, import_inventory_csv)
-from .qr_service import QRCodeService
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
+from utils.db_manager import get_db
+import logging
+app_logger = logging.getLogger("inventory")
 from datetime import datetime
+import traceback
+from inventory.qr_service import QRCodeService
 import os
 
-# Création du Blueprint pour les routes liées à l'inventaire
-inventory_bp = Blueprint('inventory', __name__, template_folder='templates')
-qr_service = QRCodeService(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static'))
+inventory_bp = Blueprint('inventory', __name__, url_prefix='/inventory')
 
 @inventory_bp.route('/')
 def index():
-    """Page principale de l'inventaire"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    # Récupérer les catégories et le matériel
-    categories = get_categories()
-    print(f"DEBUG - Catégories trouvées: {len(categories) if categories else 0}")
-    
-    sous_categories = {}
-    sous_sous_categories = {}
-    hardware = []
-    
-    if categories:
-        sous_categories = get_sous_categories(categories[0][0]) if categories else []
-        print(f"DEBUG - Sous-catégories trouvées: {len(sous_categories) if sous_categories else 0}")
-        
-        if sous_categories:
-            sous_sous_categories = get_sous_sous_categories(sous_categories[0][0])
-            print(f"DEBUG - Sous-sous-catégories trouvées: {len(sous_sous_categories) if sous_sous_categories else 0}")
-    
-    # Liste de tous les équipements
-    hardware = list_items()
-    print(f"DEBUG - Matériel trouvé: {len(hardware) if hardware else 0}")
-    
-    # Conversion de sous_categories en dictionnaire pour le template
-    sous_cat_dict = {}
-    for cat in categories:
-        cat_id = cat[0]
-        cat_sous = get_sous_categories(cat_id)
-        sous_cat_dict[cat_id] = cat_sous
-    
-    return render_template('inventory/index.html',
-                          categories=categories,
-                          sous_categories=sous_cat_dict,
-                          sous_sous_categories=sous_sous_categories,
-                          hardware=hardware,
-                          now=datetime.now())
-
-@inventory_bp.route('/add', methods=['GET', 'POST'])
-def add():
-    """Ajouter un nouvel élément à l'inventaire - redirection vers add_hardware"""
-    # Rediriger vers la nouvelle version de l'interface d'ajout
-    return redirect(url_for('inventory.add_hardware'))
-
-@inventory_bp.route('/delete', methods=['POST'])
-def delete():
-    """Supprimer un élément de l'inventaire"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    item_id = request.form.get('id')
-    if not item_id:
-        flash("ID de matériel non fourni", "error")
-        return redirect(url_for('inventory.index'))
-    
+    """Page d'accueil de l'inventaire"""
     try:
-        item = get_item_by_id(item_id)
-        if not item:
-            flash("Matériel introuvable", "error")
-            return redirect(url_for('inventory.index'))
+        app_logger.debug("DEBUG - inventory.index: Affichage de la page d'inventaire")
         
-        delete_item(item_id)
-        log_activity(user_id, 'delete', 'inventory', f"Matériel supprimé: {item[0]}")
-        flash("Matériel supprimé avec succès!", "success")
-    except Exception as e:
-        flash(f"Erreur lors de la suppression: {str(e)}", "error")
-    
-    return redirect(url_for('inventory.index'))
-
-@inventory_bp.route('/api/categories')
-def api_categories():
-    """API pour récupérer les catégories"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Non autorisé'}), 401
-    
-    categories = get_categories()
-    return jsonify({'categories': categories})
-
-@inventory_bp.route('/api/sous_categories/<int:categorie_id>')
-def api_sous_categories(categorie_id):
-    """API pour récupérer les sous-catégories d'une catégorie"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Non autorisé'}), 401
-    
-    sous_categories = get_sous_categories(categorie_id)
-    return jsonify({'sous_categories': sous_categories})
-
-@inventory_bp.route('/api/sous_sous_categories/<int:sous_categorie_id>')
-def api_sous_sous_categories(sous_categorie_id):
-    """API pour récupérer les sous-sous-catégories d'une sous-catégorie"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Non autorisé'}), 401
-    
-    sous_sous_categories = get_sous_sous_categories(sous_categorie_id)
-    return jsonify({'sous_sous_categories': sous_sous_categories})
-
-@inventory_bp.route('/api/items')
-def api_items():
-    """API pour récupérer la liste du matériel (utilisé par d'autres modules)"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Non autorisé'}), 401
-    
-    items = list_items()
-    return jsonify({'items': items})
-
-# Ajout des routes pour les pages créées précédemment
-@inventory_bp.route('/add_hardware', methods=['GET', 'POST'])
-def add_hardware():
-    """Ajouter un nouveau matériel (route pour le nouveau template)"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    # Code similaire à add() mais adapté au nouveau template
-    categories = get_categories()
-    sous_categories = {}
-    sous_sous_categories = {}
-    
-    # Préparer les données pour le javascript (structure de sous-catégories)
-    for cat in categories:
-        sous_cats = get_sous_categories(cat[0])
-        sous_categories[cat[0]] = sous_cats
-        
-        for sous_cat in sous_cats:
-            sous_sous_cats = get_sous_sous_categories(sous_cat[0])
-            sous_sous_categories[sous_cat[0]] = sous_sous_cats
-    
-    # POST - Traitement du formulaire
-    if request.method == 'POST':
-        try:
-            # Récupérer les données du formulaire
-            nom = request.form.get('nom')
-            categorie = request.form.get('categorie')
-            sous_categorie = request.form.get('sous_categorie')
-            sous_sous_categorie = request.form.get('sous_sous_categorie')
-            date_creation = request.form.get('date_creation')
-            qr_code = request.form.get('qr_code')
-            description = request.form.get('description')
-            
-            print(f"DEBUG - Données soumises: nom={nom}, cat={categorie}, sous_cat={sous_categorie}, sous_sous_cat={sous_sous_categorie}")
-            
-            # Validation des données
-            if not all([nom, categorie, sous_categorie, sous_sous_categorie, date_creation]):
-                flash("Veuillez remplir tous les champs obligatoires", "error")
-                return render_template('inventory/add_hardware.html',
-                                      categories=categories,
-                                      sous_categories=sous_categories,
-                                      sous_sous_categories=sous_sous_categories,
-                                      today=datetime.now().strftime('%Y-%m-%d'),
-                                      now=datetime.now())
-            
-            # Ajouter le matériel à la base de données
-            item_id = add_item(nom, int(categorie), int(sous_categorie), int(sous_sous_categorie), 
-                              date_creation=date_creation, qr_code=qr_code)
-            
-            # Enregistrer l'activité
-            log_activity(user_id, 'create', 'inventory', f"Matériel ajouté: {nom}")
-            
-            # Message de confirmation
-            flash("Matériel ajouté avec succès!", "success")
-            
-            # Rediriger vers la page de détails du nouveau matériel
-            return redirect(url_for('inventory.view_hardware', hardware_id=item_id))
-            
-        except Exception as e:
-            flash(f"Erreur lors de l'ajout du matériel: {str(e)}", "error")
-            print(f"ERREUR - Ajout matériel: {str(e)}")
-    
-    return render_template('inventory/add_hardware.html',
-                          categories=categories,
-                          sous_categories=sous_categories,
-                          sous_sous_categories=sous_sous_categories,
-                          today=datetime.now().strftime('%Y-%m-%d'),
-                          now=datetime.now())
-
-@inventory_bp.route('/view_hardware/<int:hardware_id>')
-def view_hardware(hardware_id):
-    """Afficher les détails d'un matériel"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    # TODO: Récupérer les détails du matériel
-    hardware = [hardware_id, f"Matériel #{hardware_id}", "Ordinateur", "Portable", "Dell", "2023-01-01", "ABC123"]
-    
-    return render_template('inventory/view_hardware.html',
-                          hardware=hardware,
-                          description="Description de l'équipement...",
-                          caracteristiques=[["Processeur", "Intel i7"], ["RAM", "16 Go"], ["SSD", "512 Go"]],
-                          tickets=[],
-                          historique=[],
-                          now=datetime.now())
-
-@inventory_bp.route('/generate_qr_codes')
-def generate_qr_codes():
-    """Générer des QR codes pour le matériel"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    # TODO: Implémenter la génération de QR codes
-    flash("Fonctionnalité de génération de QR codes en développement", "info")
-    return redirect(url_for('inventory.index'))
-
-@inventory_bp.route('/edit_hardware/<int:hardware_id>', methods=['GET', 'POST'])
-def edit_hardware(hardware_id):
-    """Modifier un matériel existant"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    # TODO: Implémenter l'édition
-    flash("Fonctionnalité d'édition en développement", "info")
-    return redirect(url_for('inventory.view_hardware', hardware_id=hardware_id))
-
-@inventory_bp.route('/delete_hardware/<int:hardware_id>', methods=['POST'])
-def delete_hardware(hardware_id):
-    """Supprimer un matériel"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    try:
-        # Réutiliser la fonction delete_item
-        delete_item(hardware_id)
-        log_activity(user_id, 'delete', 'inventory', f"Matériel supprimé: ID {hardware_id}")
-        flash("Matériel supprimé avec succès!", "success")
-    except Exception as e:
-        flash(f"Erreur lors de la suppression: {str(e)}", "error")
-    
-    return redirect(url_for('inventory.index'))
-
-@inventory_bp.route('/download_qr_code/<string:qr_code>')
-def download_qr_code(qr_code):
-    """Télécharger le QR code d'un équipement"""
-    import qrcode
-    import io
-    import base64
-    from flask import send_file
-    
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    # Créer un QR code avec les données fournies
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    qr.add_data(qr_code)
-    qr.make(fit=True)
-    
-    # Générer l'image
-    img = qr.make_image(fill_color="black", back_color="white")
-    
-    # Sauvegarder l'image dans un buffer
-    img_buffer = io.BytesIO()
-    img.save(img_buffer, format='PNG')
-    img_buffer.seek(0)
-    
-    # Enregistrer cette activité
-    log_activity(user_id, 'download', 'inventory', f"Téléchargement QR code: {qr_code}")
-    
-    # Envoyer le fichier au client
-    return send_file(img_buffer, mimetype='image/png', as_attachment=True, 
-                     download_name=f'qr_code_{qr_code}.png')
-
-@inventory_bp.route('/hardware/<int:hardware_id>/qr')
-def generate_qr(hardware_id):
-    """Génère un QR code pour un équipement"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    try:
-        # Récupérer les informations de l'équipement
-        hardware = get_db("""
-            SELECT * FROM HARDWARE WHERE id = %s
-        """, (hardware_id,))
-        
-        if not hardware:
-            flash("Équipement non trouvé", "error")
-            return redirect(url_for('inventory.index'))
-        
-        # Générer le QR code
-        filename = qr_service.generate_qr_code(hardware_id, hardware[0])
-        
-        # Log de l'action
-        log_activity(user_id, 'generate_qr', 'inventory', f"Génération QR code pour l'équipement {hardware_id}")
-        
-        return send_file(
-            os.path.join(qr_service.qr_folder, filename),
-            mimetype='image/png',
-            as_attachment=True,
-            download_name=filename
-        )
-        
-    except Exception as e:
-        flash(f"Erreur lors de la génération du QR code : {str(e)}", "error")
-        return redirect(url_for('inventory.index'))
-
-@inventory_bp.route('/hardware/<int:hardware_id>/label')
-def generate_label(hardware_id):
-    """Génère une étiquette avec QR code pour l'impression"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    try:
-        # Récupérer les informations de l'équipement
-        hardware = get_db("""
-            SELECT * FROM HARDWARE WHERE id = %s
-        """, (hardware_id,))
-        
-        if not hardware:
-            flash("Équipement non trouvé", "error")
-            return redirect(url_for('inventory.index'))
-        
-        # Formater les informations pour l'étiquette
-        hardware_info = {
-            'id': hardware[0][0],
-            'name': hardware[0][1],
-            'type': hardware[0][2],
-            'status': hardware[0][3]
+        # Récupérer les statistiques de l'inventaire
+        stats = {
+            'total_elements': 0,
+            'elements_actifs': 0,
+            'en_maintenance': 0,
+            'garantie_expiree': 0
         }
         
-        # Générer l'étiquette
-        filename = qr_service.generate_qr_label(hardware_info)
+        try:
+            # Vérifier si la table inventory existe, sinon la créer
+            get_db("""
+                CREATE TABLE IF NOT EXISTS inventory (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    location TEXT,
+                    status TEXT DEFAULT 'active',
+                    serial_number TEXT,
+                    purchase_date DATE,
+                    warranty_end DATE,
+                    description TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Récupérer les statistiques
+            total_result = get_db("SELECT COUNT(*) FROM inventory")
+            stats['total_elements'] = total_result[0][0] if total_result else 0
+            
+            active_result = get_db("SELECT COUNT(*) FROM inventory WHERE status = 'active'")
+            stats['elements_actifs'] = active_result[0][0] if active_result else 0
+            
+            maintenance_result = get_db("SELECT COUNT(*) FROM inventory WHERE status = 'maintenance'")
+            stats['en_maintenance'] = maintenance_result[0][0] if maintenance_result else 0
+            
+            expired_result = get_db("SELECT COUNT(*) FROM inventory WHERE warranty_end < date('now') AND warranty_end IS NOT NULL")
+            stats['garantie_expiree'] = expired_result[0][0] if expired_result else 0
+            
+        except Exception as db_error:
+            app_logger.error(f"Erreur lors de la récupération des statistiques: {str(db_error)}")
         
-        # Log de l'action
-        log_activity(user_id, 'generate_label', 'inventory', f"Génération étiquette pour l'équipement {hardware_id}")
+        # Récupérer les éléments d'inventaire avec recherche et filtres
+        search = request.args.get('search', '')
+        category_filter = request.args.get('category', '')
+        status_filter = request.args.get('status', '')
         
-        return send_file(
-            os.path.join(qr_service.qr_folder, filename),
-            mimetype='image/png',
-            as_attachment=True,
-            download_name=filename
-        )
+        query = "SELECT * FROM inventory WHERE 1=1"
+        params = []
         
+        if search:
+            query += " AND (name LIKE ? OR description LIKE ? OR serial_number LIKE ?)"
+            search_param = f"%{search}%"
+            params.extend([search_param, search_param, search_param])
+        
+        if category_filter:
+            query += " AND category = ?"
+            params.append(category_filter)
+        
+        if status_filter:
+            query += " AND status = ?"
+            params.append(status_filter)
+        
+        query += " ORDER BY created_at DESC"
+        
+        inventory_items = get_db(query, params) or []
+        
+        # Traiter les dates pour éviter les erreurs de comparaison
+        processed_items = []
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        
+        for item in inventory_items:
+            # Convertir l'item en liste pour pouvoir le modifier
+            item_list = list(item)
+            
+            # Vérifier et traiter la date de garantie (index 7)
+            if item_list[7]:
+                try:
+                    # S'assurer que la date est dans le bon format
+                    warranty_date = item_list[7]
+                    if isinstance(warranty_date, str):
+                        # Valider le format de date
+                        datetime.strptime(warranty_date, '%Y-%m-%d')
+                except (ValueError, TypeError):
+                    # Si la date n'est pas valide, la mettre à None
+                    item_list[7] = None
+                    app_logger.warning(f"Date de garantie invalide pour l'item {item_list[0]}: {warranty_date}")
+            
+            processed_items.append(item_list)
+        
+        # Récupérer les catégories disponibles pour les filtres
+        categories = get_db("SELECT DISTINCT category FROM inventory ORDER BY category") or []
+        category_list = [cat[0] for cat in categories]
+        
+        return render_template('inventory/index.html', 
+                             inventory_items=processed_items,
+                             stats=stats,
+                             categories=category_list,
+                             search=search,
+                             category_filter=category_filter,
+                             status_filter=status_filter,
+                             current_date=current_date)
+                             
     except Exception as e:
-        flash(f"Erreur lors de la génération de l'étiquette : {str(e)}", "error")
-        return redirect(url_for('inventory.index'))
+        app_logger.error(f"Erreur dans inventory.index: {str(e)}")
+        app_logger.error(traceback.format_exc())
+        flash(f"Erreur lors du chargement de l'inventaire: {str(e)}", "error")
+        return render_template('inventory/index.html', 
+                             inventory_items=[],
+                             stats={'total_elements': 0, 'elements_actifs': 0, 'en_maintenance': 0, 'garantie_expiree': 0},
+                             categories=[],
+                             current_date=datetime.now().strftime('%Y-%m-%d'))
 
-@inventory_bp.route('/scan', methods=['GET', 'POST'])
-def scan_qr():
-    """Page de scan de QR code"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
+@inventory_bp.route('/create', methods=['GET', 'POST'])
+def create_item():
+    """Créer un nouvel élément d'inventaire"""
     if request.method == 'POST':
         try:
-            if 'qr_image' not in request.files:
-                flash("Aucune image fournie", "error")
-                return redirect(request.url)
+            name = request.form.get('name')
+            category = request.form.get('category')
+            location = request.form.get('location')
+            status = request.form.get('status', 'active')
+            serial_number = request.form.get('serial_number')
+            purchase_date = request.form.get('purchase_date')
+            warranty_end = request.form.get('warranty_end')
+            description = request.form.get('description')
             
-            file = request.files['qr_image']
-            if file.filename == '':
-                flash("Aucun fichier sélectionné", "error")
-                return redirect(request.url)
+            if not name or not category:
+                flash("Le nom et la catégorie sont obligatoires", "error")
+                return render_template('inventory/create.html')
             
+            # Insérer le nouvel élément
+            get_db("""
+                INSERT INTO inventory (name, category, location, status, serial_number, 
+                                     purchase_date, warranty_end, description)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (name, category, location, status, serial_number, 
+                  purchase_date if purchase_date else None,
+                  warranty_end if warranty_end else None,
+                  description))
+            
+            app_logger.info(f"Nouvel élément d'inventaire créé: {name}")
+            flash(f"Élément '{name}' ajouté avec succès à l'inventaire", "success")
+            return redirect(url_for('inventory.index'))
+            
+        except Exception as e:
+            app_logger.error(f"Erreur lors de la création de l'élément: {str(e)}")
+            flash(f"Erreur lors de la création: {str(e)}", "error")
+    
+    return render_template('inventory/create.html')
+
+@inventory_bp.route('/item/<int:item_id>')
+def view_item(item_id):
+    """Voir les détails d'un élément d'inventaire"""
+    try:
+        item = get_db("SELECT * FROM inventory WHERE id = ?", (item_id,))
+        if not item:
+            flash("Élément non trouvé", "error")
+            return redirect(url_for('inventory.index'))
+        
+        return render_template('inventory/view.html', item=item[0])
+        
+    except Exception as e:
+        app_logger.error(f"Erreur lors de la visualisation de l'élément {item_id}: {str(e)}")
+        flash(f"Erreur lors du chargement: {str(e)}", "error")
+        return redirect(url_for('inventory.index'))
+
+@inventory_bp.route('/item/<int:item_id>/edit', methods=['GET', 'POST'])
+def edit_item(item_id):
+    """Modifier un élément d'inventaire"""
+    try:
+        item = get_db("SELECT * FROM inventory WHERE id = ?", (item_id,))
+        if not item:
+            flash("Élément non trouvé", "error")
+            return redirect(url_for('inventory.index'))
+        
+        if request.method == 'POST':
+            name = request.form.get('name')
+            category = request.form.get('category')
+            location = request.form.get('location')
+            status = request.form.get('status')
+            serial_number = request.form.get('serial_number')
+            purchase_date = request.form.get('purchase_date')
+            warranty_end = request.form.get('warranty_end')
+            description = request.form.get('description')
+            
+            if not name or not category:
+                flash("Le nom et la catégorie sont obligatoires", "error")
+                return render_template('inventory/edit.html', item=item[0])
+            
+            # Mettre à jour l'élément
+            get_db("""
+                UPDATE inventory 
+                SET name = ?, category = ?, location = ?, status = ?, 
+                    serial_number = ?, purchase_date = ?, warranty_end = ?, description = ?
+                WHERE id = ?
+            """, (name, category, location, status, serial_number,
+                  purchase_date if purchase_date else None,
+                  warranty_end if warranty_end else None,
+                  description, item_id))
+            
+            app_logger.info(f"Élément d'inventaire {item_id} modifié: {name}")
+            flash(f"Élément '{name}' modifié avec succès", "success")
+            return redirect(url_for('inventory.view_item', item_id=item_id))
+        
+        return render_template('inventory/edit.html', item=item[0])
+        
+    except Exception as e:
+        app_logger.error(f"Erreur lors de la modification de l'élément {item_id}: {str(e)}")
+        flash(f"Erreur lors de la modification: {str(e)}", "error")
+        return redirect(url_for('inventory.index'))
+
+@inventory_bp.route('/generate-qr/<int:item_id>', methods=['POST'])
+def generate_qr_code(item_id):
+    """Génère un QR code pour un équipement"""
+    try:
+        # Récupérer les informations de l'équipement depuis inventory
+        item = get_db("SELECT * FROM inventory WHERE id = ?", (item_id,))
+        
+        if not item:
+            return jsonify({'success': False, 'error': 'Équipement non trouvé'}), 404
+        
+        # Initialiser le service QR
+        static_folder = current_app.static_folder
+        qr_service = QRCodeService(static_folder)
+        
+        # Préparer les informations de l'équipement
+        equipment_info = {
+            'id': item[0][0],
+            'name': item[0][1],
+            'category': item[0][2],
+            'location': item[0][3],
+            'status': item[0][4],
+            'serial': item[0][5],
+            'purchase_date': item[0][6],
+            'warranty_end': item[0][7],
+            'created_at': item[0][9]
+        }
+        
+        # Générer le QR code simple
+        filename = qr_service.generate_qr_code(equipment_info['id'], equipment_info['name'])
+        
+        # Générer aussi l'étiquette complète
+        label_filename = qr_service.generate_qr_label(equipment_info)
+        
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'label_filename': label_filename,
+            'message': f'QR code généré pour {equipment_info["name"]}'
+        })
+        
+    except Exception as e:
+        app_logger.error(f"Erreur lors de la génération du QR code: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@inventory_bp.route('/scan-qr', methods=['GET', 'POST'])
+def scan_qr():
+    """Page de scan de QR codes"""
+    if request.method == 'POST':
+        if 'qr_image' not in request.files:
+            return jsonify({'success': False, 'error': 'Aucun fichier fourni'}), 400
+        
+        file = request.files['qr_image']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'Aucun fichier sélectionné'}), 400
+        
+        try:
             # Lire le QR code
+            static_folder = current_app.static_folder
+            qr_service = QRCodeService(static_folder)
+            
             hardware_id = qr_service.get_qr_info(file.read())
             
             if hardware_id:
-                # Log de l'action
-                log_activity(user_id, 'scan_qr', 'inventory', f"Scan QR code pour l'équipement {hardware_id}")
-                return redirect(url_for('inventory.view_hardware', hardware_id=hardware_id))
+                return jsonify({
+                    'success': True,
+                    'hardware_id': hardware_id,
+                    'redirect_url': f'/inventory/item/{hardware_id}'
+                })
             else:
-                flash("Aucun QR code valide détecté", "error")
-                return redirect(request.url)
-            
+                return jsonify({'success': False, 'error': 'QR code non reconnu'}), 400
+                
         except Exception as e:
-            flash(f"Erreur lors du scan du QR code : {str(e)}", "error")
-            return redirect(request.url)
+            return jsonify({'success': False, 'error': str(e)}), 500
     
     return render_template('inventory/scan_qr.html')
-
-# Routes pour la localisation
-@inventory_bp.route('/locations', methods=['GET', 'POST'])
-def locations():
-    """Gérer les localisations"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        batiment = request.form.get('batiment')
-        etage = request.form.get('etage')
-        salle = request.form.get('salle')
-        description = request.form.get('description')
-        
-        try:
-            location_id = add_location(batiment, etage, salle, description)
-            flash("Localisation ajoutée avec succès!", "success")
-        except Exception as e:
-            flash(f"Erreur lors de l'ajout de la localisation: {str(e)}", "error")
-    
-    locations = get_locations()
-    return render_template('inventory/locations.html', locations=locations)
-
-@inventory_bp.route('/item/<int:item_id>/location', methods=['POST'])
-def update_location(item_id):
-    """Mettre à jour la localisation d'un matériel"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    location_id = request.form.get('location_id')
-    try:
-        update_item_location(item_id, location_id)
-        flash("Localisation mise à jour avec succès!", "success")
-    except Exception as e:
-        flash(f"Erreur lors de la mise à jour de la localisation: {str(e)}", "error")
-    
-    return redirect(url_for('inventory.view_hardware', hardware_id=item_id))
-
-# Routes pour les prêts
-@inventory_bp.route('/loans')
-def loans():
-    """Liste des prêts en cours"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    active_loans = get_active_loans()
-    return render_template('inventory/loans.html', loans=active_loans)
-
-@inventory_bp.route('/item/<int:item_id>/loan', methods=['GET', 'POST'])
-def loan_item(item_id):
-    """Emprunter un matériel"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        return_date = request.form.get('return_date')
-        notes = request.form.get('notes')
-        
-        try:
-            create_loan(item_id, user_id, return_date, notes)
-            flash("Prêt enregistré avec succès!", "success")
-        except Exception as e:
-            flash(f"Erreur lors de l'enregistrement du prêt: {str(e)}", "error")
-    
-    return redirect(url_for('inventory.view_hardware', hardware_id=item_id))
-
-@inventory_bp.route('/loan/<int:loan_id>/return', methods=['POST'])
-def return_loan(loan_id):
-    """Retourner un matériel emprunté"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    try:
-        return_item(loan_id)
-        flash("Retour enregistré avec succès!", "success")
-    except Exception as e:
-        flash(f"Erreur lors de l'enregistrement du retour: {str(e)}", "error")
-    
-    return redirect(url_for('inventory.loans'))
-
-# Routes pour les interventions
-@inventory_bp.route('/item/<int:item_id>/intervention', methods=['POST'])
-def add_item_intervention(item_id):
-    """Ajouter une intervention sur un matériel"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    type_intervention = request.form.get('type')
-    description = request.form.get('description')
-    
-    try:
-        add_intervention(item_id, user_id, type_intervention, description)
-        flash("Intervention enregistrée avec succès!", "success")
-    except Exception as e:
-        flash(f"Erreur lors de l'enregistrement de l'intervention: {str(e)}", "error")
-    
-    return redirect(url_for('inventory.view_hardware', hardware_id=item_id))
-
-@inventory_bp.route('/intervention/<int:intervention_id>/close', methods=['POST'])
-def close_item_intervention(intervention_id):
-    """Terminer une intervention"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    try:
-        close_intervention(intervention_id)
-        flash("Intervention terminée avec succès!", "success")
-    except Exception as e:
-        flash(f"Erreur lors de la clôture de l'intervention: {str(e)}", "error")
-    
-    return redirect(request.referrer or url_for('inventory.index'))
-
-# Routes pour l'import/export
-@inventory_bp.route('/export/<format>')
-def export_inventory(format):
-    """Exporter l'inventaire (CSV ou JSON)"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    try:
-        if format == 'csv':
-            output = export_inventory_csv()
-            mimetype = 'text/csv'
-            filename = 'inventaire.csv'
-        elif format == 'json':
-            output = export_inventory_json()
-            mimetype = 'application/json'
-            filename = 'inventaire.json'
-        else:
-            flash("Format d'export non supporté", "error")
-            return redirect(url_for('inventory.index'))
-        
-        # Log de l'activité
-        log_activity(user_id, 'export', 'inventory', f"Export {format.upper()} de l'inventaire")
-        
-        # Envoyer le fichier
-        return Response(
-            output,
-            mimetype=mimetype,
-            headers={'Content-Disposition': f'attachment;filename={filename}'}
-        )
-        
-    except Exception as e:
-        flash(f"Erreur lors de l'export: {str(e)}", "error")
-        return redirect(url_for('inventory.index'))
-
-@inventory_bp.route('/import', methods=['POST'])
-def import_inventory():
-    """Importer l'inventaire depuis un fichier CSV"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect(url_for('login'))
-    
-    if 'file' not in request.files:
-        flash("Aucun fichier sélectionné", "error")
-        return redirect(url_for('inventory.index'))
-    
-    file = request.files['file']
-    if file.filename == '':
-        flash("Aucun fichier sélectionné", "error")
-        return redirect(url_for('inventory.index'))
-    
-    if not file.filename.endswith('.csv'):
-        flash("Format de fichier non supporté. Utilisez un fichier CSV.", "error")
-        return redirect(url_for('inventory.index'))
-    
-    try:
-        file_content = file.read().decode('utf-8')
-        imported_count, errors = import_inventory_csv(file_content)
-        
-        # Log de l'activité
-        log_activity(user_id, 'import', 'inventory', f"Import CSV: {imported_count} éléments importés")
-        
-        if errors:
-            flash(f"Import terminé avec {len(errors)} erreurs. {imported_count} éléments importés.", "warning")
-            for error in errors:
-                flash(error, "error")
-        else:
-            flash(f"Import terminé avec succès. {imported_count} éléments importés.", "success")
-            
-    except Exception as e:
-        flash(f"Erreur lors de l'import: {str(e)}", "error")
-    
-    return redirect(url_for('inventory.index'))

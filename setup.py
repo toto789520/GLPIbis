@@ -53,16 +53,17 @@ def set_up_database():
     print(get_db('''
         CREATE TABLE IF NOT EXISTS `tiqué` (
         `ID_tiqué` INTEGER PRIMARY KEY AUTOINCREMENT,
-        `id_creator` VARCHAR(255) NOT NULL,
+        `ID_user` VARCHAR(255) NOT NULL,
         `titre` VARCHAR(255) NOT NULL,
-        `date_creation` DATE NOT NULL,
-        `date_resolution` DATE,
-        `date_cloture` DATE,
+        `date_open` DATE NOT NULL,
+        `date_close` DATE,
+        `ID_technicien` VARCHAR(255),
         `description` TEXT NOT NULL,
-        `priorite` INTEGER NOT NULL DEFAULT 1,
-        `tags` TEXT,
-        `statut` INTEGER NOT NULL DEFAULT 1,
-        FOREIGN KEY (`id_creator`) REFERENCES `USEUR`(`ID`)
+        `open` INTEGER NOT NULL DEFAULT 1,
+        `tag` TEXT,
+        `gravite` INTEGER NOT NULL DEFAULT 1,
+        FOREIGN KEY (`ID_user`) REFERENCES `USEUR`(`ID`),
+        FOREIGN KEY (`ID_technicien`) REFERENCES `USEUR`(`ID`)
         );
     '''))
 

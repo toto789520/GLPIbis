@@ -9,6 +9,29 @@ logger = logging.getLogger('glpibis')
 
 class CommentService:
     @staticmethod
+    def ensure_comments_table():
+        """
+        S'assure que la table ticket_comments existe
+        """
+        try:
+            get_db("""
+                CREATE TABLE IF NOT EXISTS ticket_comments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ticket_id INTEGER NOT NULL,
+                    user_id TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    gravite INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (ticket_id) REFERENCES tiqué(ID_tiqué) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES USEUR(ID)
+                )
+            """)
+            logger.info("Table ticket_comments créée ou vérifiée avec succès")
+        except Exception as e:
+            logger.error(f"Erreur lors de la création de la table ticket_comments: {str(e)}")
+            raise
+
+    @staticmethod
     def add_comment(ticket_id, user_id, content, gravite=0):
         """
         Ajoute un commentaire à un ticket
@@ -26,6 +49,9 @@ class CommentService:
             ValueError: Si le ticket n'existe pas ou si le contenu est vide
         """
         try:
+            # S'assurer que la table existe
+            CommentService.ensure_comments_table()
+            
             # Validation des entrées
             if not content or not content.strip():
                 raise ValueError("Le contenu du commentaire ne peut pas être vide")
@@ -48,7 +74,11 @@ class CommentService:
                    (ticket_id, user_id, content, gravite, datetime.datetime.now()))
                    
             # Enregistrer l'activité
-            log_activity(user_id, 'comment', 'ticket', f"Commentaire ajouté au ticket {ticket_id}")
+            try:
+                log_activity(user_id, 'comment', 'ticket', f"Commentaire ajouté au ticket {ticket_id}")
+            except:
+                # Ne pas faire échouer l'ajout du commentaire si le log échoue
+                pass
             
             return True
             
@@ -69,6 +99,9 @@ class CommentService:
             list: Liste des commentaires avec leurs détails
         """
         try:
+            # S'assurer que la table existe
+            CommentService.ensure_comments_table()
+            
             if with_user_info:
                 comments = get_db("""
                     SELECT c.*, u.name as user_name
@@ -85,7 +118,7 @@ class CommentService:
                     ORDER BY created_at DESC
                 """, (ticket_id,))
             
-            return comments
+            return comments or []
             
         except Exception as e:
             logger.error(f"Erreur lors de la récupération des commentaires: {str(e)}")

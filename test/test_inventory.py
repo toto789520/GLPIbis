@@ -147,14 +147,44 @@ def test_qr_code_service():
         
         # Données de test
         hardware_id = "test123"
-        hardware_info = {"id": hardware_id, "name": "Test Equipment"}
+        equipment_name = "Test Equipment"
         
         # Générer un QR code
-        qr_filename = qr_service.generate_qr_code(hardware_id, "Test info")
+        qr_filename = qr_service.generate_qr_code(hardware_id, equipment_name)
         
         # Vérifier que le fichier a été créé
         qr_path = os.path.join(temp_dir, 'qr_codes', qr_filename)
         assert os.path.exists(qr_path)
+        
+        # Générer une étiquette QR
+        hardware_info = {
+            "id": hardware_id,
+            "name": equipment_name,
+            "category": "Serveur",
+            "location": "A301",
+            "status": "Actif",
+            "serial": "ERXDTCFGVH",
+            "purchase_date": "2025-06-06",
+            "warranty_end": "2028-06-06",
+            "created_at": "2025-06-19 07:29:22"
+        }
+        label_filename = qr_service.generate_qr_label(hardware_info)
+        
+        # Vérifier que l'étiquette a été créée
+        label_path = os.path.join(temp_dir, 'qr_codes', label_filename)
+        assert os.path.exists(label_path)
+        
+        # Tester la lecture de QR code (simulation)
+        import json
+        test_qr_data = json.dumps({
+            "id": hardware_id,
+            "name": equipment_name,
+            "url": f"http://localhost:5000/inventory/item/{hardware_id}"
+        })
+        
+        # Vérifier que les fichiers générés ne sont pas vides
+        assert os.path.getsize(qr_path) > 0
+        assert os.path.getsize(label_path) > 0
         
     except Exception as e:
         pytest.fail(f"Le test du service QR code a échoué: {e}")

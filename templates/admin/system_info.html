@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Informations Système - GLPIbis{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-server mr-2"></i>
+                        Informations Système
+                    </h3>
+                    <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left mr-1"></i>
+                        Retour
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Système d'exploitation</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><strong>Plateforme:</strong></td>
+                                            <td>{{ system_info.platform or 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Version:</strong></td>
+                                            <td>{{ system_info.platform_release or 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Architecture:</strong></td>
+                                            <td>{{ system_info.architecture or 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Nom machine:</strong></td>
+                                            <td>{{ system_info.hostname or 'N/A' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Processeur</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><strong>Processeur:</strong></td>
+                                            <td>{{ system_info.processor or 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Nombre de cœurs:</strong></td>
+                                            <td>{{ system_info.cpu_count or 'N/A' }}</td>
+                                        </tr>
+                                        {% if system_info.cpu_usage %}
+                                        <tr>
+                                            <td><strong>Utilisation CPU:</strong></td>
+                                            <td>
+                                                <div class="progress">
+                                                    <div class="progress-bar {% if system_info.cpu_usage > 80 %}bg-danger{% elif system_info.cpu_usage > 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ system_info.cpu_usage }}%">
+                                                        {{ system_info.cpu_usage }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Mémoire</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><strong>RAM Totale:</strong></td>
+                                            <td>{{ system_info.ram or 'N/A' }}</td>
+                                        </tr>
+                                        {% if system_info.memory_usage %}
+                                        <tr>
+                                            <td><strong>Utilisation Mémoire:</strong></td>
+                                            <td>
+                                                <div class="progress">
+                                                    <div class="progress-bar {% if system_info.memory_usage > 80 %}bg-danger{% elif system_info.memory_usage > 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ system_info.memory_usage }}%">
+                                                        {{ system_info.memory_usage }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Disque</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless">
+                                        {% if system_info.disk_usage %}
+                                        <tr>
+                                            <td><strong>Utilisation Disque:</strong></td>
+                                            <td>
+                                                <div class="progress">
+                                                    <div class="progress-bar {% if system_info.disk_usage > 80 %}bg-danger{% elif system_info.disk_usage > 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ system_info.disk_usage }}%">
+                                                        {{ system_info.disk_usage }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Application GLPIbis</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><strong>Version GLPIbis:</strong></td>
+                                            <td>1.0.0</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Version Python:</strong></td>
+                                            <td>{{ system_info.python_version or 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Version Flask:</strong></td>
+                                            <td>{{ system_info.flask_version or 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Dernière mise à jour:</strong></td>
+                                            <td>{{ current_time.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12 text-center">
+                            <button class="btn btn-info" onclick="refreshInfo()">
+                                <i class="fas fa-sync-alt mr-2"></i>
+                                Actualiser les informations
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshInfo() {
+    location.reload();
+}
+</script>
+{% endblock %}

@@ -13,16 +13,24 @@ _thread_local = threading.local()
 
 class DBManager:
     def __init__(self, db_type='sqlite', mysql_params=None):
-        self.db_type = db_type.lower()
+        self.db_type = db_type
         self.mysql_params = mysql_params or {}
         self.connection = None
+        
+        # Importer le logger ici pour éviter les imports circulaires
+        try:
+            from .logger import app_logger
+            self.logger = app_logger
+        except ImportError:
+            import logging
+            self.logger = logging.getLogger(__name__)
 
     def get_connection(self):
         if self.db_type == 'sqlite':
             # Une meilleure approche pour SQLite dans un environnement multi-thread
             # Utiliser check_same_thread=False avec précaution
             if not hasattr(_thread_local, 'connection'):
-                db_path = os.path.join(os.getcwd(), 'database.sqlite')
+                db_path = os.path.join(os.getcwd(), 'glpibis.db')
                 _thread_local.connection = sqlite3.connect(db_path, check_same_thread=False, timeout=30)
                 # Activer le suivi des clés étrangères
                 _thread_local.connection.execute("PRAGMA foreign_keys = ON")
@@ -64,31 +72,66 @@ class DBManager:
         else:
             raise ValueError("Unsupported database type")
 
-    def execute_query(self, query, params=None, fetch=False):
-        conn = self.get_connection()
-        cursor = conn.cursor()
+    def execute_query(self, query, params=None, return_results=True):
+        """Exécute une requête SQL avec gestion d'erreur améliorée"""
         try:
-            if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
-            if fetch:
-                result = cursor.fetchall()
-                return result
-            else:
-                if self.db_type == 'sqlite':
-                    conn.commit()
-                return cursor.lastrowid if cursor.lastrowid else True
-        except Exception as e:
+            # Importer le logger ici pour éviter les imports circulaires
+            try:
+                from .logger import get_logger
+                logger = get_logger()
+            except ImportError:
+                import logging
+                logger = logging.getLogger(__name__)
             if self.db_type == 'sqlite':
-                conn.rollback()
-            raise e
-        finally:
-            cursor.close()
+                import sqlite3
+                
+                # S'assurer que le répertoire existe
+                db_path = os.path.join(os.getcwd(), 'glpibis.db')
+                
+                with sqlite3.connect(db_path) as conn:
+                    cursor = conn.cursor()
+                    if params:
+                        result = cursor.execute(query, params)
+                    else:
+                        result = cursor.execute(query)
+                    
+                    if query.strip().upper().startswith(('SELECT', 'PRAGMA')):
+                        return cursor.fetchall()
+                    else:
+                        conn.commit()
+                        return True
+                        
+            elif self.db_type == 'mysql':
+                # Pour MySQL, utiliser la connexion existante
+                conn = self.get_connection()
+                with conn.cursor() as cursor:
+                    if params:
+                        cursor.execute(query, params)
+                    else:
+                        cursor.execute(query)
+                    
+                    if query.strip().upper().startswith('SELECT'):
+                        return cursor.fetchall()
+                    else:
+                        conn.commit()
+                        return True
+                
+        except Exception as e:
+            try:
+                from .logger import get_logger
+                logger = get_logger()
+            except ImportError:
+                import logging
+                logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de l'exécution de la requête: {str(e)}")
+            logger.error(f"Requête: {query}")
+            if params:
+                logger.error(f"Paramètres: {params}")
+            return False
 
     def initialize_database(self):
         if self.db_type == 'sqlite':
-            db_path = os.path.join(os.getcwd(), 'database.sqlite')
+            db_path = os.path.join(os.getcwd(), 'glpibis.db')
             if not os.path.exists(db_path):
                 conn = sqlite3.connect(db_path)
                 conn.execute("PRAGMA foreign_keys = ON")
@@ -114,539 +157,443 @@ class DBManager:
             raise ValueError("Unsupported database type")
 
     def create_tables(self):
-        if self.db_type == 'sqlite':
-            # SQLite schema
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS USEUR (
-                    ID TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    age INTEGER,
-                    tel TEXT,
-                    hashed_password TEXT NOT NULL,
-                    email TEXT UNIQUE NOT NULL,
-                    dete_de_creation TEXT,
-                    derniere_connexion TEXT,
-                    role TEXT DEFAULT 'user'
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS sessions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id TEXT NOT NULL,
-                    token TEXT NOT NULL UNIQUE,
-                    expiry_date TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES USEUR(ID) ON DELETE CASCADE
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS state (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_user TEXT NOT NULL,
-                    tiqué_créer INTEGER DEFAULT 0,
-                    tiqué_partisipé INTEGER DEFAULT 0,
-                    comm INTEGER DEFAULT 0,
-                    FOREIGN KEY (id_user) REFERENCES USEUR(ID) ON DELETE CASCADE
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS tiqué (
-                    ID_tiqué INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ID_user TEXT NOT NULL,
-                    titre TEXT NOT NULL,
-                    date_open TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    date_close TIMESTAMP,
-                    ID_technicien TEXT,
-                    description TEXT,
-                    open INTEGER DEFAULT 1,
-                    tag TEXT,
-                    gravite INTEGER DEFAULT 5,
-                    FOREIGN KEY (ID_user) REFERENCES USEUR(ID),
-                    FOREIGN KEY (ID_technicien) REFERENCES USEUR(ID)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS commentaires (
-                    ID_comm INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ID_tiqué INTEGER NOT NULL,
-                    ID_user TEXT NOT NULL,
-                    contenur TEXT,
-                    date_comm TIMESTAMP NOT NULL,
-                    is_staff INTEGER DEFAULT 0,
-                    FOREIGN KEY (ID_tiqué) REFERENCES tiqué(ID_tiqué) ON DELETE CASCADE,
-                    FOREIGN KEY (ID_user) REFERENCES USEUR(ID)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS admin (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_user TEXT NOT NULL UNIQUE,
-                    FOREIGN KEY (id_user) REFERENCES USEUR(ID) ON DELETE CASCADE
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS technicien (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_user TEXT NOT NULL UNIQUE,
-                    specialite TEXT DEFAULT 'Général',
-                    FOREIGN KEY (id_user) REFERENCES USEUR(ID) ON DELETE CASCADE
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS activity_logs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id TEXT NOT NULL,
-                    action_type TEXT NOT NULL,
-                    module TEXT NOT NULL,
-                    description TEXT,
-                    timestamp DATETIME NOT NULL
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS inventory (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    description TEXT,
-                    category TEXT,
-                    status TEXT DEFAULT 'available',
-                    location TEXT,
-                    serial_number TEXT UNIQUE,
-                    qr_code TEXT UNIQUE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS categorie (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nom TEXT NOT NULL UNIQUE,
-                    description TEXT,
-                    icone TEXT DEFAULT 'fas fa-box',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS sous_categorie (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nom TEXT NOT NULL,
-                    id_categorie INTEGER NOT NULL,
-                    description TEXT,
-                    FOREIGN KEY (id_categorie) REFERENCES categorie(id) ON DELETE CASCADE,
-                    UNIQUE(nom, id_categorie)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS sous_sous_categorie (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nom TEXT NOT NULL,
-                    id_sous_categorie INTEGER NOT NULL,
-                    description TEXT,
-                    FOREIGN KEY (id_sous_categorie) REFERENCES sous_categorie(id) ON DELETE CASCADE,
-                    UNIQUE(nom, id_sous_categorie)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS localisation (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    batiment TEXT NOT NULL,
-                    etage TEXT,
-                    salle TEXT,
-                    description TEXT
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS materiel (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nom TEXT NOT NULL,
-                    categorie INTEGER NOT NULL,
-                    sous_categorie INTEGER NOT NULL,
-                    sous_sous_categorie INTEGER NOT NULL,
-                    date_creation TEXT DEFAULT CURRENT_TIMESTAMP,
-                    qr_code TEXT UNIQUE,
-                    id_localisation INTEGER,
-                    FOREIGN KEY (categorie) REFERENCES categorie(id),
-                    FOREIGN KEY (sous_categorie) REFERENCES sous_categorie(id),
-                    FOREIGN KEY (sous_sous_categorie) REFERENCES sous_sous_categorie(id),
-                    FOREIGN KEY (id_localisation) REFERENCES localisation(id)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS ticket_materiel (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_ticket INTEGER NOT NULL,
-                    id_materiel INTEGER NOT NULL,
-                    date_association TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (id_ticket) REFERENCES tiqué(ID_tiqué),
-                    FOREIGN KEY (id_materiel) REFERENCES materiel(id)
-                )
-            """)
-            # Création de la table pret avec la syntaxe appropriée selon le type de base de données
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS pret (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_materiel INTEGER NOT NULL,
-                    id_emprunteur VARCHAR(36) NOT NULL,
-                    date_pret DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    date_retour_prevue DATETIME NOT NULL,
-                    date_retour DATETIME,
-                    statut VARCHAR(50) DEFAULT 'en_cours',
-                    notes TEXT,
-                    FOREIGN KEY (id_materiel) REFERENCES materiel(id) ON DELETE CASCADE,
-                    FOREIGN KEY (id_emprunteur) REFERENCES USEUR(ID) ON DELETE CASCADE
-                )
-            """)
-            # Création de la table intervention avec la syntaxe appropriée selon le type de base de données
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS intervention (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_materiel INTEGER NOT NULL,
-                    id_technicien VARCHAR(36) NOT NULL,
-                    type VARCHAR(100) NOT NULL,
-                    description TEXT,
-                    date_debut DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    date_fin DATETIME,
-                    statut VARCHAR(50) DEFAULT 'en_cours',
-                    FOREIGN KEY (id_materiel) REFERENCES materiel(id) ON DELETE CASCADE
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS tiqué (
-                    ID_tiqué INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ID_user TEXT NOT NULL,
-                    titre TEXT NOT NULL,
-                    date_open TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    date_close TIMESTAMP,
-                    ID_technicien TEXT,
-                    description TEXT,
-                    open INTEGER DEFAULT 1,
-                    tag TEXT,
-                    gravite INTEGER DEFAULT 5,
-                    FOREIGN KEY (ID_user) REFERENCES USEUR(ID),
-                    FOREIGN KEY (ID_technicien) REFERENCES USEUR(ID)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS commentaires (
-                    ID_comm INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ID_tiqué INTEGER NOT NULL,
-                    ID_user TEXT NOT NULL,
-                    contenur TEXT,
-                    date_comm TIMESTAMP NOT NULL,
-                    is_staff INTEGER DEFAULT 0,
-                    FOREIGN KEY (ID_tiqué) REFERENCES tiqué(ID_tiqué) ON DELETE CASCADE,
-                    FOREIGN KEY (ID_user) REFERENCES USEUR(ID)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS admin (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_user TEXT NOT NULL UNIQUE,
-                    FOREIGN KEY (id_user) REFERENCES USEUR(ID) ON DELETE CASCADE
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS technicien (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_user TEXT NOT NULL UNIQUE,
-                    specialite TEXT DEFAULT 'Général',
-                    FOREIGN KEY (id_user) REFERENCES USEUR(ID) ON DELETE CASCADE
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS activity_logs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id TEXT NOT NULL,
-                    action_type TEXT NOT NULL,
-                    module TEXT NOT NULL,
-                    description TEXT,
-                    timestamp DATETIME NOT NULL
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS inventory (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    description TEXT,
-                    category TEXT,
-                    status TEXT DEFAULT 'available',
-                    location TEXT,
-                    serial_number TEXT UNIQUE,
-                    qr_code TEXT UNIQUE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS categorie (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nom TEXT NOT NULL UNIQUE,
-                    description TEXT,
-                    icone TEXT DEFAULT 'fas fa-box',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS sous_categorie (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nom TEXT NOT NULL,
-                    id_categorie INTEGER NOT NULL,
-                    description TEXT,
-                    FOREIGN KEY (id_categorie) REFERENCES categorie(id) ON DELETE CASCADE,
-                    UNIQUE(nom, id_categorie)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS sous_sous_categorie (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nom TEXT NOT NULL,
-                    id_sous_categorie INTEGER NOT NULL,
-                    description TEXT,
-                    FOREIGN KEY (id_sous_categorie) REFERENCES sous_categorie(id) ON DELETE CASCADE,
-                    UNIQUE(nom, id_sous_categorie)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS localisation (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    batiment TEXT NOT NULL,
-                    etage TEXT,
-                    salle TEXT,
-                    description TEXT
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS materiel (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nom TEXT NOT NULL,
-                    categorie INTEGER NOT NULL,
-                    sous_categorie INTEGER NOT NULL,
-                    sous_sous_categorie INTEGER NOT NULL,
-                    date_creation TEXT DEFAULT CURRENT_TIMESTAMP,
-                    qr_code TEXT UNIQUE,
-                    id_localisation INTEGER,
-                    FOREIGN KEY (categorie) REFERENCES categorie(id),
-                    FOREIGN KEY (sous_categorie) REFERENCES sous_categorie(id),
-                    FOREIGN KEY (sous_sous_categorie) REFERENCES sous_sous_categorie(id),
-                    FOREIGN KEY (id_localisation) REFERENCES localisation(id)
-                )
-            """)
-        elif self.db_type == 'mysql':
-            # MySQL schema
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS USEUR (
-                    ID VARCHAR(36) PRIMARY KEY,
-                    name VARCHAR(255) NOT NULL,
-                    age INT,
-                    tel VARCHAR(20),
-                    hashed_password VARCHAR(255) NOT NULL,
-                    email VARCHAR(255) NOT NULL UNIQUE,
-                    dete_de_creation DATETIME,
-                    derniere_connexion DATETIME,
-                    role VARCHAR(50) DEFAULT 'user'
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS sessions (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    user_id VARCHAR(36) NOT NULL,
-                    token VARCHAR(64) NOT NULL UNIQUE,
-                    expiry_date DATETIME NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES USEUR(ID) ON DELETE CASCADE
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS state (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    id_user VARCHAR(36) NOT NULL,
-                    tiqué_créer INT DEFAULT 0,
-                    tiqué_partisipé INT DEFAULT 0,
-                    comm INT DEFAULT 0,
-                    FOREIGN KEY (id_user) REFERENCES USEUR(ID) ON DELETE CASCADE
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS tiqué (
-                    ID_tiqué VARCHAR(36) PRIMARY KEY,
-                    ID_user VARCHAR(36) NOT NULL,
-                    titre VARCHAR(255) NOT NULL,
-                    date_open DATETIME NOT NULL,
-                    date_close DATETIME,
-                    ID_technicien VARCHAR(36),
-                    description TEXT,
-                    open BOOLEAN DEFAULT TRUE,
-                    tag VARCHAR(50),
-                    gravite INT DEFAULT 5,
-                    FOREIGN KEY (ID_user) REFERENCES USEUR(ID),
-                    FOREIGN KEY (ID_technicien) REFERENCES USEUR(ID)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS commentaires (
-                    ID_comm VARCHAR(36) PRIMARY KEY,
-                    ID_tiqué VARCHAR(36) NOT NULL,
-                    ID_user VARCHAR(36) NOT NULL,
-                    contenur TEXT,
-                    date_comm DATETIME NOT NULL,
-                    is_staff BOOLEAN DEFAULT FALSE,
-                    FOREIGN KEY (ID_tiqué) REFERENCES tiqué(ID_tiqué) ON DELETE CASCADE,
-                    FOREIGN KEY (ID_user) REFERENCES USEUR(ID)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS admin (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    id_user VARCHAR(36) NOT NULL UNIQUE,
-                    FOREIGN KEY (id_user) REFERENCES USEUR(ID) ON DELETE CASCADE
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS technicien (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    id_user VARCHAR(36) NOT NULL UNIQUE,
-                    specialite VARCHAR(100),
-                    FOREIGN KEY (id_user) REFERENCES USEUR(ID) ON DELETE CASCADE
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS activity_logs (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    user_id VARCHAR(36),
-                    action VARCHAR(50) NOT NULL,
-                    module VARCHAR(50) NOT NULL,
-                    description TEXT,
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES USEUR(ID) ON DELETE SET NULL
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS inventory (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    name VARCHAR(255) NOT NULL,
-                    description TEXT,
-                    category VARCHAR(100),
-                    status VARCHAR(50) DEFAULT 'available',
-                    location VARCHAR(255),
-                    serial_number VARCHAR(255) UNIQUE,
-                    qr_code VARCHAR(255) UNIQUE,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS categorie (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    nom VARCHAR(255) NOT NULL UNIQUE,
-                    description TEXT,
-                    icone VARCHAR(255) DEFAULT 'fas fa-box',
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS sous_categorie (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    nom VARCHAR(255) NOT NULL,
-                    id_categorie INT NOT NULL,
-                    description TEXT,
-                    FOREIGN KEY (id_categorie) REFERENCES categorie(id) ON DELETE CASCADE,
-                    UNIQUE KEY nom_categorie (nom, id_categorie)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS sous_sous_categorie (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    nom VARCHAR(255) NOT NULL,
-                    id_sous_categorie INT NOT NULL,
-                    description TEXT,
-                    FOREIGN KEY (id_sous_categorie) REFERENCES sous_categorie(id) ON DELETE CASCADE,
-                    UNIQUE KEY nom_sous_categorie (nom, id_sous_categorie)
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS localisation (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    batiment VARCHAR(255) NOT NULL,
-                    etage VARCHAR(50),
-                    salle VARCHAR(255),
-                    description TEXT
-                )
-            """)
-            self.execute_query("""
-                CREATE TABLE IF NOT EXISTS materiel (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    nom VARCHAR(255) NOT NULL,
-                    categorie INT NOT NULL,
-                    sous_categorie INT NOT NULL,
-                    sous_sous_categorie INT NOT NULL,
-                    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    qr_code VARCHAR(50) UNIQUE,
-                    id_localisation INT,
-                    FOREIGN KEY (categorie) REFERENCES categorie(id),
-                    FOREIGN KEY (sous_categorie) REFERENCES sous_categorie(id),
-                    FOREIGN KEY (sous_sous_categorie) REFERENCES sous_sous_categorie(id),
-                    FOREIGN KEY (id_localisation) REFERENCES localisation(id)
-                )
-            """)
-            # Création de la table pret avec la syntaxe appropriée selon le type de base de données
-            self.execute_query("""                CREATE TABLE IF NOT EXISTS pret (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_materiel INTEGER NOT NULL,
-                    id_emprunteur VARCHAR(36) NOT NULL,
-                    date_pret DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    date_retour_prevue DATETIME NOT NULL,
-                    date_retour DATETIME,
-                    statut VARCHAR(50) DEFAULT 'en_cours',
-                    notes TEXT,
-                    FOREIGN KEY (id_materiel) REFERENCES materiel(id) ON DELETE CASCADE,
-                    FOREIGN KEY (id_emprunteur) REFERENCES USEUR(ID) ON DELETE CASCADE
-                )
-            """)
-            # Création de la table intervention avec la syntaxe appropriée selon le type de base de données
-            self.execute_query("""                CREATE TABLE IF NOT EXISTS intervention (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_materiel INTEGER NOT NULL,
-                    id_technicien VARCHAR(36) NOT NULL,
-                    type VARCHAR(100) NOT NULL,
-                    description TEXT,
-                    date_debut DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    date_fin DATETIME,
-                    statut VARCHAR(50) DEFAULT 'en_cours',
-                    FOREIGN KEY (id_materiel) REFERENCES materiel(id) ON DELETE CASCADE
-                )
-            """)
+        """Crée toutes les tables nécessaires"""
+        try:
+            if self.db_type == 'sqlite':
+                # Table des utilisateurs avec la colonne password
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS USEUR (
+                        ID TEXT PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        age INTEGER,
+                        tel TEXT,
+                        password TEXT NOT NULL,
+                        email TEXT UNIQUE NOT NULL,
+                        creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        role TEXT DEFAULT 'user'
+                    )
+                """)
+                
+                # Table des sessions avec les bonnes colonnes
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS sessions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id TEXT NOT NULL,
+                        token TEXT UNIQUE NOT NULL,
+                        creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        expiry_date TIMESTAMP NOT NULL,
+                        FOREIGN KEY (user_id) REFERENCES USEUR(ID)
+                    )
+                """)
+                
+                # Table des tickets avec ID_technicien
+                success = self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS tiqué (
+                        ID_tiqué INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ID_user TEXT NOT NULL,
+                        titre TEXT NOT NULL,
+                        date_open TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        date_close TIMESTAMP,
+                        ID_technicien TEXT,
+                        description TEXT,
+                        open INTEGER DEFAULT 1,
+                        tag TEXT,
+                        gravite INTEGER DEFAULT 1,
+                        FOREIGN KEY (ID_user) REFERENCES USEUR(ID),
+                        FOREIGN KEY (ID_technicien) REFERENCES USEUR(ID)
+                    )
+                """)
+                if not success:
+                    raise Exception("Échec de la création de la table tiqué")
+                
+                # Table des administrateurs
+                success = self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS admin (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        id_user TEXT UNIQUE NOT NULL,
+                        FOREIGN KEY (id_user) REFERENCES USEUR(ID)
+                    )
+                """)
+                if not success:
+                    raise Exception("Échec de la création de la table admin")
+                
+                # Table des techniciens
+                success = self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS technicien (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        id_user TEXT UNIQUE NOT NULL,
+                        specialite TEXT,
+                        FOREIGN KEY (id_user) REFERENCES USEUR(ID)
+                    )
+                """)
+                if not success:
+                    raise Exception("Échec de la création de la table technicien")
+                
+                # Table des statistiques utilisateur
+                success = self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS state (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        id_user TEXT UNIQUE NOT NULL,
+                        tickets_created INTEGER DEFAULT 0,
+                        tickets_participated INTEGER DEFAULT 0,
+                        comments INTEGER DEFAULT 0,
+                        FOREIGN KEY (id_user) REFERENCES USEUR(ID)
+                    )
+                """)
+                if not success:
+                    raise Exception("Échec de la création de la table state")
+                
+                # Table des logs d'activité
+                success = self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS activity_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id TEXT,
+                        action TEXT NOT NULL,
+                        description TEXT,
+                        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES USEUR(ID)
+                    )
+                """)
+                if not success:
+                    raise Exception("Échec de la création de la table activity_logs")
+                
+                # Table pour les commentaires de tickets
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS ticket_comments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ticket_id INTEGER NOT NULL,
+                        user_id TEXT NOT NULL,
+                        content TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (ticket_id) REFERENCES tiqué(ID_tiqué),
+                        FOREIGN KEY (user_id) REFERENCES USEUR(ID)
+                    )
+                """)
+                
+            # MySQL version
+            elif self.db_type == 'mysql':
+                # MySQL schema
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS USEUR (
+                        ID VARCHAR(36) PRIMARY KEY,
+                        name VARCHAR(255) NOT NULL,
+                        age INT,
+                        tel VARCHAR(20),
+                        hashed_password VARCHAR(255) NOT NULL,
+                        email VARCHAR(255) NOT NULL UNIQUE,
+                        dete_de_creation DATETIME,
+                        derniere_connexion DATETIME,
+                        role VARCHAR(50) DEFAULT 'user'
+                    )
+                """)
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS sessions (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id VARCHAR(36) NOT NULL,
+                        token VARCHAR(64) NOT NULL UNIQUE,
+                        expiry_date DATETIME NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES USEUR(ID) ON DELETE CASCADE
+                    )
+                """)
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS state (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        id_user VARCHAR(36) NOT NULL,
+                        tiqué_créer INT DEFAULT 0,
+                        tiqué_partisipé INT DEFAULT 0,
+                        comm INT DEFAULT 0,
+                        FOREIGN KEY (id_user) REFERENCES USEUR(ID) ON DELETE CASCADE
+                    )
+                """)
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS tiqué (
+                        ID_tiqué INT AUTO_INCREMENT PRIMARY KEY,
+                        ID_user VARCHAR(36) NOT NULL,
+                        titre VARCHAR(255) NOT NULL,
+                        date_open DATETIME NOT NULL,
+                        date_close DATETIME,
+                        ID_technicien VARCHAR(36),
+                        description TEXT,
+                        open BOOLEAN DEFAULT TRUE,
+                        tag VARCHAR(50),
+                        gravite INT DEFAULT 5,
+                        FOREIGN KEY (ID_user) REFERENCES USEUR(ID),
+                        FOREIGN KEY (ID_technicien) REFERENCES USEUR(ID)
+                    )
+                """)
+                # Supprimer l'ancienne table commentaires MySQL aussi
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS ticket_comments (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        ticket_id INT NOT NULL,
+                        user_id VARCHAR(36) NOT NULL,
+                        content TEXT NOT NULL,
+                        gravite INT DEFAULT 0,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (ticket_id) REFERENCES tiqué(ID_tiqué) ON DELETE CASCADE,
+                        FOREIGN KEY (user_id) REFERENCES USEUR(ID)
+                    )
+                """)
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS admin (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        id_user VARCHAR(36) NOT NULL UNIQUE,
+                        FOREIGN KEY (id_user) REFERENCES USEUR(ID) ON DELETE CASCADE
+                    )
+                """)
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS technicien (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        id_user VARCHAR(36) NOT NULL UNIQUE,
+                        specialite VARCHAR(100),
+                        FOREIGN KEY (id_user) REFERENCES USEUR(ID) ON DELETE CASCADE
+                    )
+                """)
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS activity_logs (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id VARCHAR(36),
+                        action VARCHAR(50) NOT NULL,
+                        module VARCHAR(50) NOT NULL,
+                        description TEXT,
+                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES USEUR(ID) ON DELETE SET NULL
+                    )
+                """)
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS inventory (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        name VARCHAR(255) NOT NULL,
+                        description TEXT,
+                        category VARCHAR(100),
+                        status VARCHAR(50) DEFAULT 'available',
+                        location VARCHAR(255),
+                        serial_number VARCHAR(255) UNIQUE,
+                        qr_code VARCHAR(255) UNIQUE,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                    )
+                """)
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS categorie (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        nom VARCHAR(255) NOT NULL UNIQUE,
+                        description TEXT,
+                        icone VARCHAR(255) DEFAULT 'fas fa-box',
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS sous_categorie (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        nom VARCHAR(255) NOT NULL,
+                        id_categorie INT NOT NULL,
+                        description TEXT,
+                        FOREIGN KEY (id_categorie) REFERENCES categorie(id) ON DELETE CASCADE,
+                        UNIQUE KEY nom_categorie (nom, id_categorie)
+                    )
+                """)
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS sous_sous_categorie (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        nom VARCHAR(255) NOT NULL,
+                        id_sous_categorie INT NOT NULL,
+                        description TEXT,
+                        FOREIGN KEY (id_sous_categorie) REFERENCES sous_categorie(id) ON DELETE CASCADE,
+                        UNIQUE KEY nom_sous_categorie (nom, id_sous_categorie)
+                    )
+                """)
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS localisation (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        batiment VARCHAR(255) NOT NULL,
+                        etage VARCHAR(50),
+                        salle VARCHAR(255),
+                        description TEXT
+                    )
+                """)
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS materiel (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        nom VARCHAR(255) NOT NULL,
+                        categorie INT NOT NULL,
+                        sous_categorie INT NOT NULL,
+                        sous_sous_categorie INT NOT NULL,
+                        date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        qr_code VARCHAR(50) UNIQUE,
+                        id_localisation INT,
+                        FOREIGN KEY (categorie) REFERENCES categorie(id),
+                        FOREIGN KEY (sous_categorie) REFERENCES sous_categorie(id),
+                        FOREIGN KEY (sous_sous_categorie) REFERENCES sous_sous_categorie(id),
+                        FOREIGN KEY (id_localisation) REFERENCES localisation(id)
+                    )
+                """)
+                # Création de la table pret avec la syntaxe appropriée selon le type de base de données
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS pret (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        id_materiel INT NOT NULL,
+                        id_emprunteur VARCHAR(36) NOT NULL,
+                        date_pret DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        date_retour_prevue DATETIME NOT NULL,
+                        date_retour DATETIME,
+                        statut VARCHAR(50) DEFAULT 'en_cours',
+                        notes TEXT,
+                        FOREIGN KEY (id_materiel) REFERENCES materiel(id) ON DELETE CASCADE,
+                        FOREIGN KEY (id_emprunteur) REFERENCES USEUR(ID) ON DELETE CASCADE
+                    )
+                """)
+                # Création de la table intervention avec la syntaxe appropriée selon le type de base de données
+                self.execute_query("""
+                    CREATE TABLE IF NOT EXISTS intervention (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        id_materiel INT NOT NULL,
+                        id_technicien VARCHAR(36) NOT NULL,
+                        type VARCHAR(100) NOT NULL,
+                        description TEXT,
+                        date_debut DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        date_fin DATETIME,
+                        statut VARCHAR(50) DEFAULT 'en_cours',
+                        FOREIGN KEY (id_materiel) REFERENCES materiel(id) ON DELETE CASCADE
+                    )
+                """)
+
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la création des tables : {str(e)}")
+            raise Exception(f"Impossible de créer les tables : {str(e)}")
 
     def verify_table_structure(self):
-        # Implement verification and update of table structure if needed
-        # For SQLite, check columns and add missing ones
-        if self.db_type == 'sqlite':
-            try:
-                columns = self.execute_query("PRAGMA table_info(USEUR)", fetch=True)
-                column_names = [col[1] for col in columns]
-                if 'age' not in column_names:
-                    self.execute_query("ALTER TABLE USEUR ADD COLUMN age INTEGER")
-                if 'tel' not in column_names:
-                    self.execute_query("ALTER TABLE USEUR ADD COLUMN tel TEXT")
-                if 'role' not in column_names:
-                    self.execute_query("ALTER TABLE USEUR ADD COLUMN role TEXT DEFAULT 'user'")
-                if 'derniere_connexion' not in column_names:
-                    self.execute_query("ALTER TABLE USEUR ADD COLUMN derniere_connexion TEXT")
-            except Exception as e:
-                print(f"Error verifying SQLite table structure: {e}")
-        elif self.db_type == 'mysql':
-            try:
-                columns = self.execute_query("""
-                    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-                    WHERE TABLE_NAME = 'USEUR'
-                """, fetch=True)
-                column_names = [col['COLUMN_NAME'] for col in columns]
-                if 'age' not in column_names:
-                    self.execute_query("ALTER TABLE USEUR ADD COLUMN age INT")
-                if 'tel' not in column_names:
-                    self.execute_query("ALTER TABLE USEUR ADD COLUMN tel VARCHAR(20)")
-                if 'role' not in column_names:
-                    self.execute_query("ALTER TABLE USEUR ADD COLUMN role VARCHAR(50) DEFAULT 'user'")
-            except Exception as e:
-                print(f"Error verifying MySQL table structure: {e}")
+        """Vérifie et corrige la structure des tables"""
+        try:
+            if self.db_type == 'sqlite':
+                # Vérifier la table sessions
+                sessions_columns = self.execute_query("PRAGMA table_info(sessions)")
+                if sessions_columns and isinstance(sessions_columns, list):
+                    session_column_names = [col[1] for col in sessions_columns]
+                    
+                    # Vérifier que les colonnes nécessaires existent
+                    required_columns = ['user_id', 'token', 'creation_date', 'expiry_date']
+                    missing_columns = []
+                    
+                    for col in required_columns:
+                        if col not in session_column_names:
+                            missing_columns.append(col)
+                    
+                    # Si des colonnes manquent, recréer la table
+                    if missing_columns:
+                        self.logger.info(f"Colonnes manquantes dans sessions: {missing_columns}")
+                        # Sauvegarder les données existantes si possible
+                        try:
+                            existing_sessions = self.execute_query("SELECT * FROM sessions")
+                        except:
+                            existing_sessions = []
+                        
+                        # Supprimer et recréer la table
+                        self.execute_query("DROP TABLE IF EXISTS sessions")
+                        self.execute_query("""
+                            CREATE TABLE sessions (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                user_id TEXT NOT NULL,
+                                token TEXT UNIQUE NOT NULL,
+                                creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                expiry_date TIMESTAMP NOT NULL,
+                                FOREIGN KEY (user_id) REFERENCES USEUR(ID)
+                            )
+                        """)
+                        self.logger.info("Table sessions recréée avec la bonne structure")
+                
+                # Vérifier la table USEUR
+                columns_result = self.execute_query("PRAGMA table_info(USEUR)")
+                if columns_result and isinstance(columns_result, list):
+                    column_names = [col[1] for col in columns_result]
+                    
+                    if 'password' not in column_names:
+                        self.logger.info("Ajout de la colonne password à la table USEUR")
+                        self.execute_query("ALTER TABLE USEUR ADD COLUMN password TEXT")
+                    
+                    if 'role' not in column_names:
+                        self.logger.info("Ajout de la colonne role à la table USEUR")
+                        self.execute_query("ALTER TABLE USEUR ADD COLUMN role TEXT DEFAULT 'user'")
+                
+                # Vérifier la table tiqué
+                ticket_result = self.execute_query("PRAGMA table_info(tiqué)")
+                if ticket_result and isinstance(ticket_result, list):
+                    ticket_column_names = [col[1] for col in ticket_result]
+                    
+                    # Ajouter ID_technicien si manquant
+                    if 'ID_technicien' not in ticket_column_names:
+                        self.logger.info("Ajout de la colonne ID_technicien à la table tiqué")
+                        success = self.execute_query("ALTER TABLE tiqué ADD COLUMN ID_technicien TEXT")
+                        if not success:
+                            self.logger.error("Échec de l'ajout de la colonne ID_technicien")
+                            return False
+                    
+                    # Ajouter description si manquant (ou renommer descriptio)
+                    if 'description' not in ticket_column_names and 'descriptio' in ticket_column_names:
+                        # Renommer descriptio en description
+                        self.logger.info("Renommage de la colonne descriptio en description")
+                        # SQLite ne supporte pas ALTER COLUMN, on doit recréer la table
+                        try:
+                            # Créer une nouvelle table avec la bonne structure
+                            self.execute_query("""
+                                CREATE TABLE tiqué_new (
+                                    ID_tiqué INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    ID_user TEXT NOT NULL,
+                                    titre TEXT NOT NULL,
+                                    date_open TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                    date_close TIMESTAMP,
+                                    ID_technicien TEXT,
+                                    description TEXT,
+                                    open INTEGER DEFAULT 1,
+                                    tag TEXT,
+                                    gravite INTEGER DEFAULT 1,
+                                    FOREIGN KEY (ID_user) REFERENCES USEUR(ID),
+                                    FOREIGN KEY (ID_technicien) REFERENCES USEUR(ID)
+                                )
+                            """)
+                            
+                            # Copier les données
+                            self.execute_query("""
+                                INSERT INTO tiqué_new (ID_tiqué, ID_user, titre, date_open, date_close, 
+                                                     description, open, tag, gravite)
+                                SELECT ID_tiqué, ID_user, titre, date_open, date_close, 
+                                       descriptio, open, tag, gravite 
+                                FROM tiqué
+                            """)
+                            
+                            # Supprimer l'ancienne table et renommer la nouvelle
+                            self.execute_query("DROP TABLE tiqué")
+                            self.execute_query("ALTER TABLE tiqué_new RENAME TO tiqué")
+                            
+                            self.logger.info("Table tiqué restructurée avec succès")
+                        except Exception as e:
+                            self.logger.error(f"Erreur lors de la restructuration de la table tiqué: {str(e)}")
+                            return False
+                    
+                    elif 'description' not in ticket_column_names:
+                        # Ajouter la colonne description
+                        self.logger.info("Ajout de la colonne description à la table tiqué")
+                        success = self.execute_query("ALTER TABLE tiqué ADD COLUMN description TEXT")
+                        if not success:
+                            self.logger.error("Échec de l'ajout de la colonne description")
+                            return False
+                    
+                    if 'date_close' not in ticket_column_names:
+                        self.logger.info("Ajout de la colonne date_close à la table tiqué")
+                        success = self.execute_query("ALTER TABLE tiqué ADD COLUMN date_close TIMESTAMP")
+                        if not success:
+                            self.logger.error("Échec de l'ajout de la colonne date_close")
+                            return False
+            
+            self.logger.info("Structure des tables vérifiée et corrigée")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la vérification de la structure : {str(e)}")
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
+            return False
 
     def test_connection(self):
         """
@@ -656,7 +603,7 @@ class DBManager:
         """
         try:
             if self.db_type == 'sqlite':
-                db_path = os.path.join(os.getcwd(), 'database.sqlite')
+                db_path = os.path.join(os.getcwd(), 'glpibis.db')
                 if os.path.exists(db_path):
                     # Vérifier que le fichier est accessible en lecture/écriture
                     if not os.access(db_path, os.R_OK | os.W_OK):
@@ -779,17 +726,8 @@ def init_db_manager(db_type='sqlite', mysql_params=None):
 def get_db(query=None, params=None, fetch=True):
     """
     Fonction utilitaire pour exécuter des requêtes sur la base de données.
-    
-    Args:
-        query (str, optional): La requête SQL à exécuter. Si None, renvoie juste l'instance de db_manager.
-        params (tuple, optional): Les paramètres à passer à la requête.
-        fetch (bool, optional): Si True, récupère et renvoie les résultats.
-        
-    Returns:
-        Les résultats de la requête si fetch=True, sinon le code de retour de la requête.
     """
     if query == 'connect':
-        # Pour la compatibilité avec l'ancien code qui utilise une connexion directe
         return db_manager.get_connection()
         
     if query is None:
@@ -852,3 +790,171 @@ def load_config():
             "log_level": "INFO"
         }
     }
+
+def fix_database_structure():
+    """Corrige la structure de la base de données au démarrage"""
+    try:
+        from utils.logger import app_logger
+        app_logger.info("Vérification et correction de la structure de la base de données...")
+        
+        # Créer les tables manquantes
+        create_missing_tables()
+        
+        # Vérifier et corriger la table tiqué
+        columns = get_db("PRAGMA table_info(tiqué)")
+        column_names = [col[1] for col in columns] if columns else []
+        
+        changes_made = False
+        
+        # Corriger la colonne description/descriptio
+        if 'description' not in column_names and 'descriptio' in column_names:
+            app_logger.info("Correction de la colonne 'descriptio' -> 'description'")
+            
+            # Créer une nouvelle table avec la bonne structure
+            get_db("""
+                CREATE TABLE tiqué_temp (
+                    ID_tiqué INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ID_user TEXT NOT NULL,
+                    titre TEXT NOT NULL,
+                    date_open TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    date_close TIMESTAMP,
+                    ID_technicien TEXT,
+                    description TEXT,
+                    open INTEGER DEFAULT 1,
+                    tag TEXT,
+                    gravite INTEGER DEFAULT 1,
+                    FOREIGN KEY (ID_user) REFERENCES USEUR(ID),
+                    FOREIGN KEY (ID_technicien) REFERENCES USEUR(ID)
+                )
+            """)
+            
+            # Copier les données
+            get_db("""
+                INSERT INTO tiqué_temp (ID_tiqué, ID_user, titre, date_open, date_close, 
+                                      ID_technicien, description, open, tag, gravite)
+                SELECT ID_tiqué, ID_user, titre, date_open, date_close, 
+                       ID_technicien, descriptio, open, tag, gravite 
+                FROM tiqué
+            """)
+            
+            # Remplacer l'ancienne table
+            get_db("DROP TABLE tiqué")
+            get_db("ALTER TABLE tiqué_temp RENAME TO tiqué")
+            changes_made = True
+            
+        # Ajouter les colonnes manquantes
+        missing_columns = {
+            'ID_technicien': 'TEXT',
+            'date_close': 'TIMESTAMP',
+            'description': 'TEXT'
+        }
+        
+        for column, column_type in missing_columns.items():
+            if column not in column_names:
+                try:
+                    get_db(f"ALTER TABLE tiqué ADD COLUMN {column} {column_type}")
+                    app_logger.info(f"Colonne '{column}' ajoutée à la table tiqué")
+                    changes_made = True
+                except Exception as col_error:
+                    app_logger.warning(f"Impossible d'ajouter la colonne {column}: {str(col_error)}")
+        
+        if changes_made:
+            app_logger.info("Structure de la base de données corrigée avec succès")
+        else:
+            app_logger.info("Structure de la base de données déjà correcte")
+            
+    except Exception as e:
+        from utils.logger import app_logger
+        app_logger.error(f"Erreur lors de la correction de la structure: {str(e)}")
+
+def create_missing_tables():
+    """Crée les tables manquantes si elles n'existent pas"""
+    try:
+        # Table des commentaires de tickets
+        get_db("""
+            CREATE TABLE IF NOT EXISTS ticket_comments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticket_id INTEGER NOT NULL,
+                user_id TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (ticket_id) REFERENCES tiqué(ID_tiqué),
+                FOREIGN KEY (user_id) REFERENCES USEUR(ID)
+            )
+        """)
+        
+        # Table d'inventaire
+        get_db("""
+            CREATE TABLE IF NOT EXISTS inventory (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                category TEXT NOT NULL,
+                location TEXT,
+                status TEXT DEFAULT 'active',
+                serial_number TEXT,
+                purchase_date DATE,
+                warranty_end DATE,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Table des logs d'activité
+        get_db("""
+            CREATE TABLE IF NOT EXISTS activity_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
+                description TEXT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES USEUR(ID)
+            )
+        """)
+        
+    except Exception as e:
+        from utils.logger import app_logger
+        app_logger.error(f"Erreur lors de la création des tables manquantes: {str(e)}")
+    """
+    Charge et renvoie la configuration depuis le fichier de configuration.
+    Si le fichier n'existe pas ou est illisible, renvoie une configuration par défaut.
+    
+    Returns:
+        dict: La configuration chargée
+    """
+    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config', 'conf.conf')
+    
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                return json.load(f)
+    except (IOError, json.JSONDecodeError) as e:
+        print(f"Erreur lors du chargement de la configuration: {str(e)}")
+        
+    # Configuration par défaut en cas d'échec
+    return {
+        "db_type": "sqlite",
+        "company_name": "GLPIbis",
+        "app_settings": {
+            "session_duration_hours": 24,
+            "debug_mode": True,
+            "log_level": "INFO"
+        }
+    }
+
+# Listage des tables de la base de données
+def get_tables_list():
+    """
+    Retourne la liste des tables dans la base de données.
+    """
+    try:
+        if db_manager is None:
+            raise RuntimeError("db_manager n'est pas initialisé. Veuillez initialiser la base de données avant d'appeler cette fonction.")
+        if db_manager.db_type == 'sqlite':
+            return db_manager.execute_query("SELECT name FROM sqlite_master WHERE type='table'")
+        elif db_manager.db_type == 'mysql':
+            return db_manager.execute_query("SHOW TABLES")
+        else:
+            raise ValueError(f"Type de base de données non supporté: {db_manager.db_type}")
+    except Exception as e:
+        from utils.logger import app_logger
+        app_logger.error(f"Erreur lors de la récupération des tables: {str(e)}")
+        return []

@@ -64,11 +64,11 @@
                         </tr>
                         {% for ticket in page %}
                             <tr>
-                                <td>{{ ticket[5] }}<td>
-                                <td>{{ ticket[7] }}<td>
-                                <td>{{ ticket[1] }}<td>
+                                <td>{{ ticket[5] }}</td>
+                                <td>{{ ticket[7] }}</td>
+                                <td>{{ ticket[1] }}</td>
                                 {% if ticket[8] == 1 %}
-                                    <td>Open<td>
+                                    <td>Open</td>
                                 {% else %}
                                     <td>Close</td>
                                 {% endif %}
@@ -82,61 +82,61 @@
                         {% endfor %}
                     </table>
                     <h3 class="mt-5">Ajouter un ticket</h3>
-                        <form Method="POST" class="mt-3">
+                    <form method="POST" class="mt-3">
+                        <div class="form-group">
+                            <label for="titre">Titre :</label>
+                            <input type="text" class="form-control" id="titre" name="titre" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="gravite">Gravité :</label>
+                            <input type="number" class="form-control" id="gravite" name="gravite" min="1" max="5" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description :</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                        </div>
+                        {% if ou == 'all' %}
                             <div class="form-group">
-                                <label for="titre">titre:</label>
-                                <input type="text" class="form-control" id="titre" name="titre" required>
+                                <label for="tags">Catégorie :</label>
+                                <input type="text" class="form-control" id="tags" name="tags" required>
                             </div>
+                        {% else %}
                             <div class="form-group">
-                                <label for="gravité">gravité:</label>
-                                <input type="number" class="form-control" id="gravité" name="gravité" required>
+                                <label for="tags">Catégorie :</label>
+                                <input type="text" class="form-control" id="tags" name="tags" value="{{ ou }}" readonly>
                             </div>
-                            <div class="form-group">
-                                <label for="description">description:</label>
-                                <input type="text" class="form-control" id="description" name="description" required>
-                            </div>
-                            {% if ou == all %}
-                                <div class="form-group">
-                                    <label for="tags">catécori:</label>
-                                    <input type="text" class="form-control" id="tags" name="tags" required>
-                                </div>
-                            {% else %}
-                                <div class="form-group">
-                                    <label for="tags">catécori:</label>
-                                    <input type="text" class="form-control" id="tags" name="tags" value="{{ ou }}" readonly>
-                                </div>
-                            {% endif %}
-                            <button type="submit" class="btn btn-primary">Ajouter</button>
-                        </form>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary">Ajouter</button>
+                    </form>
                 {% else %}
                     <h2>Pas de tickets disponibles pour le moment… On dirait que les tickets se cachent mieux que mes chaussettes préférées après une lessive !</h2>
                     <h3 class="mt-5">Ajouter un ticket</h3>
-                        <form Method="POST" class="mt-3">
+                    <form method="POST" class="mt-3">
+                        <div class="form-group">
+                            <label for="titre">Titre :</label>
+                            <input type="text" class="form-control" id="titre" name="titre" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="gravite">Gravité :</label>
+                            <input type="number" class="form-control" id="gravite" name="gravite" min="1" max="5" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description :</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                        </div>
+                        {% if ou == 'all' %}
                             <div class="form-group">
-                                <label for="titre">titre:</label>
-                                <input type="text" class="form-control" id="titre" name="titre" required>
+                                <label for="tags">Catégorie :</label>
+                                <input type="text" class="form-control" id="tags" name="tags" required>
                             </div>
+                        {% else %}
                             <div class="form-group">
-                                <label for="gravité">gravité:</label>
-                                <input type="number" class="form-control" id="gravité" name="gravité" required>
+                                <label for="tags">Catégorie :</label>
+                                <input type="text" class="form-control" id="tags" name="tags" value="{{ ou }}" readonly>
                             </div>
-                            <div class="form-group">
-                                <label for="description">description:</label>
-                                <input type="text" class="form-control" id="description" name="description" required>
-                            </div>
-                            {% if ou == all %}
-                                <div class="form-group">
-                                    <label for="tags">catécori:</label>
-                                    <input type="text" class="form-control" id="tags" name="tags" required>
-                                </div>
-                            {% else %}
-                                <div class="form-group">
-                                    <label for="tags">catécori:</label>
-                                    <input type="text" class="form-control" id="tags" name="tags" value="{{ ou }}" readonly>
-                                </div>
-                            {% endif %}
-                            <button type="submit" class="btn btn-primary">Ajouter</button>
-                        </form>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary">Ajouter</button>
+                    </form>
                 {% endif %}
     </div>
 </body>

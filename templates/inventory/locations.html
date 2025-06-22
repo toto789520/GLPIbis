@@ -44,6 +44,9 @@
                     <button type="submit" class="btn-inventory primary">
                         <i class="fas fa-plus"></i> Ajouter la localisation
                     </button>
+                    <button type="button" class="btn-inventory secondary ms-2" onclick="generateLocationQR()">
+                        <i class="fas fa-qrcode"></i> Générer QR Code
+                    </button>
                 </div>
             </form>
         </div>
@@ -142,6 +145,10 @@ function deleteLocation(id) {
     // TODO: Implémenter la suppression
     const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
     modal.show();
+}
+
+function generateLocationQR() {
+    // TODO: Implémenter la génération de QR Code
 }
 </script>
 {% endblock %}

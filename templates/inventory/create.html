@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un élément - Inventaire{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8 col-lg-6 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus"></i> Ajouter un élément à l'inventaire
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ safe_url_for('inventory.create_item') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">
+                                        <i class="fas fa-tag"></i> Nom de l'élément *
+                                    </label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           placeholder="Ex: Ordinateur portable Dell" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">
+                                        <i class="fas fa-folder"></i> Catégorie *
+                                    </label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Sélectionner une catégorie</option>
+                                        <option value="Ordinateur">Ordinateur</option>
+                                        <option value="Périphérique">Périphérique</option>
+                                        <option value="Réseau">Équipement réseau</option>
+                                        <option value="Mobile">Appareil mobile</option>
+                                        <option value="Imprimante">Imprimante</option>
+                                        <option value="Serveur">Serveur</option>
+                                        <option value="Accessoire">Accessoire</option>
+                                        <option value="Autre">Autre</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="location" class="form-label">
+                                        <i class="fas fa-map-marker-alt"></i> Emplacement
+                                    </label>
+                                    <input type="text" class="form-control" id="location" name="location" 
+                                           placeholder="Ex: Bureau 101, Étage 2">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">
+                                        <i class="fas fa-circle"></i> Statut
+                                    </label>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="active">Actif</option>
+                                        <option value="maintenance">En maintenance</option>
+                                        <option value="retired">Retiré du service</option>
+                                        <option value="storage">En stock</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="serial_number" class="form-label">
+                                        <i class="fas fa-barcode"></i> Numéro de série
+                                    </label>
+                                    <input type="text" class="form-control" id="serial_number" name="serial_number" 
+                                           placeholder="Ex: DL123456789">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="purchase_date" class="form-label">
+                                        <i class="fas fa-calendar"></i> Date d'achat
+                                    </label>
+                                    <input type="date" class="form-control" id="purchase_date" name="purchase_date">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="warranty_end" class="form-label">
+                                        <i class="fas fa-shield-alt"></i> Fin de garantie
+                                    </label>
+                                    <input type="date" class="form-control" id="warranty_end" name="warranty_end">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-align-left"></i> Description
+                            </label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="Description détaillée de l'élément..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ safe_url_for('inventory.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Retour à l'inventaire
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Ajouter l'élément
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-calculer la date de fin de garantie si on saisit la date d'achat
+document.getElementById('purchase_date').addEventListener('change', function() {
+    const purchaseDate = new Date(this.value);
+    if (purchaseDate) {
+        // Ajouter 3 ans par défaut pour la garantie
+        const warrantyEnd = new Date(purchaseDate);
+        warrantyEnd.setFullYear(warrantyEnd.getFullYear() + 3);
+        
+        document.getElementById('warranty_end').value = warrantyEnd.toISOString().split('T')[0];
+    }
+});
+</script>
+{% endblock %}

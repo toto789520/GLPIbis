@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion Base de Données - GLPIbis{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-database mr-2"></i>
+                        Gestion de la Base de Données
+                    </h3>
+                    <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left mr-1"></i>
+                        Retour
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Informations générales</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Taille de la base :</strong> {{ "%.2f"|format(db_size / 1024 / 1024) }} MB</p>
+                                    <p><strong>Dernière mise à jour :</strong> {{ current_time.strftime('%d/%m/%Y %H:%M:%S') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Actions</h5>
+                                </div>
+                                <div class="card-body">
+                                    <button class="btn btn-warning mb-2" onclick="backupDatabase()">
+                                        <i class="fas fa-download mr-1"></i>
+                                        Sauvegarder
+                                    </button><br>
+                                    <button class="btn btn-info mb-2" onclick="optimizeDatabase()">
+                                        <i class="fas fa-cogs mr-1"></i>
+                                        Optimiser
+                                    </button><br>
+                                    <button class="btn btn-danger" onclick="confirmReset()">
+                                        <i class="fas fa-trash mr-1"></i>
+                                        Réinitialiser
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title">Tables de la base de données</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Nom de la table</th>
+                                            <th>Nombre d'enregistrements</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for table in table_info %}
+                                        <tr>
+                                            <td>{{ table.name }}</td>
+                                            <td>{{ table.count }}</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-info" onclick="viewTable('{{ table.name }}')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-warning" onclick="truncateTable('{{ table.name }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function backupDatabase() {
+    alert('Fonction de sauvegarde à implémenter');
+}
+
+function optimizeDatabase() {
+    alert('Fonction d\'optimisation à implémenter');
+}
+
+function confirmReset() {
+    if (confirm('Êtes-vous sûr de vouloir réinitialiser la base de données ? Cette action est irréversible !')) {
+        alert('Fonction de réinitialisation à implémenter');
+    }
+}
+
+function viewTable(tableName) {
+    alert('Affichage de la table ' + tableName + ' à implémenter');
+}
+
+function truncateTable(tableName) {
+    if (confirm('Êtes-vous sûr de vouloir vider la table ' + tableName + ' ?')) {
+        alert('Fonction de vidage de table à implémenter');
+    }
+}
+</script>
+{% endblock %}

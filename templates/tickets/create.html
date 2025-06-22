@@ -21,12 +21,11 @@
             <h5 class="mb-0">Informations du ticket</h5>
         </div>
         <div class="card-body">
-            <form method="post" action="{{ url_for('tickets.create') }}" enctype="multipart/form-data">
+            <form method="post" action="{{ url_for('tickets.create_ticket') }}" enctype="multipart/form-data">
                 <div class="row">
                     <!-- Colonne de gauche -->
                     <div class="col-md-8">
-                        <!-- Informations principales -->
-                        <div class="mb-3">
+                        <!-- Informations principales -->                        <div class="mb-3">
                             <label for="titre" class="form-label">Titre*</label>
                             <input type="text" class="form-control" id="titre" name="titre" required
                                    placeholder="Ex: Problème de connexion au réseau">
@@ -210,7 +209,6 @@
 
 {% block scripts %}
 <script>
-    // Solution directe avec jQuery (si disponible) ou vanilla JavaScript
     document.addEventListener('DOMContentLoaded', function() {
         const typeSelect = document.getElementById('type');
         const categorieSelect = document.getElementById('categorie');
@@ -263,15 +261,13 @@
             ]
         };
         
-        // Fonction pour mettre à jour les options de catégorie
+        // Fonction pour mettre à jour les catégories
         function updateCategorieOptions() {
             const selectedType = typeSelect.value;
-            console.log('Type sélectionné:', selectedType);
             
             // Vider le select de catégories
             categorieSelect.innerHTML = '';
             
-            // Désactiver si aucun type n'est sélectionné
             if (!selectedType) {
                 categorieSelect.disabled = true;
                 const option = document.createElement('option');
@@ -301,28 +297,12 @@
                 option.textContent = category.text;
                 categorieSelect.appendChild(option);
             });
-            
-            console.log('Catégories mises à jour, champ désactivé?', categorieSelect.disabled);
         }
         
-        // Méthode directe : appliquer manuellement les gestionnaires d'événements
-        typeSelect.onchange = updateCategorieOptions;
+        // Gestionnaire d'événements
+        typeSelect.addEventListener('change', updateCategorieOptions);
         
-        // Second gestionnaire en tant que plan de secours
-        typeSelect.addEventListener('change', function() {
-            setTimeout(updateCategorieOptions, 50); // Petite temporisation
-        });
-        
-        // Vérification périodique pour contrer les problèmes de timing
-        setInterval(function() {
-            if (typeSelect.value && categorieSelect.disabled) {
-                console.log('Correction forcée: type sélectionné mais catégorie toujours désactivée');
-                categorieSelect.disabled = false;
-                updateCategorieOptions();
-            }
-        }, 500);
-        
-        // Si un type est déjà sélectionné au chargement
+        // Initialiser si un type est déjà sélectionné
         if (typeSelect.value) {
             updateCategorieOptions();
         }
