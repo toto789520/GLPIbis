@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for
+import os
 
 app = Flask(__name__)
-app.config['DEBUG'] = True
-
+app.config['DEBUG'] = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
 @app.route('/')
 def index():
     return redirect(url_for('login'))
@@ -25,4 +25,4 @@ def dashboard():
     return render_template('dashboard.html')
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(port=5001)
