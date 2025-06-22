@@ -20,7 +20,7 @@ def validate_password(password):
     - Au moins un chiffre
     - Au moins un caractère spécial
     """
-    app_logger.debug(f"Validation du mot de passe: {password[:5]}...")  # Log les 5 premiers caractères pour éviter de loguer le mot de passe complet
+    app_logger.debug("Validation du mot de passe en cours.")  # Ne pas loguer le mot de passe
     # Vérifier la longueur minimale
     if not password or len(password) < 8:
         app_logger.debug("Validation du mot de passe échouée - Longueur insuffisante")
