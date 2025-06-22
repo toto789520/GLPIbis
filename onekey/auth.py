@@ -69,9 +69,9 @@ def register_user(name, age, tel, email, password, role='user'):
             raise ValueError("Un utilisateur avec cet email existe déjà")
           # Valider le mot de passe
         if not validate_password(password):
-            app_logger.debug(f"Validation du mot de passe échouée pour {email}")
+            app_logger.debug("Validation du mot de passe échouée")
             raise ValueError("Le mot de passe ne respecte pas les critères de complexité")
-        app_logger.debug(f"Validation du mot de passe réussie pour {email}")
+        app_logger.debug("Validation du mot de passe réussie")
         
         # Hasher le mot de passe
         ph = argon2.PasswordHasher()
