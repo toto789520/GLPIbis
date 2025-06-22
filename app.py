@@ -568,7 +568,9 @@ if __name__ == '__main__':
 
         atexit.register(cleanup)
         
-        app.run(debug=True, host='127.0.0.1', port=5000)
+        # Dynamically set debug mode based on the environment
+        debug_mode = os.environ.get('FLASK_ENV', 'production') == 'development'
+        app.run(debug=debug_mode, host='127.0.0.1', port=5000)
         
     except Exception as e:
         app_logger.error(f"Erreur fatale: {e}")
