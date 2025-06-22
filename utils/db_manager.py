@@ -25,6 +25,15 @@ class DBManager:
             import logging
             self.logger = logging.getLogger(__name__)
 
+    def _sanitize_sensitive_data(self, data):
+        """
+        Remplace les données sensibles par des valeurs masquées.
+        """
+        if isinstance(data, dict):
+            sensitive_keys = {'smtp_password', 'password'}
+            return {key: ('***' if key in sensitive_keys else value) for key, value in data.items()}
+        return data
+
     def get_connection(self):
         if self.db_type == 'sqlite':
             # Une meilleure approche pour SQLite dans un environnement multi-thread
@@ -126,7 +135,8 @@ class DBManager:
             logger.error(f"Erreur lors de l'exécution de la requête: {str(e)}")
             logger.error(f"Requête: {query}")
             if params:
-                logger.error(f"Paramètres: {params}")
+                sanitized_params = self._sanitize_sensitive_data(params)
+                # Sensitive parameters are sanitized but not logged to avoid exposure.
             return False
 
     def initialize_database(self):
