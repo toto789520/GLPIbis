@@ -136,7 +136,7 @@ class DBManager:
             logger.error(f"Requête: {query}")
             if params:
                 sanitized_params = self._sanitize_sensitive_data(params)
-                logger.error(f"Paramètres: {sanitized_params}")
+                # Sensitive parameters are sanitized but not logged to avoid exposure.
             return False
 
     def initialize_database(self):
