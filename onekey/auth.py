@@ -176,9 +176,9 @@ def login_user(email: str, password: str) -> dict:
         return {
             'status': 'success',
             'message': 'Connexion réussie',
+            'token': token,
             'user_id': user_id,
-            'username': username,
-            'token': token
+            'email': email
         }
             
     except Exception as e:

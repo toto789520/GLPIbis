@@ -2,6 +2,7 @@ import pytest
 import sys
 import os
 import re
+import uuid
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 # Ajouter le dossier racine au chemin de recherche des modules
 sys.path.append(project_root)
@@ -39,53 +40,46 @@ def test_email_basic_format():
 
 def test_register_with_duplicate_email():
     """Test que l'enregistrement avec un e-mail dupliqué échoue"""
-    # Créer un utilisateur
     email = "test_duplicate@example.com"
     password = "Password123!"
-    
+    user_id1 = None
+
+    # Nettoyage préalable pour éviter les conflits de tests précédents
+    get_db("DELETE FROM USEUR WHERE EMAIL = ?", (email,))
+
     try:
-        # Créer le premier utilisateur
+        # Premier enregistrement
         user_id1 = register_user("Test User 1", "25", "1234567890", email, password)
-        
-        # Tenter de créer un deuxième utilisateur avec le même e-mail
-        try:
-            user_id2 = register_user("Test User 2", "30", "0987654321", email, password)
-            pytest.fail("Le test aurait dû échouer avec un e-mail dupliqué")
-        except ValueError:
-            # C'est le comportement attendu
-            pass
+        assert user_id1 is not None
+
+        # Deuxième enregistrement avec le même email
+        with pytest.raises(ValueError) as excinfo:
+            register_user("Test User 2", "30", "0987654321", email, password)
+        assert "existe déjà" in str(excinfo.value)
+
     finally:
-        # Nettoyer après le test
-        if 'user_id1' in locals() and user_id1:
-            get_db("DELETE FROM USEUR WHERE ID = %s", (user_id1,))
+        if user_id1:
+            get_db("DELETE FROM USEUR WHERE ID = ?", (user_id1,))
 
 def test_register_with_complex_password():
     """Test que l'enregistrement nécessite un mot de passe complexe"""
-    email = "test_password@example.com"
+    test_id = str(uuid.uuid4())
+    email = f"test_password_{test_id}@example.com"
     valid_password = "Password123!"
-    invalid_passwords = [
-        "password",  # pas de majuscule, pas de chiffre, pas de caractère spécial
-        "PASSWORD123",  # pas de minuscule, pas de caractère spécial
-        "Password",  # pas de chiffre, pas de caractère spécial
-        "123456!"  # pas de lettre
-    ]
-    
-    # Tester avec un mot de passe valide
+    user_id = None
+
     try:
         user_id = register_user("Test User", "25", "1234567890", email, valid_password)
         assert user_id is not None
-        # Nettoyer
-        get_db("DELETE FROM USEUR WHERE ID = %s", (user_id,))
-    except ValueError as e:
-        pytest.fail(f"L'enregistrement avec un mot de passe valide a échoué: {e}")
-    
-    # Tester avec des mots de passe invalides
-    for password in invalid_passwords:
-        try:
-            user_id = register_user("Test User", "25", "1234567890", 
-                                 f"test_{password}@example.com", password)
-            get_db("DELETE FROM USEUR WHERE ID = %s", (user_id,))
-            pytest.fail(f"Le test aurait dû échouer avec le mot de passe invalide: {password}")
-        except ValueError:
-            # C'est le comportement attendu
-            pass
+
+        # Test des mots de passe invalides
+        invalid_passwords = ["password", "PASSWORD123", "Password", "123456!"]
+        for invalid_pass in invalid_passwords:
+            with pytest.raises(ValueError) as excinfo:
+                register_user("Test User", "25", "1234567890", 
+                            f"test_{invalid_pass}@example.com", invalid_pass)
+            assert "mot de passe" in str(excinfo.value).lower()
+
+    finally:
+        if user_id:
+            get_db("DELETE FROM USEUR WHERE ID = ?", (user_id,))
