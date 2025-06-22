@@ -669,6 +669,105 @@ class DBManager:
             self.connection.close()
             self.connection = None
 
+    def get_table_structure(self, table_name):
+        """Récupère la structure d'une table"""
+        try:
+            if self.db_type == 'sqlite':
+                return self.execute_query(f"PRAGMA table_info({table_name})")
+            elif self.db_type == 'mysql':
+                return self.execute_query(f"DESCRIBE {table_name}")
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la récupération de la structure de la table {table_name}: {str(e)}")
+            return None
+
+    def get_table_data(self, table_name, page=1, per_page=50, filters=None, sort_by=None):
+        """Récupère les données d'une table avec pagination et filtres"""
+        try:
+            query = f"SELECT * FROM {table_name}"
+            params = []
+            
+            if filters:
+                where_clauses = []
+                for key, value in filters.items():
+                    where_clauses.append(f"{key} = ?")
+                    params.append(value)
+                if where_clauses:
+                    query += " WHERE " + " AND ".join(where_clauses)
+            
+            if sort_by:
+                query += f" ORDER BY {sort_by}"
+                
+            query += " LIMIT ? OFFSET ?"
+            params.extend([per_page, (page - 1) * per_page])
+            
+            return self.execute_query(query, params)
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la récupération des données de {table_name}: {str(e)}")
+            return None
+
+    def get_table_count(self, table_name, filters=None):
+        """Compte le nombre total d'enregistrements dans une table"""
+        try:
+            query = f"SELECT COUNT(*) FROM {table_name}"
+            params = []
+            
+            if filters:
+                where_clauses = []
+                for key, value in filters.items():
+                    where_clauses.append(f"{key} = ?")
+                    params.append(value)
+                if where_clauses:
+                    query += " WHERE " + " AND ".join(where_clauses)
+            
+            result = self.execute_query(query, params)
+            return result[0][0] if result else 0
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du comptage des enregistrements de {table_name}: {str(e)}")
+            return 0
+
+    def update_table_row(self, table_name, row_id, data):
+        """Met à jour une ligne dans une table"""
+        try:
+            set_clauses = []
+            params = []
+            
+            for key, value in data.items():
+                set_clauses.append(f"{key} = ?")
+                params.append(value)
+            
+            query = f"UPDATE {table_name} SET {', '.join(set_clauses)} WHERE id = ?"
+            params.append(row_id)
+            
+            return self.execute_query(query, params)
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la mise à jour de la ligne {row_id} dans {table_name}: {str(e)}")
+            return False
+
+    def delete_table_row(self, table_name, row_id):
+        """Supprime une ligne d'une table"""
+        try:
+            query = f"DELETE FROM {table_name} WHERE id = ?"
+            return self.execute_query(query, [row_id])
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la suppression de la ligne {row_id} dans {table_name}: {str(e)}")
+            return False
+            
+    def add_table_row(self, table_name, data):
+        """Ajoute une nouvelle ligne dans une table"""
+        try:
+            columns = ", ".join(data.keys())
+            placeholders = ", ".join(["?" for _ in data])
+            query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+            
+            return self.execute_query(query, list(data.values()))
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de l'ajout d'une ligne dans {table_name}: {str(e)}")
+            return False
 # Singleton instance for app usage
 db_manager = None
 
