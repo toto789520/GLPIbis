@@ -4,7 +4,7 @@ import os
 app = Flask(__name__)
 
 # Configuration de débogage
-app.config['DEBUG'] = True
+app.config['DEBUG'] = os.environ.get('FLASK_ENV') == 'development'
 
 # Vérification des chemins
 print(f"Dossier de l'application: {app.root_path}")
@@ -74,4 +74,4 @@ def test():
     """
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=app.config['DEBUG'], port=5000)
