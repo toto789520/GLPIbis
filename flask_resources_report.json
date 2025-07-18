@@ -1,0 +1,167 @@
+{
+  "flask_resources": {
+    "templates_dirs": 1,
+    "static_dirs": 1,
+    "blueprints": 9,
+    "config_files": 0,
+    "instance_dirs": 0,
+    "template_references": 36,
+    "blueprint_imports": 3,
+    "missing_modules": 3,
+    "created_modules": 3,
+    "app_configs": 7
+  },
+  "template_references": [
+    "activity_screening/kiosk.html",
+    "admin/database.html",
+    "inventory/view.html",
+    "waiting.html",
+    "activity/index.html",
+    "inventory/index.html",
+    "about.html",
+    "profile.html",
+    "tickets/update.html",
+    "dashboard.html",
+    "admin/logs.html",
+    "auth/register.html",
+    "edit_profile.html",
+    "login.html",
+    "tickets/index.html",
+    "admin/settings.html",
+    "index.html",
+    "errors/500.html",
+    "activity/create.html",
+    "inventory/edit.html",
+    "register.html",
+    "auth/login.html",
+    "inventory/create.html",
+    "activity/view.html",
+    "tickets/view.html",
+    "admin/create_user.html",
+    "activity_screening/user_activities.html",
+    "tickets/create.html",
+    "errors/404.html",
+    "change_password.html",
+    "inventory/scan_qr.html",
+    "admin/index.html",
+    "admin/system_info.html",
+    "admin/edit_user.html",
+    "activity_screening/index.html",
+    "admin/users.html"
+  ],
+  "blueprints": [
+    "activity_screening\\routes.py",
+    "admin\\routes.py",
+    "inventory\\routes.py",
+    "routes\\activity.py",
+    "routes\\admin.py",
+    "routes\\inventory.py",
+    "routes\\main.py",
+    "routes\\tickets.py",
+    "tickets\\routes.py"
+  ],
+  "templates_dirs": [
+    "templates"
+  ],
+  "static_dirs": [
+    "static"
+  ],
+  "blueprint_imports": {
+    "admin_bp": {
+      "module": "admin_bp",
+      "import_type": "direct_import",
+      "file": "test_admin_import.py"
+    },
+    "Blueprint": {
+      "module": "Blueprint",
+      "import_type": "direct_import",
+      "file": "tickets\\routes.py"
+    },
+    "inventory_bp": {
+      "module": "inventory_bp",
+      "import_type": "direct_import",
+      "file": "inventory\\__init__.py"
+    }
+  },
+  "missing_modules": [
+    {
+      "blueprint": "admin_bp",
+      "module": "admin_bp",
+      "file": "test_admin_import.py",
+      "import_type": "direct_import"
+    },
+    {
+      "blueprint": "Blueprint",
+      "module": "Blueprint",
+      "file": "tickets\\routes.py",
+      "import_type": "direct_import"
+    },
+    {
+      "blueprint": "inventory_bp",
+      "module": "inventory_bp",
+      "file": "inventory\\__init__.py",
+      "import_type": "direct_import"
+    }
+  ],
+  "created_modules": [
+    {
+      "module": "admin_bp",
+      "file": "admin_bp\\__init__.py",
+      "blueprint": "admin_bp"
+    },
+    {
+      "module": "Blueprint",
+      "file": "Blueprint\\__init__.py",
+      "blueprint": "Blueprint"
+    },
+    {
+      "module": "inventory_bp",
+      "file": "inventory_bp\\__init__.py",
+      "blueprint": "inventory_bp"
+    }
+  ],
+  "app_configs": [
+    {
+      "file": "app.py",
+      "has_flask_app": true,
+      "has_create_app": true,
+      "has_config": true
+    },
+    {
+      "file": "debug_app.py",
+      "has_flask_app": true,
+      "has_create_app": false,
+      "has_config": true
+    },
+    {
+      "file": "minimal_app.py",
+      "has_flask_app": true,
+      "has_create_app": false,
+      "has_config": true
+    },
+    {
+      "file": "test\\test_activity.py",
+      "has_flask_app": false,
+      "has_create_app": false,
+      "has_config": true
+    },
+    {
+      "file": "test\\test_inventory.py",
+      "has_flask_app": false,
+      "has_create_app": false,
+      "has_config": true
+    },
+    {
+      "file": "test\\test_sql_injection.py",
+      "has_flask_app": false,
+      "has_create_app": false,
+      "has_config": true
+    },
+    {
+      "file": "test\\test_tickets.py",
+      "has_flask_app": false,
+      "has_create_app": false,
+      "has_config": true
+    }
+  ]
+}

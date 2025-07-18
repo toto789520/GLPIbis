@@ -8,9 +8,9 @@ from utils.db_manager import get_db, log_activity
 
 logger = logging.getLogger('glpibis')
 
-def create_ticket(user_id, titre, description, gravite=3, tags=""):
+def create_ticket(user_id, titre, description, gravite=3, tags="", equipement_id=None, new_equipement=False, categorie=None):
     """
-    Crée un nouveau ticket
+    Crée un nouveau ticket avec validation des données
     
     Args:
         user_id (str): ID de l'utilisateur créateur
@@ -23,20 +23,42 @@ def create_ticket(user_id, titre, description, gravite=3, tags=""):
         int: ID du ticket créé
     """
     try:
-        # Insérer le ticket dans la base de données
+        # Validation des données
+        if not titre or len(titre.strip()) < 3:
+            raise ValueError("Le titre doit contenir au moins 3 caractères")
+            
+        if not description:
+            raise ValueError("La description est obligatoire")
+            
+        if not 1 <= int(gravite) <= 5:
+            raise ValueError("La gravité doit être entre 1 et 5")
+            
+        # Préparer les catégories
+        cat_logicielle = cat_materielle = None
+        if categorie:
+            if categorie in ["outlook", "office", "windows", "antivirus", "browser"]:
+                cat_logicielle = categorie
+            elif categorie in ["computer", "printer", "phone", "network", "server"]:
+                cat_materielle = categorie
+        
+        # Insérer le ticket
         result = get_db("""
-            INSERT INTO tiqué (ID_user, titre, description, gravite, tag, date_open, open)
-            VALUES (?, ?, ?, ?, ?, ?, 1)
-        """, (user_id, titre, description, int(gravite), tags, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            INSERT INTO tiqué (
+                ID_user, titre, description, gravite, tag,
+                date_open, open, equipement_id, new_equipement,
+                categorie_logicielle, categorie_materielle
+            ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
+        """, (
+            user_id, titre, description, int(gravite), tags,
+            datetime.datetime.now(), equipement_id, new_equipement,
+            cat_logicielle, cat_materielle
+        ))
         
         # Récupérer l'ID du ticket créé
         ticket_id = get_db("SELECT last_insert_rowid()")[0][0]
         
         # Log de l'activité
-        try:
-            log_activity(user_id, 'create', 'ticket', f"Ticket créé: {titre}")
-        except Exception as log_error:
-            logger.warning(f"Impossible de logger l'activité: {log_error}")
+        log_activity(user_id, 'create', 'ticket', f"Ticket créé: {titre}")
         
         logger.info(f"Ticket créé avec succès - ID: {ticket_id}, Titre: {titre}")
         return ticket_id
@@ -51,13 +73,7 @@ def get_ticket_info(ticket_id):
     """    
     try:
         ticket = get_db("""
-            SELECT t.*, 
-                   u1.name as demandeur,
-                   u2.name as assigne_a
-            FROM tiqué t
-            LEFT JOIN USEUR u1 ON t.ID_user = u1.ID
-            LEFT JOIN USEUR u2 ON t.ID_technicien = u2.ID
-            WHERE t.ID_tiqué = ?
+            SELECT * FROM tiqué t WHERE t.ID_tiqué = ?
         """, (ticket_id,))
         
         if ticket and len(ticket) > 0:

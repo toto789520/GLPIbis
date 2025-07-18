@@ -1,0 +1,176 @@
+{
+  "scan_date": "2025-07-18T12:14:37.526270",
+  "found_files": [
+    {
+      "path": "C:\\Users\\opm85\\OneDrive\\Bureau\\GLPIbis\\app.py",
+      "relative_path": "app.py"
+    },
+    {
+      "path": "C:\\Users\\opm85\\OneDrive\\Bureau\\GLPIbis\\onekey\\__init__.py",
+      "relative_path": "onekey\\__init__.py"
+    },
+    {
+      "path": "C:\\Users\\opm85\\OneDrive\\Bureau\\GLPIbis\\onekey\\auth.py",
+      "relative_path": "onekey\\auth.py"
+    },
+    {
+      "path": "C:\\Users\\opm85\\OneDrive\\Bureau\\GLPIbis\\onekey\\user.py",
+      "relative_path": "onekey\\user.py"
+    },
+    {
+      "path": "C:\\Users\\opm85\\OneDrive\\Bureau\\GLPIbis\\tickets\\ticket_service.py",
+      "relative_path": "tickets\\ticket_service.py"
+    },
+    {
+      "path": "C:\\Users\\opm85\\OneDrive\\Bureau\\GLPIbis\\utils\\db_manager.py",
+      "relative_path": "utils\\db_manager.py"
+    },
+    {
+      "path": "C:\\Users\\opm85\\OneDrive\\Bureau\\GLPIbis\\utils\\logger.py",
+      "relative_path": "utils\\logger.py"
+    }
+  ],
+  "missing_dependencies": [
+    {
+      "name": "auth.validate_password",
+      "type": "internal"
+    },
+    {
+      "name": "logger.app_logger",
+      "type": "internal"
+    },
+    {
+      "name": "logger.get_logger",
+      "type": "internal"
+    },
+    {
+      "name": "onekey.user.change_password",
+      "type": "internal"
+    },
+    {
+      "name": "onekey.user.get_user_info",
+      "type": "internal"
+    },
+    {
+      "name": "onekey.user.update_user_info",
+      "type": "internal"
+    },
+    {
+      "name": "state_handler",
+      "type": "internal"
+    },
+    {
+      "name": "state_handler.StateHandler",
+      "type": "internal"
+    },
+    {
+      "name": "tickets.ticket_service.get_ticket_list",
+      "type": "internal"
+    },
+    {
+      "name": "utils.db_manager.DBManager",
+      "type": "internal"
+    },
+    {
+      "name": "utils.db_manager.get_db",
+      "type": "internal"
+    },
+    {
+      "name": "utils.db_manager.get_tables_list",
+      "type": "internal"
+    },
+    {
+      "name": "utils.db_manager.init_db_manager",
+      "type": "internal"
+    },
+    {
+      "name": "utils.db_manager.log_activity",
+      "type": "internal"
+    },
+    {
+      "name": "utils.logger.app_logger",
+      "type": "internal"
+    },
+    {
+      "name": "utils.state_manager",
+      "type": "internal"
+    },
+    {
+      "name": "utils.state_manager.state_manager",
+      "type": "internal"
+    }
+  ],
+  "scan_iterations": 2,
+  "total_imports": 112,
+  "external_dependencies": [
+    {
+      "name": "argon2",
+      "type": "external"
+    },
+    {
+      "name": "argon2.PasswordHasher",
+      "type": "external"
+    },
+    {
+      "name": "argon2.exceptions",
+      "type": "external"
+    },
+    {
+      "name": "argon2.exceptions.HashingError",
+      "type": "external"
+    },
+    {
+      "name": "argon2.exceptions.InvalidHash",
+      "type": "external"
+    },
+    {
+      "name": "argon2.exceptions.VerifyMismatchError",
+      "type": "external"
+    },
+    {
+      "name": "flask",
+      "type": "external"
+    },
+    {
+      "name": "flask.Flask",
+      "type": "external"
+    },
+    {
+      "name": "flask.flash",
+      "type": "external"
+    },
+    {
+      "name": "flask.redirect",
+      "type": "external"
+    },
+    {
+      "name": "flask.render_template",
+      "type": "external"
+    },
+    {
+      "name": "flask.request",
+      "type": "external"
+    },
+    {
+      "name": "flask.send_from_directory",
+      "type": "external"
+    },
+    {
+      "name": "flask.session",
+      "type": "external"
+    },
+    {
+      "name": "flask.url_for",
+      "type": "external"
+    },
+    {
+      "name": "pymysql",
+      "type": "external"
+    },
+    {
+      "name": "qrcode",
+      "type": "external"
+    }
+  ],
+  "pip_packages_count": 347
+}

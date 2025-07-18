@@ -62,6 +62,10 @@ def set_up_database():
         `open` INTEGER NOT NULL DEFAULT 1,
         `tag` TEXT,
         `gravite` INTEGER NOT NULL DEFAULT 1,
+        `equipement_id` INTEGER REFERENCES hardware(id),
+        `new_equipement` BOOLEAN DEFAULT FALSE,
+        `categorie_logicielle` ENUM('outlook', 'office', 'windows', 'antivirus', 'browser'),
+        `categorie_materielle` ENUM('computer', 'printer', 'phone', 'network', 'server'),
         FOREIGN KEY (`ID_user`) REFERENCES `USEUR`(`ID`),
         FOREIGN KEY (`ID_technicien`) REFERENCES `USEUR`(`ID`)
         );

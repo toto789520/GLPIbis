@@ -5,40 +5,51 @@ import sys
 import os
 import shutil
 import atexit
+from multiprocessing import Process, Queue, freeze_support
+from state_handler import StateHandler  # nouveau fichier à créer
 
 # Ajouter le répertoire racine au path Python
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory
-from utils.logger import get_logger
-from utils.db_manager import init_db_manager, get_tables_list, get_db
+from utils.logger import app_logger as logger
+from utils.db_manager import init_db_manager, get_tables_list, get_db, DBManager
+from utils.state_manager import state_manager
 from datetime import datetime
 from tickets.ticket_service import get_ticket_list
 import atexit
 from onekey import auth
 
-# Initialisation du logger
-app_logger = get_logger()
+# Variables globales pour la gestion des états
+state_handler = StateHandler()
+process_queue = Queue()
 
 # Variable globale pour gérer l'état de pause de l'application
 app_paused = False
 app_paused_status = "Application en pause"
-app_paused_message = "Application en pause pour maintenance ou mise à jour. Veuillez patienter."
+app_paused_message = "Application en pause pour maintenance ou mise à jour."
 
 def init_db():
     """Initialise la base de données"""
     try:
-        app_logger.info("Tentative d'initialisation de la base de données...")
+        logger.info("Tentative d'initialisation de la base de données...")
         
         # Nettoyer les anciennes bases de données si elles existent
         cleanup_old_databases()
-        
+
         # Initialisation du gestionnaire de base de données
-        app_logger.info("Initialisation du gestionnaire de base de données pour SQLite")
+        logger.info("Initialisation du gestionnaire de base de données pour SQLite")
         # Utilisation de la fonction init_db_manager pour initialiser la base de données
-        return init_db_manager('sqlite')
+        db_manager = init_db_manager('sqlite')
+
+        # Vérification de la structure des tables
+        logger.info("Vérification de la structure des tables de la base de données")
+        db_manager.verify_table_structure()
+        logger.info("Structure des tables vérifiée avec succès")
+
+        return db_manager
     except Exception as e:
-        app_logger.error(f"ERREUR d'initialisation de la base de données: {e}")
+        logger.error(f"ERREUR d'initialisation de la base de données: {e}")
         raise
 
 def cleanup_old_databases():
@@ -56,50 +67,73 @@ def cleanup_old_databases():
                 try:
                     if os.path.isfile(db_path):
                         os.remove(db_path)
-                        app_logger.info(f"Ancien fichier de base de données supprimé: {db_file}")
+                        logger.info(f"Ancien fichier de base de données supprimé: {db_file}")
                     elif os.path.isdir(db_path):
                         import shutil
                         shutil.rmtree(db_path)
-                        app_logger.info(f"Ancien répertoire de base de données supprimé: {db_file}")
+                        logger.info(f"Ancien répertoire de base de données supprimé: {db_file}")
                 except Exception as e:
-                    app_logger.warning(f"Impossible de supprimer {db_file}: {e}")
+                    logger.warning(f"Impossible de supprimer {db_file}: {e}")
         
-        app_logger.info("Nettoyage des anciennes bases de données terminé")
+        logger.info("Nettoyage des anciennes bases de données terminé")
         
     except Exception as e:
-        app_logger.warning(f"Erreur lors du nettoyage des bases de données: {e}")
+        logger.warning(f"Erreur lors du nettoyage des bases de données: {e}")
 
 # Initialisation de la base de données au démarrage
 try:
     db_manager_instance = init_db()
-    app_logger.info("Base de données initialisée avec succès")
-    app_logger.info(f"Liste des tables Créées/Trouver : {get_tables_list()}")
-    app_logger.info("=== BASE DE DONNÉES INITIALISÉE ===")
+    logger.info("Base de données initialisée avec succès")
+    logger.info(f"Liste des tables Créées/Trouver : {get_tables_list()}")
+    logger.info("=== BASE DE DONNÉES INITIALISÉE ===")
 except Exception as e:
-    app_logger.error(f"Impossible d'initialiser la base de données: {e}")
+    logger.error(f"Impossible d'initialiser la base de données: {e}")
     sys.exit(1)
 
 #lanch SOS mode 
+try:
+    import qrcode
+except ImportError:
+    logger.warning("Module 'qrcode' non disponible. Certaines fonctionnalités peuvent être limitées.")
+
+# Modification de la fonction StartSOSMode pour éviter l'utilisation de 'flash' en dehors du contexte de requête
 def StartSOSMode(app=None):
     """Active le mode SOS pour l'application"""
-    app_logger.warning("\033[31m !===== MODE SOS ACTIVÉ =====! \033[0m")
+    logger.warning("\033[31m !===== MODE SOS ACTIVÉ =====! \033[0m")
     global app_paused, app_paused_status, app_paused_message
     app_paused = True
     app_paused_status = "Mode SOS activé"
     app_paused_message = "L'application fonctionne en mode dégradé. Certaines fonctionnalités peuvent être indisponibles."
     if app:
         app.config['SOS_MODE'] = True
-        flash("L'application fonctionne en mode dégradé. Certaines fonctionnalités sont limitées.", "warning")
+        with app.app_context():  # Ajout d'un contexte d'application pour utiliser 'flash'
+            flash("L'application fonctionne en mode dégradé. Certaines fonctionnalités sont limitées.", "warning")
     
 
 def create_app():
     """Factory pour créer l'application Flask"""
     try:
-        app_logger.info("=== DÉMARRAGE DE L'APPLICATION GLPIBIS ===")
-        
+        logger.info("=== DÉMARRAGE DE L'APPLICATION GLPIBIS ===")
         app = Flask(__name__)
         app.secret_key = "your-secret-key-here-change-this-in-production"
+
+        def cleanup():
+            """Fonction de nettoyage à la fermeture"""
+            logger.info("======= ARRÊT DE L'APPLICATION =======")
+            state_manager.stop()
+            
+        # Enregistrer la fonction cleanup avant d'initialiser state_manager
+        atexit.register(cleanup)
         
+        # Initialisation sécurisée du state_manager
+        try:
+            state_manager.initialize()
+            if not app.debug:  # Ne démarrer le state_manager qu'en production
+                state_manager.start()
+        except Exception as e:
+            logger.error(f"Erreur d'initialisation du state_manager: {e}")
+            StartSOSMode(app)
+
         # Context processor pour rendre 'now' disponible dans tous les templates
         @app.context_processor
         def inject_now():
@@ -110,7 +144,7 @@ def create_app():
                 except Exception:
                     # Si l'endpoint n'existe pas, retourner '#' ou une URL par défaut
                     flash(f"Erreur: L'endpoint '{endpoint}' n'existe pas.", 'error')
-                    app_logger.error(f"Erreur lors de la génération de l'URL pour l'endpoint '{endpoint}' avec les valeurs {values}")
+                    logger.error(f"Erreur lors de la génération de l'URL pour l'endpoint '{endpoint}' avec les valeurs {values}")
                     return '#'
             return {
                 'now': datetime.now(),
@@ -130,12 +164,12 @@ def create_app():
                     session['user_id'] = user_id
                     return None
                 else:
-                    app_logger.warning(f"Session invalide pour l'utilisateur {session.get('user_id')}")
+                    logger.warning(f"Session invalide pour l'utilisateur {session.get('user_id')}")
                     session.clear()
                     flash('Session expirée, veuillez vous reconnecter', 'error')
                     return redirect(url_for('login'))
             else:
-                app_logger.debug("Aucun token de session trouvé")
+                logger.debug("Aucun token de session trouvé")
                 session.clear()
                 return redirect(url_for('login'))
         
@@ -162,61 +196,75 @@ def create_app():
             from flask import send_from_directory
             return send_from_directory('static', 'sw.js', mimetype='application/javascript')
         
+        # Nettoyer à la fermeture
+        atexit.register(cleanup)
+        
+        def cleanup():
+            logger.info("======= ARRÊT DE L'APPLICATION =======")
+            state_manager.stop()
+        
         # Route pour vérifier si le serveur est disponible
         @app.route('/health')
         def health_check():
             """Point de contrôle rapide pour vérifier si l'application est disponible"""
-            return {'status': app_paused_status, 'info': app_paused_message} if app_paused else {'status': 'ok'}
+            state = state_manager.get_state()
+            return {
+                'status': app_paused_status if app_paused else 'ok',
+                'info': app_paused_message if app_paused else '',
+                'tickets_count': state.get('tickets_count', 0),
+                'active_users': state.get('active_users', 0),
+                'last_update': state.get('last_update', 0)
+            }
 
         # Route pour mettre l'application en pause
         @app.route('/pause')
         def pause():
             global app_paused
             if 'user_id' not in session:
-                app_logger.warning("Tentative de mise en pause sans utilisateur connecté")
+                logger.warning("Tentative de mise en pause sans utilisateur connecté")
                 flash('Vous devez être connecté pour mettre l\'application en pause', 'error')
                 return redirect(url_for('login'))
             if app_paused:
-                app_logger.info("L'application est déjà en pause - redémarrage")
+                logger.info("L'application est déjà en pause - redémarrage")
                 app_paused = False
-                app_logger.info("Application redémarrée")
+                logger.info("Application redémarrée")
                 return {'status': 'resumed'}
             app_paused = True
-            app_logger.info("Application mise en pause")
+            logger.info("Application mise en pause")
             return {'status': 'paused'}
 
         @app.route('/login', methods=['GET', 'POST'])
         def login():
-            app_logger.debug("Route /login appelée")
+            logger.debug("Route /login appelée")
             
             if request.method == 'POST':
-                app_logger.debug("Méthode POST détectée")
+                logger.debug("Méthode POST détectée")
                 email = request.form.get('email')  # Changé de 'username' à 'email'
                 password = request.form.get('password')
                 
-                app_logger.debug(f"Identifiants reçus - Email: {email}")
+                logger.debug(f"Identifiants reçus - Email: {email}")
 
                 if email and password:
                     user_connected = auth.login_user(email, password)
                     if user_connected['status'] == 'error':
-                        app_logger.error(f"Erreur de connexion pour {email}: {user_connected['message']}")
+                        logger.error(f"Erreur de connexion pour {email}: {user_connected['message']}")
                         flash(user_connected['message'], 'error')
                         return render_template('login.html')
-                    app_logger.debug(f"Résultat de la connexion: {user_connected}")
+                    logger.debug(f"Résultat de la connexion: {user_connected}")
                     if not user_connected:
                         flash('Identifiants incorrects', 'error')
-                        app_logger.warning(f"Échec de la connexion pour {email}")
+                        logger.warning(f"Échec de la connexion pour {email}")
                         return render_template('login.html')
                     else:
-                        app_logger.info(f"Utilisateur connecté: {user_connected['username']}")
+                        logger.info(f"Utilisateur connecté: {user_connected['user_id']}")
                         session['token'] = user_connected['token']
                         session['role'] = user_connected.get('role', 'user')
                     return redirect(url_for('dashboard'))
                 else:
                     flash('Email et mot de passe requis', 'error')
-                    app_logger.warning("Tentative de connexion avec des champs vides")
+                    logger.warning("Tentative de connexion avec des champs vides")
             
-            app_logger.debug("Rendu du template login.html")
+            logger.debug("Rendu du template login.html")
             return render_template('login.html')
         
         def get_dashboard_stats():
@@ -270,7 +318,7 @@ def create_app():
                     
                 return stats
             except Exception as e:
-                app_logger.error(f"Erreur lors du calcul des statistiques: {e}")
+                logger.error(f"Erreur lors du calcul des statistiques: {e}")
                 return stats
 
         # Route pour le tableau de bord
@@ -305,10 +353,10 @@ def create_app():
         # Routes pour l'inscription (si elles n'existent pas dans les blueprints)
         @app.route('/register', methods=['GET', 'POST'])
         def register():
-            app_logger.debug("Route /register appelée")
+            logger.debug("Route /register appelée")
             
             if request.method == 'POST':
-                app_logger.debug("Méthode POST détectée pour l'inscription")
+                logger.debug("Méthode POST détectée pour l'inscription")
                 name = request.form.get('name')
                 email = request.form.get('email')
                 password = request.form.get('password')
@@ -319,17 +367,17 @@ def create_app():
                     try:
                         debug_user_id = auth.register_user(name, age, tel, email, password, role='user')
                         flash("Inscription réussie, vous pouvez maintenant vous connecter", "success")
-                        app_logger.info(f"Inscription réussie pour {email} avec ID {debug_user_id}")
+                        logger.info(f"Inscription réussie pour {email} avec ID {debug_user_id}")
                         return redirect(url_for('login'))
                     except Exception as e:
-                        app_logger.error(f"Erreur lors de l'inscription: {e}")
+                        logger.error(f"Erreur lors de l'inscription: {e}")
                         flash("Erreur lors de l'inscription : \n" + str(e), "error")
                         return render_template('register.html')
                 else:
                     flash("Les mots de passe ne correspondent pas", "error")
-                    app_logger.warning("Tentative d'inscription avec des mots de passe non correspondants")
+                    logger.warning("Tentative d'inscription avec des mots de passe non correspondants")
                     return render_template('register.html')
-            app_logger.debug("Rendu du template register.html")
+            logger.debug("Rendu du template register.html")
             return render_template('register.html')
           # Routes pour le profil utilisateur
         @app.route('/profile')
@@ -337,7 +385,7 @@ def create_app():
             """Affiche le profil de l'utilisateur connecté"""
             if 'user_id' not in session:
                 flash('Vous devez être connecté pour accéder à votre profil', 'error')
-                app_logger.warning("Tentative d'accès au profil sans utilisateur connecté")
+                logger.warning("Tentative d'accès au profil sans utilisateur connecté")
                 return redirect(url_for('dashboard'))
 
             try:
@@ -347,7 +395,7 @@ def create_app():
                     user_info = get_user_info(session['user_id'])
                 except ImportError:
                     # Si le module n'existe pas, créer des données par défaut
-                    app_logger.warning("Module onekey.user non disponible, utilisation de données par défaut")
+                    logger.warning("Module onekey.user non disponible, utilisation de données par défaut")
                     user_info = {
                         'id': session['user_id'],
                         'name': session.get('username', 'Utilisateur'),
@@ -360,7 +408,7 @@ def create_app():
                     }
                   # Vérifier si user_info est None ou vide
                 if not user_info:
-                    app_logger.warning(f"Aucune information utilisateur trouvée pour {session['user_id']}")
+                    logger.warning(f"Aucune information utilisateur trouvée pour {session['user_id']}")
                     # Créer un profil par défaut au lieu de déconnecter
                     user_info = {
                         'id': session['user_id'],
@@ -392,7 +440,7 @@ def create_app():
                 return render_template('profile.html', user_info=user_info)
                 
             except Exception as e:
-                app_logger.error(f"Erreur lors du chargement du profil: {e}")
+                logger.error(f"Erreur lors du chargement du profil: {e}")
                 flash('Erreur lors du chargement du profil', 'error')
                 return redirect(url_for('dashboard'))
 
@@ -409,7 +457,7 @@ def create_app():
                     user_info = get_user_info(session['user_id'])
                 except ImportError:
                     # Module non disponible, créer des données par défaut
-                    app_logger.warning("Module onekey.user non disponible pour edit_profile")
+                    logger.warning("Module onekey.user non disponible pour edit_profile")
                     user_info = {
                         'id': session['user_id'],
                         'name': session.get('username', 'Utilisateur'),
@@ -460,7 +508,7 @@ def create_app():
                 return render_template('edit_profile.html', user_info=user_info)
                 
             except Exception as e:
-                app_logger.error(f"Erreur lors de la modification du profil: {e}")
+                logger.error(f"Erreur lors de la modification du profil: {e}")
                 flash('Erreur lors de la modification du profil', 'error')
                 return redirect(url_for('profile'))
         
@@ -495,7 +543,7 @@ def create_app():
                 except ValueError as e:
                     flash(str(e), 'error')
                 except Exception as e:
-                    app_logger.error(f"Erreur lors du changement de mot de passe: {e}")
+                    logger.error(f"Erreur lors du changement de mot de passe: {e}")
                     flash('Erreur lors du changement de mot de passe', 'error')
             
             return render_template('change_password.html')        # Import et enregistrement des blueprints
@@ -509,6 +557,7 @@ def create_app():
         
         blueprints_imported = []
 
+        # Modification de la fonction register_blueprints pour éviter l'utilisation de 'flash' en dehors du contexte de requête
         def register_blueprints(app):
             for bp_config in blueprints_config:
                 try:
@@ -516,30 +565,31 @@ def create_app():
                     blueprint = getattr(module, bp_config['bp_name'])
                     app.register_blueprint(blueprint)
                     blueprints_imported.append(bp_config['name'])
-                    app_logger.info(f"Blueprint {bp_config['name']} enregistré")
-                    app_logger.info(f"Blueprints enregistrés: {', '.join(blueprints_imported)}")
+                    logger.info(f"Blueprint {bp_config['name']} enregistré")
+                    logger.info(f"Blueprints enregistrés: {', '.join(blueprints_imported)}")
                 except (ImportError, AttributeError) as e:
-                    app_logger.warning(f"Blueprint {bp_config['name']} non disponible: {e}")
+                    logger.warning(f"Blueprint {bp_config['name']} non disponible: {e}")
                     # Activer le mode SOS si un blueprint n'est pas chargé
                     StartSOSMode(app)
-                    flash(f"Le module {bp_config['name']} n'est pas disponible, certaines fonctionnalités peuvent être limitées.", "warning")
+                    with app.app_context():  # Ajout d'un contexte d'application pour utiliser 'flash'
+                        flash(f"Le module {bp_config['name']} n'est pas disponible, certaines fonctionnalités peuvent être limitées.", "warning")
 
         register_blueprints(app)
         
         if not blueprints_imported:
-            app_logger.warning("Aucun blueprint enregistré, seules les routes de base sont disponibles")
+            logger.warning("Aucun blueprint enregistré, seules les routes de base sont disponibles")
             StartSOSMode(app)
             
         
         # Gestionnaires d'erreur
         @app.errorhandler(500)
         def internal_error(error):
-            app_logger.error(f"Erreur interne: {error}")
+            logger.error(f"Erreur interne: {error}")
             return render_template('errors/500.html'), 500
         
         @app.errorhandler(404)
         def not_found(error):
-            app_logger.warning(f"Page non trouvée: {request.url}")
+            logger.warning(f"Page non trouvée: {request.url}")
             return render_template('errors/404.html'), 404
         
         @app.route('/favicon.ico')
@@ -554,24 +604,72 @@ def create_app():
         return app
         
     except Exception as e:
-        app_logger.error(f"Erreur lors de l'initialisation de l'application: {e}")
+        logger.error(f"Erreur lors de l'initialisation de l'application: {e}")
         raise
 
-if __name__ == '__main__':
+def run_main_server(queue):
+    """Serveur principal"""
     try:
         app = create_app()
-        app_logger.info("=== DÉMARRAGE DU SERVEUR FLASK ===")
-        app_logger.info("Application disponible sur http://127.0.0.1:5000")
-        
-        def cleanup():
-            app_logger.info("======= ARRÊT DE L'APPLICATION =======")
-
-        atexit.register(cleanup)
-        
-        # Dynamically set debug mode based on the environment
-        debug_mode = os.environ.get('FLASK_ENV', 'production') == 'development'
-        app.run(debug=debug_mode, host='127.0.0.1', port=5000)
-        
+        logger.info("=== DÉMARRAGE DU SERVEUR PRINCIPAL ===")
+        app.run(host='127.0.0.1', port=5000)
     except Exception as e:
-        app_logger.error(f"Erreur fatale: {e}")
+        logger.error(f"Erreur serveur principal: {e}")
+        queue.put(('error', str(e)))
+
+def run_backup_server(queue):
+    """Serveur de secours pour les pages essentielles"""
+    try:
+        backup_app = Flask('backup')
+        backup_app.config['SOS_MODE'] = True
+        
+        @backup_app.route('/waiting')
+        def waiting():
+            return render_template('waiting.html')
+            
+        @backup_app.route('/health')
+        def health():
+            return state_handler.get_health_status()
+            
+        logger.info("=== DÉMARRAGE DU SERVEUR DE SECOURS ===")
+        backup_app.run(host='127.0.0.1', port=5001)
+    except Exception as e:
+        logger.error(f"Erreur serveur secours: {e}")
+        queue.put(('backup_error', str(e)))
+
+def start_servers():
+    """Démarre les serveurs avec surveillance"""
+    main_process = Process(target=run_main_server, args=(process_queue,))
+    backup_process = Process(target=run_backup_server, args=(process_queue,))
+    
+    main_process.start()
+    backup_process.start()
+    
+    try:
+        while True:
+            if not process_queue.empty():
+                msg_type, msg = process_queue.get()
+                if msg_type == 'error':
+                    logger.critical(f"Erreur serveur principal: {msg}")
+                    state_handler.set_sos_mode(True)
+                elif msg_type == 'backup_error':
+                    logger.critical(f"Erreur serveur secours: {msg}")
+            
+            if not main_process.is_alive():
+                logger.warning("Redémarrage du serveur principal...")
+                main_process = Process(target=run_main_server, args=(process_queue,))
+                main_process.start()
+    except KeyboardInterrupt:
+        logger.info("Arrêt des serveurs demandé...")
+        main_process.terminate()
+        backup_process.terminate()
+        main_process.join()
+        backup_process.join()
+
+if __name__ == '__main__':
+    freeze_support()
+    try:
+        start_servers()
+    except Exception as e:
+        logger.critical(f"Erreur fatale: {e}")
         sys.exit(1)

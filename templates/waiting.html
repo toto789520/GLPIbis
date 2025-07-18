@@ -78,15 +78,12 @@
         function updateRetryCount() {
             document.getElementById('retryCount').textContent = `Tentative: ${retryCount}`;
         }          function checkServer() {
-            fetch('/health', {
-                method: 'GET',
-                cache: 'no-cache'
-            })
-            .then(response => {
-                if (response.ok) {
+            fetch('/health')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
                     updateStatus('Serveur disponible ! Redirection...');
                     setTimeout(() => {
-                        // Essayer de retourner à la page précédente, sinon aller à l'accueil
                         if (document.referrer && !document.referrer.includes('/waiting')) {
                             window.location.href = document.referrer;
                         } else {
@@ -94,38 +91,12 @@
                         }
                     }, 1000);
                 } else {
-                    // Vérifier si le serveur retourne une info spéciale (ex: status paused)
-                    response.text().then(text => {
-                        try {
-                            const data = JSON.parse(text);
-                            document.getElementById('info_server').textContent = `${data.info || 'Erreur de récupération des informations.'}`;
-                            document.getElementById('status_server').textContent = `Statut du serveur: ${data.status || 'Inconnu'}`;
-                            updateStatus('Serveur non disponible, nouvelle tentative dans 5s...');
-                            retryCount++;
-                            updateRetryCount();
-                            // Relancer la vérification après 5 secondes
-                            setTimeout(checkServer, 5000);
-                        } catch (e) {
-                            document.getElementById('info').textContent = `Aucune information disponible. / Application en cours de redémarrage...`;
-                            updateStatus('Serveur non disponible, nouvelle tentative dans 5s...');
-                            retryCount++;
-                            updateRetryCount();
-                            // Relancer la vérification après 5 secondes
-                            setTimeout(checkServer, 5000);
-                        }
-                    });
+                    updateStatus(`Serveur en ${data.status} - Tickets ouverts: ${data.tickets_count}, Utilisateurs actifs: ${data.active_users}`);
+                    setTimeout(checkServer, 5000);
                 }
             })
             .catch(error => {
-                retryCount++;
-                updateRetryCount();
-                
-                if (retryCount > maxRetries) {
-                    updateStatus('Le serveur met trop de temps à redémarrer. Veuillez actualiser manuellement.');
-                    return;
-                }
-                
-                updateStatus('Serveur non disponible, nouvelle tentative dans 5s...');
+                updateStatus('Serveur indisponible, nouvelle tentative dans 5s...');
                 setTimeout(checkServer, 5000);
             });
         }

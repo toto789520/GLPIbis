@@ -20,7 +20,7 @@ def validate_password(password):
     - Au moins un chiffre
     - Au moins un caractère spécial
     """
-    app_logger.debug("Validation du mot de passe en cours.")  # Ne pas loguer le mot de passe
+    app_logger.debug(f"Validation du mot de passe: {password[:5]}...")  # Log les 5 premiers caractères pour éviter de loguer le mot de passe complet
     # Vérifier la longueur minimale
     if not password or len(password) < 8:
         app_logger.debug("Validation du mot de passe échouée - Longueur insuffisante")
@@ -69,9 +69,9 @@ def register_user(name, age, tel, email, password, role='user'):
             raise ValueError("Un utilisateur avec cet email existe déjà")
           # Valider le mot de passe
         if not validate_password(password):
-            app_logger.debug("Validation du mot de passe échouée")
+            app_logger.debug(f"Validation du mot de passe échouée pour {email}")
             raise ValueError("Le mot de passe ne respecte pas les critères de complexité")
-        app_logger.debug("Validation du mot de passe réussie")
+        app_logger.debug(f"Validation du mot de passe réussie pour {email}")
         
         # Hasher le mot de passe
         ph = argon2.PasswordHasher()
@@ -98,7 +98,7 @@ def register_user(name, age, tel, email, password, role='user'):
         elif role == 'technician':
             get_db("INSERT INTO technicien (id_user) VALUES (?)", (user_id,))
         
-        app_logger.info(f"INFO: Utilisateur créé avec succès - ID: {user_id}")
+        app_logger.info(f"INFO: Utilisateur {email} créé avec succès - ID: {user_id}")
         return user_id
         
     except Exception as e:

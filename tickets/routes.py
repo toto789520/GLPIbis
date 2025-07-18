@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from utils.db_manager import get_db, log_activity
+from onekey.user import get_user_info
 from datetime import datetime
 import logging
 
@@ -11,28 +12,36 @@ tickets_bp = Blueprint('tickets', __name__, url_prefix='/tickets')
 def index():
     """Page d'accueil des tickets"""
     try:
-        # Récupérer tous les tickets
+        # Récupérer tous les tickets avec les informations utilisateur
         tickets = get_db("""
             SELECT t.ID_tiqué, t.ID_user, t.titre, t.date_open, 
-                   COALESCE(u2.name, 'Non assigné') as assigne_a,
-                   t.open, t.gravite, t.tag, t.description, t.date_close,
-                   u1.name as user_name
+                   t.ID_technicien, t.open, t.gravite, t.tag, 
+                   t.description, t.date_close
             FROM tiqué t
-            LEFT JOIN USEUR u1 ON t.ID_user = u1.ID
-            LEFT JOIN USEUR u2 ON t.ID_technicien = u2.ID
             ORDER BY t.date_open DESC
-        """)
-        
-        app_logger.debug(f"DEBUG - index: Requête SQL exécutée")
-        app_logger.debug(f"DEBUG - index: Résultat brut: {tickets}")
-        app_logger.debug(f"DEBUG - index: Type du résultat: {type(tickets)}")
-        app_logger.debug(f"DEBUG - index: {len(tickets) if tickets else 0} tickets récupérés")
-        
-        # Vérifier s'il y a des tickets dans la table
-        count_result = get_db("SELECT COUNT(*) FROM tiqué")
-        app_logger.debug(f"DEBUG - index: Nombre total de tickets dans la table: {count_result}")
-        
-        return render_template('tickets/index.html', tickets=tickets or [])
+        """) or []
+
+        # Enrichir les données avec les informations utilisateur
+        enriched_tickets = []
+        for ticket in tickets:
+            user_info = get_user_info(ticket[1])  # ID_user
+            tech_info = get_user_info(ticket[4]) if ticket[4] else None  # ID_technicien
+            
+            enriched_ticket = {
+                'id': ticket[0],
+                'user': user_info['name'] if user_info else 'Inconnu',
+                'titre': ticket[2],
+                'date_open': ticket[3],
+                'assigne_a': tech_info['name'] if tech_info else 'Non assigné',
+                'open': ticket[5],
+                'gravite': ticket[6],
+                'tag': ticket[7],
+                'description': ticket[8],
+                'date_close': ticket[9]
+            }
+            enriched_tickets.append(enriched_ticket)
+
+        return render_template('tickets/index.html', tickets=enriched_tickets)
         
     except Exception as e:
         app_logger.error(f"Erreur lors de la récupération des tickets: {str(e)}")
@@ -93,31 +102,43 @@ def create_ticket():
     """Créer un nouveau ticket"""
     if request.method == 'POST':
         try:
+            # Récupération des champs du formulaire
             titre = request.form.get('titre')
             description = request.form.get('description')
             gravite = request.form.get('gravite', 3)
             tags = request.form.get('tags', '')
             assigned_to = request.form.get('assigned_to')
+            type_ticket = request.form.get('type')
+            categorie = request.form.get('categorie')
+            equipement_id = request.form.get('equipement')
+            new_hw = request.form.get('new_hw') == '1'
             
-            app_logger.debug(f"DEBUG - create_ticket: Données reçues - titre: {titre}, description: {description[:50]}..., gravite: {gravite}")
+            app_logger.debug(f"DEBUG - create_ticket: Données reçues - titre: {titre}, type: {type_ticket}, catégorie: {categorie}")
             
-            if not titre or not description:
-                flash("Le titre et la description sont obligatoires", "error")
+            if not titre or not description or not type_ticket or not categorie:
+                flash("Tous les champs obligatoires doivent être remplis", "error")
                 app_logger.warning("Tentative de création de ticket avec des champs manquants")
                 return render_template('tickets/create.html')
-            
-            # Vérifier que l'utilisateur est connecté
+
             user_id = session.get('user_id')
             if not user_id:
                 flash("Vous devez être connecté pour créer un ticket", "error")
                 return redirect(url_for('login'))
             
+            # Construction du tag avec type et catégorie
+            formatted_tags = f"{type_ticket}:{categorie}"
+            if tags:
+                formatted_tags += f",{tags}"
+
             # Créer le ticket
-            result = get_db("""
-                INSERT INTO tiqué (ID_user, titre, description, gravite, tag, date_open, open, ID_technicien)
-                VALUES (?, ?, ?, ?, ?, ?, 1, ?)
-            """, (user_id, titre, description, int(gravite), tags, 
-                  datetime.now().strftime("%Y-%m-%d %H:%M:%S"), assigned_to if assigned_to else None))
+            get_db("""
+                INSERT INTO tiqué (ID_user, titre, description, gravite, tag, date_open, open, ID_technicien, equipement_id, new_equipement)
+                VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+            """, (user_id, titre, description, int(gravite), formatted_tags, 
+                  datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+                  assigned_to if assigned_to else None,
+                  equipement_id if equipement_id else None,
+                  new_hw))
             
             app_logger.info(f"Ticket créé avec succès pour l'utilisateur {user_id}: {titre}")
             
@@ -143,10 +164,24 @@ def create_ticket():
         # Récupérer la liste du matériel pour l'association
         hardware_list = get_db("SELECT id, nom, type FROM hardware ORDER BY nom LIMIT 100")
         
-        return render_template('tickets/create.html', users=users or [], hardware_list=hardware_list or [])
+        return render_template('tickets/create.html', 
+                             users=users or [], 
+                             hardware_list=hardware_list or [],
+                             types_categories=get_ticket_categories())
     except Exception as e:
         app_logger.error(f"Erreur lors du chargement du formulaire de création: {str(e)}")
         return render_template('tickets/create.html', users=[], hardware_list=[])
+
+def get_ticket_categories():
+    """Retourne la structure des types et catégories de tickets"""
+    return {
+        'hardware': ['desktop', 'laptop', 'printer', 'scanner', 'phone', 'peripheral', 'other_hw'],
+        'software': ['os', 'office', 'email', 'browser', 'antivirus', 'erp', 'other_sw'],
+        'network': ['internet', 'wifi', 'lan', 'vpn', 'other_net'],
+        'security': ['password', 'access_denied', 'virus', 'data_breach', 'other_sec'],
+        'access': ['new_account', 'permissions', 'software_install', 'other_acc'],
+        'other': ['training', 'consultation', 'info', 'other_req']
+    }
 
 @tickets_bp.route('/view/<int:ticket_id>')
 def view(ticket_id):
@@ -154,51 +189,54 @@ def view(ticket_id):
     try:
         app_logger.debug(f"DEBUG - view: Récupération des informations du ticket {ticket_id}")
         
-        # Récupérer le ticket avec toutes les informations nécessaires
-        ticket_rows = get_db("""
-            SELECT t.ID_tiqué, t.ID_user, t.titre, t.date_open, t.date_close,
-                   t.ID_technicien, t.description, t.open, t.tag, t.gravite,
-                   u1.name as demandeur, u2.name as assigne_a
-            FROM tiqué t
-            LEFT JOIN USEUR u1 ON t.ID_user = u1.ID
-            LEFT JOIN USEUR u2 ON t.ID_technicien = u2.ID
-            WHERE t.ID_tiqué = ?
+        # Récupérer le ticket
+        ticket_result = get_db("""
+            SELECT ID_tiqué, ID_user, titre, date_open, date_close,
+                   ID_technicien, description, open, tag, gravite
+            FROM tiqué 
+            WHERE ID_tiqué = ?
         """, (ticket_id,))
 
-        app_logger.debug(f"DEBUG - view: Résultat de la requête pour le ticket {ticket_id}: {ticket_rows}")
-
-        if not ticket_rows:
-            app_logger.warning(f"Ticket {ticket_id} non trouvé")
+        if not ticket_result or not ticket_result[0]:
             flash("Ticket non trouvé", "error")
             return redirect(url_for('tickets.index'))
+            
+        app_logger.debug(f"DEBUG - view: Informations récupérées de la db: {dict(zip(['ID_tiqué', 'ID_user', 'titre', 'date_open', 'date_close', 'ID_technicien', 'description', 'open', 'tag', 'gravite'], ticket_result[0]))}")
+        app_logger.debug(f"DEBUG - view: Ticket trouvé: {bool(ticket_result)}")
 
-        # Vérifier que ticket_rows est une liste/tuple et contient des données
-        if not isinstance(ticket_rows, (list, tuple)) or len(ticket_rows) == 0:
-            app_logger.error("Format de résultat inattendu de la base de données")
-            flash("Erreur lors du chargement du ticket", "error")
-            return redirect(url_for('tickets.index'))
-
-        ticket = ticket_rows[0]  # Premier résultat
+        ticket = ticket_result[0]
         
-        # Créer le dictionnaire avec des valeurs par défaut sécurisées
-        ticket_data = {
-            'ID_tiqué': ticket[0] if len(ticket) > 0 else None,
-            'ID_user': ticket[1] if len(ticket) > 1 else None,
-            'titre': ticket[2] if len(ticket) > 2 else '',
-            'date_open': ticket[3] if len(ticket) > 3 else None,
-            'date_close': ticket[4] if len(ticket) > 4 else None,
-            'ID_technicien': ticket[5] if len(ticket) > 5 else None,
-            'description': ticket[6] if len(ticket) > 6 else '',
-            'open': ticket[7] if len(ticket) > 7 else True,
-            'tag': ticket[8] if len(ticket) > 8 else '',
-            'gravite': ticket[9] if len(ticket) > 9 else 3,  # Valeur par défaut de 3
+        # Enrichir avec les informations utilisateur
+        user_info = get_user_info(ticket[1])  # ID_user
+        tech_info = get_user_info(ticket[5]) if ticket[5] else None  # ID_technicien
+
+        # Récupérer les commentaires
+        comments = get_db("""
+            SELECT tc.id, tc.user_id, tc.content, tc.created_at, u.name as user_name
+            FROM ticket_comments tc
+            LEFT JOIN USEUR u ON tc.user_id = u.ID
+            WHERE tc.ticket_id = ?
+            ORDER BY tc.created_at DESC
+        """, (ticket_id,))
+
+        ticket_details = {
+            'ID_tiqué': ticket[0],
+            'demandeur': user_info['name'] if user_info else 'Inconnu',
+            'titre': ticket[2],
+            'date_open': ticket[3],
+            'date_close': ticket[4],
+            'assigne_a': tech_info['name'] if tech_info else 'Non assigné',
+            'description': ticket[6],
+            'open': ticket[7],
+            'tag': ticket[8],
+            'gravite': ticket[9],
+            'comments': comments or []
         }
-        
-        app_logger.debug(f"Ticket {ticket_id} chargé avec succès")
-        return render_template('tickets/view.html', ticket=ticket_data, now=datetime.now())
+
+        return render_template('tickets/view.html', ticket=ticket_details, now=datetime.now())
         
     except Exception as e:
-        app_logger.debug(f"DEBUG - view: ERREUR lors de l'accès au ticket {ticket_id}: {str(e)}")
+        app_logger.error(f"DEBUG - view: ERREUR lors de l'accès au ticket {ticket_id}: {str(e)}")
         flash("Erreur lors du chargement du ticket", "error")
         return redirect(url_for('tickets.index'))
 
@@ -323,6 +361,9 @@ def update_ticket(ticket_id):
             return redirect(url_for('tickets.view', ticket_id=ticket_id))
             
         except Exception as e:
+            app_logger.error(f"Erreur lors de la mise à jour du ticket: {str(e)}")
+            flash("Erreur lors de la mise à jour du ticket", "error")
+            return redirect(url_for('tickets.view', ticket_id=ticket_id))
             app_logger.error(f"Erreur lors de la mise à jour du ticket: {str(e)}")
             flash("Erreur lors de la mise à jour du ticket", "error")
             return redirect(url_for('tickets.view', ticket_id=ticket_id))

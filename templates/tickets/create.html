@@ -21,7 +21,7 @@
             <h5 class="mb-0">Informations du ticket</h5>
         </div>
         <div class="card-body">
-            <form method="post" action="{{ url_for('tickets.create_ticket') }}" enctype="multipart/form-data">
+            <form method="post" action="{{ url_for('tickets.create_ticket_route') }}" enctype="multipart/form-data">
                 <div class="row">
                     <!-- Colonne de gauche -->
                     <div class="col-md-8">
@@ -307,5 +307,33 @@
             updateCategorieOptions();
         }
     });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation du formulaire
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const titre = document.getElementById('titre').value.trim();
+        const description = document.getElementById('description').value.trim();
+        
+        let isValid = true;
+        let errors = [];
+
+        if (titre.length < 3) {
+            errors.push("Le titre doit contenir au moins 3 caractères");
+            isValid = false;
+        }
+
+        if (description.length < 10) {
+            errors.push("La description doit être plus détaillée");
+            isValid = false;
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            alert(errors.join("\n"));
+        }
+    });
+});
 </script>
 {% endblock %}

@@ -1,0 +1,100 @@
+{
+  "pytest_resources": {
+    "test_files": 8,
+    "test_directories": 1,
+    "conftest_files": 1,
+    "pytest_config": 1,
+    "fixtures": 12,
+    "test_data": 0,
+    "marks": 1,
+    "test_imports": 1
+  },
+  "test_files": [
+    "test_admin_import.py",
+    "test_tickets.py",
+    "test\\test_activity.py",
+    "test\\test_auth.py",
+    "test\\test_email.py",
+    "test\\test_inventory.py",
+    "test\\test_sql_injection.py",
+    "test\\test_tickets.py"
+  ],
+  "test_directories": [
+    "test"
+  ],
+  "conftest_files": [
+    "conftest.py"
+  ],
+  "pytest_config": [
+    "pytest.ini"
+  ],
+  "fixtures": [
+    {
+      "file": "conftest.py",
+      "fixture_name": "app",
+      "type": "pytest_fixture"
+    },
+    {
+      "file": "conftest.py",
+      "fixture_name": "client",
+      "type": "pytest_fixture"
+    },
+    {
+      "file": "test\\test_activity.py",
+      "fixture_name": "client",
+      "type": "pytest_fixture"
+    },
+    {
+      "file": "test\\test_activity.py",
+      "fixture_name": "setup_test_activity",
+      "type": "pytest_fixture"
+    },
+    {
+      "file": "test\\test_auth.py",
+      "fixture_name": "setup_test_db",
+      "type": "pytest_fixture"
+    },
+    {
+      "file": "test\\test_inventory.py",
+      "fixture_name": "client",
+      "type": "pytest_fixture"
+    },
+    {
+      "file": "test\\test_inventory.py",
+      "fixture_name": "setup_test_categories",
+      "type": "pytest_fixture"
+    },
+    {
+      "file": "test\\test_inventory.py",
+      "fixture_name": "setup_test_item",
+      "type": "pytest_fixture"
+    },
+    {
+      "file": "test\\test_sql_injection.py",
+      "fixture_name": "client",
+      "type": "pytest_fixture"
+    },
+    {
+      "file": "test\\test_tickets.py",
+      "fixture_name": "client",
+      "type": "pytest_fixture"
+    },
+    {
+      "file": "test\\test_tickets.py",
+      "fixture_name": "setup_test_user",
+      "type": "pytest_fixture"
+    },
+    {
+      "file": "test\\test_tickets.py",
+      "fixture_name": "setup_test_ticket",
+      "type": "pytest_fixture"
+    }
+  ],
+  "test_data": [],
+  "marks": [
+    "skip"
+  ],
+  "test_imports": [
+    "pytest"
+  ]
+}

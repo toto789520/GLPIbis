@@ -40,17 +40,42 @@
                 </div>
             </div>
 
-            <!-- Commentaires (section temporairement simplifiée) -->
+            <!-- Commentaires -->
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">Commentaires</h5>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <p>Système de commentaires en cours de développement.</p>
-                        <p><strong>Ticket ID:</strong> {{ ticket.ID_tiqué }}</p>
-                        <p><strong>Statut:</strong> {{ 'Ouvert' if ticket.open else 'Fermé' }}</p>
+                    {% if comments %}
+                    <div class="comment-list">
+                        {% for comment in comments %}
+                        <div class="comment mb-3 p-3 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong>{{ comment.name or 'Utilisateur inconnu' }}</strong>
+                                <small class="text-muted">{{ comment.created_at }}</small>
+                            </div>
+                            <p class="mb-1">{{ comment.content }}</p>
+                            {% if comment.gravite %}
+                            <span class="badge bg-warning">Gravité: {{ comment.gravite }}/5</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
                     </div>
+                    {% else %}
+                    <p class="text-muted">Aucun commentaire pour ce ticket.</p>
+                    {% endif %}
+
+                    {% if ticket.open %}
+                    <form action="{{ url_for('tickets.add_comment', ticket_id=ticket.ID_tiqué) }}" method="post" class="mt-4">
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Ajouter un commentaire</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-comment"></i> Commenter
+                        </button>
+                    </form>
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -46,7 +46,7 @@
             <span>Administration</span>
         </a>
         {% endif %}
-        <a href="{{ safe_url_for('tickets.create_ticket') }}" class="horizontal-button">
+        <a href="{{ safe_url_for('tickets.create_ticket_route') }}" class="horizontal-button">
             <i class="fas fa-plus-circle"></i>
             <span>Nouveau Ticket</span>
         </a>
@@ -175,7 +175,7 @@
                 <div class="card-body">
                     <div class="row text-center">
                         <div class="col-md-3 col-6 mb-3">
-                            <a href="{{ safe_url_for('tickets.create_ticket') }}" class="btn btn-outline-primary w-100 py-2">
+                            <a href="{{ safe_url_for('tickets.create_ticket_route') }}" class="btn btn-outline-primary w-100 py-2">
                                 <i class="fas fa-plus-circle mb-2 d-block" style="font-size: 1.5rem;"></i>
                                 Nouveau ticket
                             </a>

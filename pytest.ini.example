@@ -1,0 +1,12 @@
+# Configuration pytest générée automatiquement par pyclean
+[tool:pytest]
+testpaths = test
+python_files = test_*.py *_test.py
+python_classes = Test*
+python_functions = test_*
+markers =
+    skip: mark test as skip
+addopts = -v --tb=short --strict-markers
+filterwarnings =
+    ignore::DeprecationWarning
+    ignore::PendingDeprecationWarning

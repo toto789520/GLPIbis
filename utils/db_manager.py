@@ -25,15 +25,6 @@ class DBManager:
             import logging
             self.logger = logging.getLogger(__name__)
 
-    def _sanitize_sensitive_data(self, data):
-        """
-        Remplace les données sensibles par des valeurs masquées.
-        """
-        if isinstance(data, dict):
-            sensitive_keys = {'smtp_password', 'password'}
-            return {key: ('***' if key in sensitive_keys else value) for key, value in data.items()}
-        return data
-
     def get_connection(self):
         if self.db_type == 'sqlite':
             # Une meilleure approche pour SQLite dans un environnement multi-thread
@@ -135,8 +126,7 @@ class DBManager:
             logger.error(f"Erreur lors de l'exécution de la requête: {str(e)}")
             logger.error(f"Requête: {query}")
             if params:
-                sanitized_params = self._sanitize_sensitive_data(params)
-                # Sensitive parameters are sanitized but not logged to avoid exposure.
+                logger.error(f"Paramètres: {params}")
             return False
 
     def initialize_database(self):
@@ -476,126 +466,199 @@ class DBManager:
     def verify_table_structure(self):
         """Vérifie et corrige la structure des tables"""
         try:
-            if self.db_type == 'sqlite':
-                # Vérifier la table sessions
-                sessions_columns = self.execute_query("PRAGMA table_info(sessions)")
-                if sessions_columns and isinstance(sessions_columns, list):
-                    session_column_names = [col[1] for col in sessions_columns]
+            # Vérifier et mettre à jour la table tiqué
+            columns = self.execute_query("PRAGMA table_info(tiqué)")
+            column_names = [col[1] for col in columns] if columns else []
+            
+            # Colonnes requises avec leurs types et contraintes
+            required_columns = {
+                'ID_tiqué': 'INTEGER PRIMARY KEY AUTOINCREMENT',
+                'ID_user': 'TEXT NOT NULL',
+                'titre': 'TEXT NOT NULL',
+                'description': 'TEXT',
+                'gravite': 'INTEGER CHECK (gravite BETWEEN 1 AND 5)',
+                'date_open': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+                'date_close': 'TIMESTAMP',
+                'ID_technicien': 'TEXT',
+                'open': 'INTEGER DEFAULT 1 CHECK (open IN (0,1))',
+                'tag': 'TEXT',
+                'priorite': 'INTEGER DEFAULT 3 CHECK (priorite BETWEEN 1 AND 5)',
+                'equipement_id': 'INTEGER REFERENCES hardware(id)',
+                'new_equipement': 'BOOLEAN DEFAULT FALSE',
+                'categorie_logicielle': 'TEXT CHECK(categorie_logicielle IN ("outlook", "office", "windows", "antivirus", "browser"))',
+                'categorie_materielle': 'TEXT CHECK(categorie_materielle IN ("computer", "printer", "phone", "network", "server"))',
+                'temps_resolution': 'INTEGER DEFAULT 0',
+                'date_derniere_modif': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+            }
+            
+            # Vérifier et ajouter les colonnes manquantes
+            changes_made = False
+            for col_name, col_type in required_columns.items():
+                if col_name not in column_names:
+                    try:
+                        self.execute_query(f"ALTER TABLE tiqué ADD COLUMN {col_name} {col_type}")
+                        self.logger.info(f"Colonne '{col_name}' ajoutée à la table tiqué")
+                        changes_made = True
+                    except Exception as e:
+                        self.logger.warning(f"Impossible d'ajouter la colonne {col_name}: {str(e)}")
+            
+            # Vérifier et créer les index nécessaires
+            index_commands = [
+                "CREATE INDEX IF NOT EXISTS idx_tique_user ON tiqué(ID_user)",
+                "CREATE INDEX IF NOT EXISTS idx_tique_tech ON tiqué(ID_technicien)",
+                "CREATE INDEX IF NOT EXISTS idx_tique_open ON tiqué(open)",
+                "CREATE INDEX IF NOT EXISTS idx_tique_date ON tiqué(date_open)",
+                "CREATE INDEX IF NOT EXISTS idx_tique_equip ON tiqué(equipement_id)"
+            ]
+            
+            for cmd in index_commands:
+                try:
+                    self.execute_query(cmd)
+                except Exception as e:
+                    self.logger.warning(f"Erreur lors de la création de l'index: {str(e)}")
+
+            # Vérifier la table sessions
+            sessions_columns = self.execute_query("PRAGMA table_info(sessions)")
+            if sessions_columns and isinstance(sessions_columns, list):
+                session_column_names = [col[1] for col in sessions_columns]
+                
+                # Vérifier que les colonnes nécessaires existent
+                required_columns = ['user_id', 'token', 'creation_date', 'expiry_date']
+                missing_columns = []
+                
+                for col in required_columns:
+                    if col not in session_column_names:
+                        missing_columns.append(col)
+                
+                # Si des colonnes manquent, recréer la table
+                if missing_columns:
+                    self.logger.info(f"Colonnes manquantes dans sessions: {missing_columns}")
+                    # Sauvegarder les données existantes si possible
+                    try:
+                        existing_sessions = self.execute_query("SELECT * FROM sessions")
+                    except:
+                        existing_sessions = []
                     
-                    # Vérifier que les colonnes nécessaires existent
-                    required_columns = ['user_id', 'token', 'creation_date', 'expiry_date']
-                    missing_columns = []
-                    
-                    for col in required_columns:
-                        if col not in session_column_names:
-                            missing_columns.append(col)
-                    
-                    # Si des colonnes manquent, recréer la table
-                    if missing_columns:
-                        self.logger.info(f"Colonnes manquantes dans sessions: {missing_columns}")
-                        # Sauvegarder les données existantes si possible
-                        try:
-                            existing_sessions = self.execute_query("SELECT * FROM sessions")
-                        except:
-                            existing_sessions = []
-                        
-                        # Supprimer et recréer la table
-                        self.execute_query("DROP TABLE IF EXISTS sessions")
+                    # Supprimer et recréer la table
+                    self.execute_query("DROP TABLE IF EXISTS sessions")
+                    self.execute_query("""
+                        CREATE TABLE sessions (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id TEXT NOT NULL,
+                            token TEXT UNIQUE NOT NULL,
+                            creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            expiry_date TIMESTAMP NOT NULL,
+                            FOREIGN KEY (user_id) REFERENCES USEUR(ID)
+                        )
+                    """)
+                    self.logger.info("Table sessions recréée avec la bonne structure")
+            
+            # Vérifier la table USEUR
+            columns_result = self.execute_query("PRAGMA table_info(USEUR)")
+            if columns_result and isinstance(columns_result, list):
+                column_names = [col[1] for col in columns_result]
+                
+                if 'password' not in column_names:
+                    self.logger.info("Ajout de la colonne password à la table USEUR")
+                    self.execute_query("ALTER TABLE USEUR ADD COLUMN password TEXT")
+                
+                if 'role' not in column_names:
+                    self.logger.info("Ajout de la colonne role à la table USEUR")
+                    self.execute_query("ALTER TABLE USEUR ADD COLUMN role TEXT DEFAULT 'user'")
+            
+            # Vérifier la table tiqué
+            ticket_result = self.execute_query("PRAGMA table_info(tiqué)")
+            if ticket_result and isinstance(ticket_result, list):
+                ticket_column_names = [col[1] for col in ticket_result]
+                
+                # Ajouter ID_technicien si manquant
+                if 'ID_technicien' not in ticket_column_names:
+                    self.logger.info("Ajout de la colonne ID_technicien à la table tiqué")
+                    success = self.execute_query("ALTER TABLE tiqué ADD COLUMN ID_technicien TEXT")
+                    if not success:
+                        self.logger.error("Échec de l'ajout de la colonne ID_technicien")
+                        return False
+                
+                # Ajouter description si manquant (ou renommer descriptio)
+                if 'description' not in ticket_column_names and 'descriptio' in ticket_column_names:
+                    # Renommer descriptio en description
+                    self.logger.info("Renommage de la colonne descriptio en description")
+                    # SQLite ne supporte pas ALTER COLUMN, on doit recréer la table
+                    try:
+                        # Créer une nouvelle table avec la bonne structure
                         self.execute_query("""
-                            CREATE TABLE sessions (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                user_id TEXT NOT NULL,
-                                token TEXT UNIQUE NOT NULL,
-                                creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                expiry_date TIMESTAMP NOT NULL,
-                                FOREIGN KEY (user_id) REFERENCES USEUR(ID)
+                            CREATE TABLE tiqué_new (
+                                ID_tiqué INTEGER PRIMARY KEY AUTOINCREMENT,
+                                ID_user TEXT NOT NULL,
+                                titre TEXT NOT NULL,
+                                date_open TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                date_close TIMESTAMP,
+                                ID_technicien TEXT,
+                                description TEXT,
+                                open INTEGER DEFAULT 1,
+                                tag TEXT,
+                                gravite INTEGER DEFAULT 1,
+                                FOREIGN KEY (ID_user) REFERENCES USEUR(ID),
+                                FOREIGN KEY (ID_technicien) REFERENCES USEUR(ID)
                             )
                         """)
-                        self.logger.info("Table sessions recréée avec la bonne structure")
+                        
+                        # Copier les données
+                        self.execute_query("""
+                            INSERT INTO tiqué_new (ID_tiqué, ID_user, titre, date_open, date_close, 
+                                                 description, open, tag, gravite)
+                            SELECT ID_tiqué, ID_user, titre, date_open, date_close, 
+                                   descriptio, open, tag, gravite 
+                            FROM tiqué
+                        """)
+                        
+                        # Supprimer l'ancienne table et renommer la nouvelle
+                        self.execute_query("DROP TABLE tiqué")
+                        self.execute_query("ALTER TABLE tiqué_new RENAME TO tiqué")
+                        
+                        self.logger.info("Table tiqué restructurée avec succès")
+                    except Exception as e:
+                        self.logger.error(f"Erreur lors de la restructuration de la table tiqué: {str(e)}")
+                        return False
                 
-                # Vérifier la table USEUR
-                columns_result = self.execute_query("PRAGMA table_info(USEUR)")
-                if columns_result and isinstance(columns_result, list):
-                    column_names = [col[1] for col in columns_result]
-                    
-                    if 'password' not in column_names:
-                        self.logger.info("Ajout de la colonne password à la table USEUR")
-                        self.execute_query("ALTER TABLE USEUR ADD COLUMN password TEXT")
-                    
-                    if 'role' not in column_names:
-                        self.logger.info("Ajout de la colonne role à la table USEUR")
-                        self.execute_query("ALTER TABLE USEUR ADD COLUMN role TEXT DEFAULT 'user'")
+                elif 'description' not in ticket_column_names:
+                    # Ajouter la colonne description
+                    self.logger.info("Ajout de la colonne description à la table tiqué")
+                    success = self.execute_query("ALTER TABLE tiqué ADD COLUMN description TEXT")
+                    if not success:
+                        self.logger.error("Échec de l'ajout de la colonne description")
+                        return False
                 
-                # Vérifier la table tiqué
-                ticket_result = self.execute_query("PRAGMA table_info(tiqué)")
-                if ticket_result and isinstance(ticket_result, list):
-                    ticket_column_names = [col[1] for col in ticket_result]
-                    
-                    # Ajouter ID_technicien si manquant
-                    if 'ID_technicien' not in ticket_column_names:
-                        self.logger.info("Ajout de la colonne ID_technicien à la table tiqué")
-                        success = self.execute_query("ALTER TABLE tiqué ADD COLUMN ID_technicien TEXT")
-                        if not success:
-                            self.logger.error("Échec de l'ajout de la colonne ID_technicien")
-                            return False
-                    
-                    # Ajouter description si manquant (ou renommer descriptio)
-                    if 'description' not in ticket_column_names and 'descriptio' in ticket_column_names:
-                        # Renommer descriptio en description
-                        self.logger.info("Renommage de la colonne descriptio en description")
-                        # SQLite ne supporte pas ALTER COLUMN, on doit recréer la table
-                        try:
-                            # Créer une nouvelle table avec la bonne structure
-                            self.execute_query("""
-                                CREATE TABLE tiqué_new (
-                                    ID_tiqué INTEGER PRIMARY KEY AUTOINCREMENT,
-                                    ID_user TEXT NOT NULL,
-                                    titre TEXT NOT NULL,
-                                    date_open TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                    date_close TIMESTAMP,
-                                    ID_technicien TEXT,
-                                    description TEXT,
-                                    open INTEGER DEFAULT 1,
-                                    tag TEXT,
-                                    gravite INTEGER DEFAULT 1,
-                                    FOREIGN KEY (ID_user) REFERENCES USEUR(ID),
-                                    FOREIGN KEY (ID_technicien) REFERENCES USEUR(ID)
-                                )
-                            """)
-                            
-                            # Copier les données
-                            self.execute_query("""
-                                INSERT INTO tiqué_new (ID_tiqué, ID_user, titre, date_open, date_close, 
-                                                     description, open, tag, gravite)
-                                SELECT ID_tiqué, ID_user, titre, date_open, date_close, 
-                                       descriptio, open, tag, gravite 
-                                FROM tiqué
-                            """)
-                            
-                            # Supprimer l'ancienne table et renommer la nouvelle
-                            self.execute_query("DROP TABLE tiqué")
-                            self.execute_query("ALTER TABLE tiqué_new RENAME TO tiqué")
-                            
-                            self.logger.info("Table tiqué restructurée avec succès")
-                        except Exception as e:
-                            self.logger.error(f"Erreur lors de la restructuration de la table tiqué: {str(e)}")
-                            return False
-                    
-                    elif 'description' not in ticket_column_names:
-                        # Ajouter la colonne description
-                        self.logger.info("Ajout de la colonne description à la table tiqué")
-                        success = self.execute_query("ALTER TABLE tiqué ADD COLUMN description TEXT")
-                        if not success:
-                            self.logger.error("Échec de l'ajout de la colonne description")
-                            return False
-                    
-                    if 'date_close' not in ticket_column_names:
-                        self.logger.info("Ajout de la colonne date_close à la table tiqué")
-                        success = self.execute_query("ALTER TABLE tiqué ADD COLUMN date_close TIMESTAMP")
-                        if not success:
-                            self.logger.error("Échec de l'ajout de la colonne date_close")
-                            return False
+                if 'date_close' not in ticket_column_names:
+                    self.logger.info("Ajout de la colonne date_close à la table tiqué")
+                    success = self.execute_query("ALTER TABLE tiqué ADD COLUMN date_close TIMESTAMP")
+                    if not success:
+                        self.logger.error("Échec de l'ajout de la colonne date_close")
+                        return False
             
+            # Vérifier et ajouter les colonnes de catégorie
+            columns_result = self.execute_query("PRAGMA table_info(tiqué)")
+            if columns_result and isinstance(columns_result, list):
+                column_names = [col[1] for col in columns_result]
+                
+                # Nouvelles colonnes à ajouter
+                new_columns = {
+                    'categorie_logicielle': 'TEXT CHECK(categorie_logicielle IN ("outlook", "office", "windows", "antivirus", "browser"))',
+                    'categorie_materielle': 'TEXT CHECK(categorie_materielle IN ("computer", "printer", "phone", "network", "server"))',
+                    'priorite': 'INTEGER DEFAULT 1 CHECK(priorite BETWEEN 1 AND 5)',
+                    'statut': 'TEXT DEFAULT "nouveau" CHECK(statut IN ("nouveau", "en_cours", "resolu", "ferme"))',
+                    'temps_resolution': 'INTEGER DEFAULT 0',
+                    'date_derniere_modif': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+                }
+                
+                for col_name, col_type in new_columns.items():
+                    if col_name not in column_names:
+                        self.logger.info(f"Ajout de la colonne {col_name} à la table tiqué")
+                        try:
+                            self.execute_query(f"ALTER TABLE tiqué ADD COLUMN {col_name} {col_type}")
+                        except Exception as e:
+                            self.logger.warning(f"Impossible d'ajouter la colonne {col_name}: {str(e)}")
+
             self.logger.info("Structure des tables vérifiée et corrigée")
             return True
             
@@ -967,6 +1030,30 @@ def fix_database_structure():
                 except Exception as col_error:
                     app_logger.warning(f"Impossible d'ajouter la colonne {column}: {str(col_error)}")
         
+        # Vérifier et ajouter les colonnes de catégorie
+        columns_result = get_db("PRAGMA table_info(tiqué)")
+        if columns_result and isinstance(columns_result, list):
+            column_names = [col[1] for col in columns_result]
+            
+            # Nouvelles colonnes à ajouter
+            new_columns = {
+                'categorie_logicielle': 'TEXT CHECK(categorie_logicielle IN ("outlook", "office", "windows", "antivirus", "browser"))',
+                'categorie_materielle': 'TEXT CHECK(categorie_materielle IN ("computer", "printer", "phone", "network", "server"))',
+                'priorite': 'INTEGER DEFAULT 1 CHECK(priorite BETWEEN 1 AND 5)',
+                'statut': 'TEXT DEFAULT "nouveau" CHECK(statut IN ("nouveau", "en_cours", "resolu", "ferme"))',
+                'temps_resolution': 'INTEGER DEFAULT 0',
+                'date_derniere_modif': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+            }
+            
+            for col_name, col_type in new_columns.items():
+                if col_name not in column_names:
+                    try:
+                        get_db(f"ALTER TABLE tiqué ADD COLUMN {col_name} {col_type}")
+                        app_logger.info(f"Colonne '{col_name}' ajoutée à la table tiqué")
+                        changes_made = True
+                    except Exception as e:
+                        app_logger.warning(f"Impossible d'ajouter la colonne {col_name}: {str(e)}")
+
         if changes_made:
             app_logger.info("Structure de la base de données corrigée avec succès")
         else:
@@ -979,7 +1066,10 @@ def fix_database_structure():
 def create_missing_tables():
     """Crée les tables manquantes si elles n'existent pas"""
     try:
-        # Table des commentaires de tickets
+        # Supprimer l'ancienne table ticket_comments si elle existe
+        get_db("DROP TABLE IF EXISTS ticket_comments")
+        
+        # Recréer la table ticket_comments avec la bonne structure
         get_db("""
             CREATE TABLE IF NOT EXISTS ticket_comments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -987,10 +1077,14 @@ def create_missing_tables():
                 user_id TEXT NOT NULL,
                 content TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (ticket_id) REFERENCES tiqué(ID_tiqué),
-                FOREIGN KEY (user_id) REFERENCES USEUR(ID)
+                FOREIGN KEY (ticket_id) REFERENCES tiqué(ID_tiqué) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES USEUR(ID) ON DELETE CASCADE
             )
         """)
+        
+        # Créer des index pour optimiser les requêtes
+        get_db("CREATE INDEX IF NOT EXISTS idx_comments_ticket ON ticket_comments(ticket_id)")
+        get_db("CREATE INDEX IF NOT EXISTS idx_comments_user ON ticket_comments(user_id)")
         
         # Table d'inventaire
         get_db("""
