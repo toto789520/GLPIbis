@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, send_file
+import app
 from utils.db_manager import get_db, log_activity
 import os
 from datetime import datetime, timedelta
@@ -23,6 +24,7 @@ def index():
     ticket_activity_data = get_ticket_activity_data()
     ticket_distribution_data = get_ticket_distribution_data()
     
+    app.app_logger.debug(f"activités récupérées: {activities}, stats: {stats},ticket_activity_data: {ticket_activity_data}, ticket_distribution_data: {ticket_distribution_data},")
     return render_template('activity_screening/index.html', 
                           activities=activities, 
                           stats=stats,
