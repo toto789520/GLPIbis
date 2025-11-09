@@ -48,24 +48,109 @@ def create_ticket():
     """Création d'un nouveau ticket"""
     if request.method == 'POST':
         try:
-            # Traitement du formulaire
-            # ... logique de création
-            flash("Ticket créé avec succès", "success")
-            return redirect(url_for('tickets.index'))
+            from flask import session
+            from tickets.ticket_service import create_ticket as service_create_ticket
+            
+            # Vérifier que l'utilisateur est connecté
+            if 'user_id' not in session:
+                flash("Vous devez être connecté pour créer un ticket", "error")
+                return redirect(url_for('login'))
+            
+            # Récupérer les données du formulaire
+            titre = request.form.get('titre')
+            description = request.form.get('description')
+            gravite = request.form.get('gravite', 3)
+            tags = request.form.get('tags', '')
+            
+            # Validation des champs obligatoires
+            if not titre or not description:
+                flash("Le titre et la description sont obligatoires", "error")
+                return render_template('tickets/create.html', now=datetime.now())
+            
+            # Créer le ticket via le service
+            ticket_id = service_create_ticket(
+                user_id=session['user_id'],
+                titre=titre,
+                description=description,
+                gravite=int(gravite),
+                tags=tags
+            )
+            
+            logger.info(f"Ticket {ticket_id} créé avec succès par l'utilisateur {session['user_id']}")
+            flash(f"Ticket #{ticket_id} créé avec succès", "success")
+            return redirect(url_for('tickets.view', ticket_id=ticket_id))
+            
         except Exception as e:
             logger.error(f"Erreur lors de la création du ticket: {e}")
             flash("Erreur lors de la création du ticket", "error")
     
-    return render_template('tickets/create.html', now=datetime.now())
+    # Récupérer la liste des équipements pour le formulaire
+    try:
+        hardware_list = get_db("SELECT id, name, category FROM inventory ORDER BY name")
+    except Exception:
+        hardware_list = []
+    
+    return render_template('tickets/create.html', now=datetime.now(), hardware_list=hardware_list)
 
-@tickets_bp.route('/update/<int:ticket_id>', methods=['POST'])
+@tickets_bp.route('/update/<int:ticket_id>', methods=['GET', 'POST'])
 def update(ticket_id):
     """Mise à jour d'un ticket"""
     try:
-        # Utiliser get_db au lieu de get_db_manager()
-        # ... logique de mise à jour
-        flash("Ticket mis à jour avec succès", "success")
-        return redirect(url_for('tickets.view', ticket_id=ticket_id))
+        from tickets.ticket_service import get_ticket_info
+        from flask import session
+        
+        # Récupérer le ticket
+        ticket = get_ticket_info(ticket_id)
+        if not ticket:
+            flash("Ticket non trouvé", "error")
+            return redirect(url_for('tickets.index'))
+        
+        if request.method == 'POST':
+            # Récupérer les données du formulaire
+            assigned_user_id = request.form.get('assigned_user_id')
+            titre = request.form.get('titre')
+            description = request.form.get('description')
+            gravite = request.form.get('gravite')
+            tags = request.form.get('tags')
+            
+            # Construire la requête de mise à jour
+            if assigned_user_id is not None:
+                get_db("""
+                    UPDATE tiqué 
+                    SET ID_technicien = ?
+                    WHERE ID_tiqué = ?
+                """, (assigned_user_id if assigned_user_id else None, ticket_id))
+                flash("Ticket assigné avec succès", "success")
+            
+            if titre or description or gravite or tags:
+                # Mise à jour des champs du ticket
+                update_fields = []
+                params = []
+                
+                if titre:
+                    update_fields.append("titre = ?")
+                    params.append(titre)
+                if description:
+                    update_fields.append("description = ?")
+                    params.append(description)
+                if gravite:
+                    update_fields.append("gravite = ?")
+                    params.append(int(gravite))
+                if tags is not None:
+                    update_fields.append("tag = ?")
+                    params.append(tags)
+                
+                if update_fields:
+                    params.append(ticket_id)
+                    query = f"UPDATE tiqué SET {', '.join(update_fields)} WHERE ID_tiqué = ?"
+                    get_db(query, tuple(params))
+                    flash("Ticket mis à jour avec succès", "success")
+            
+            return redirect(url_for('tickets.view', ticket_id=ticket_id))
+        
+        # GET: Afficher le formulaire de modification
+        return render_template('tickets/update.html', ticket=ticket, now=datetime.now())
+        
     except Exception as e:
         logger.error(f"Erreur lors de la mise à jour du ticket: {e}")
         flash("Erreur lors de la mise à jour", "error")
