@@ -1,1 +1,0 @@
-# Ce fichier rend le dossier tickets un module Python
