@@ -23,14 +23,25 @@ def create_ticket(user_id, titre, description, gravite=3, tags=""):
         int: ID du ticket créé
     """
     try:
+        date_open = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
         # Insérer le ticket dans la base de données
-        result = get_db("""
+        get_db("""
             INSERT INTO tiqué (ID_user, titre, description, gravite, tag, date_open, open)
             VALUES (?, ?, ?, ?, ?, ?, 1)
-        """, (user_id, titre, description, int(gravite), tags, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        """, (user_id, titre, description, int(gravite), tags, date_open))
         
-        # Récupérer l'ID du ticket créé
-        ticket_id = get_db("SELECT last_insert_rowid()")[0][0]
+        # Récupérer l'ID du ticket créé en utilisant le titre et la date pour l'identifier
+        result = get_db("""
+            SELECT ID_tiqué FROM tiqué 
+            WHERE ID_user = ? AND titre = ? AND date_open = ?
+            ORDER BY ID_tiqué DESC LIMIT 1
+        """, (user_id, titre, date_open))
+        
+        if result and len(result) > 0:
+            ticket_id = result[0][0]
+        else:
+            raise Exception("Impossible de récupérer l'ID du ticket créé")
         
         # Log de l'activité
         try:
@@ -74,11 +85,12 @@ def get_ticket_info(ticket_id):
                 'open': ticket_data[7],
                 'tag': ticket_data[8],
                 'gravite': ticket_data[9],
+                'demandeur': ticket_data[11],
+                'assigne_a': ticket_data[12]
             }
         else:
-            ticket = None
             logger.warning(f"Ticket non trouvé pour ID: {ticket_id}")
-        return None
+            return None
     except Exception as e:
         logger.error(f"Erreur lors de la récupération du ticket: {str(e)}")
         raise
