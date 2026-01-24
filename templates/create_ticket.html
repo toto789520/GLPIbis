@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un Ticket{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Créer un nouveau ticket</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('create_ticket') }}">
+                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="mb-3">
+                        <label for="name_ticket" class="form-label">Titre du ticket <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name_ticket" name="name_ticket" placeholder="Décrivez brièvement votre problème" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="def_ticket" class="form-label">Description détaillée</label>
+                        <textarea class="form-control" id="def_ticket" name="def_ticket" rows="6" placeholder="Fournissez plus de détails sur votre problème..."></textarea>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Créer le ticket</button>
+                        <a href="{{ url_for('tickets') }}" class="btn btn-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

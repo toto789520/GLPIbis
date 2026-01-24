@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier le ticket #{{ ticket.id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1>Modifier le ticket #{{ ticket.id }}</h1>
+
+        <div class="card mt-4">
+            <div class="card-body">
+                <form action="{{ url_for('edit_ticket', id_tickets=ticket.id) }}" method="post">
+                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="mb-3">
+                        <label for="name_ticket" class="form-label">Nom du ticket</label>
+                        <input type="text" class="form-control" id="name_ticket" name="name_ticket" value="{{ ticket.name_ticket }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="def_ticket" class="form-label">Description</label>
+                        <textarea class="form-control" id="def_ticket" name="def_ticket" rows="6">{{ ticket.def_ticket or '' }}</textarea>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('view_ticket', id_tickets=ticket.id) }}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

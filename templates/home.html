@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil{% endblock %}
+
+{% block content %}
+<div class="jumbotron mt-5">
+    <h1>Bienvenue sur MonApp</h1>
+    {% if current_user.is_authenticated %}
+        <p class="lead">Bonjour {{ current_user.name }} !</p>
+        <a href="{{ url_for('profile') }}" class="btn btn-primary">Voir mon profil</a>
+    {% else %}
+        <p class="lead">Connectez-vous pour accéder à votre profil</p>
+        <a href="{{ url_for('login') }}" class="btn btn-primary me-2">Connexion</a>
+        <a href="{{ url_for('register') }}" class="btn btn-success">Inscription</a>
+    {% endif %}
+</div>
+{% endblock %}

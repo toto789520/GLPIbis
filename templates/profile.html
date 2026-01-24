@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Mon Profil{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>Mon Profil</h3>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th>ID:</th>
+                        <td>{{ user.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Nom:</th>
+                        <td>{{ user.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Groupe:</th>
+                        <td>{{ user.id_group }}</td>
+                    </tr>
+                    <tr>
+                        <th>Dernière connexion:</th>
+                        <td>{{ user.last_login if user.last_login else 'Jamais' }}</td>
+                    </tr>
+                </table>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger">Se déconnecter</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
