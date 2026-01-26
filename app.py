@@ -16,8 +16,17 @@ load_dotenv()
 
 app = Flask(__name__)
 csrf = CSRFProtect(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('db_url')
+
+# Configuration de la base de données
+db_url = os.getenv('db_url') or os.getenv('DATABASE_URL')
+if not db_url:
+    raise RuntimeError(
+        "DATABASE_URL or db_url environment variable is not set. "
+        "Please configure your database connection string."
+    )
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 secret_key = os.getenv('SECRET_KEY')
 if not secret_key:
     raise RuntimeError("SECRET_KEY environment variable is not set. Please configure a strong, random secret key.")
