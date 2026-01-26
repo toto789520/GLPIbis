@@ -21,6 +21,18 @@
                         <textarea class="form-control" id="def_ticket" name="def_ticket" rows="6">{{ ticket.def_ticket or '' }}</textarea>
                     </div>
 
+                    <div class="mb-3">
+                        <label for="id_hardware" class="form-label">Matériel</label>
+                        <select name="id_hardware" class="form-control">
+                            <option value="">-- Sélectionner un matériel --</option>
+                            {% for hardware in hardware_list %}
+                                <option value="{{ hardware.id }}" {% if ticket and ticket.id_hardware == hardware.id %}selected{% endif %}>
+                                    {{ hardware.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <a href="{{ url_for('view_ticket', id_tickets=ticket.id) }}" class="btn btn-secondary">Annuler</a>
                         <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>

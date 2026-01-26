@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Facture #{{ bill.id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ bill.name }}</h1>
+    <div>
+        {% if has_permission(4) %}
+        <a href="{{ url_for('edit_bill', bill_id=bill.id) }}" class="btn btn-warning">Modifier</a>
+        <form method="POST" action="{{ url_for('delete_bill', bill_id=bill.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette facture ?')">Supprimer</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <p><strong>ID :</strong> {{ bill.id }}</p>
+        <p><strong>Nom :</strong> {{ bill.name }}</p>
+        <p><strong>Marque :</strong> 
+            {% if bill.id_brand %}
+                <a href="{{ url_for('view_brand', brand_id=bill.id_brand) }}">Marque #{{ bill.id_brand }}</a>
+            {% else %}
+                N/A
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h3>Fichiers associés</h3>
+    </div>
+    <div class="card-body">
+        {% if bill.files %}
+        <div class="list-group">
+            {% for file in bill.files %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-file-earmark"></i>
+                    <strong>{{ file.original_filename }}</strong>
+                    <br>
+                    <small class="text-muted">
+                        Uploadé le {{ file.uploaded_at.strftime('%d/%m/%Y à %H:%M') }} - 
+                        {{ "%.2f"|format(file.file_size / 1024) }} Ko
+                    </small>
+                </div>
+                <div>
+                    <a href="{{ url_for('download_bill_file', file_id=file.id) }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-download"></i> Télécharger
+                    </a>
+                    {% if has_permission(4) %}
+                    <form method="POST" action="{{ url_for('delete_bill_file', file_id=file.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Supprimer ce fichier ?')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">Aucun fichier associé.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mt-4">
+    <h3>Matériels associés</h3>
+    {% if bill.hardwares %}
+    <ul class="list-group">
+        {% for hardware in bill.hardwares %}
+        <li class="list-group-item">
+            <a href="{{ url_for('view_hardware', hardware_id=hardware.id) }}">{{ hardware.name }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Aucun matériel associé.</p>
+    {% endif %}
+</div>
+
+<a href="{{ url_for('bills') }}" class="btn btn-secondary mt-3">Retour à la liste</a>
+{% endblock %}

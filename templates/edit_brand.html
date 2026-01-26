@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Modifier la Marque{% endblock %}
+
+{% block content %}
+<h1>Modifier la Marque : {{ brand.name }}</h1>
+
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    
+    <div class="mb-3">
+        <label for="name" class="form-label">Nom de la marque *</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ brand.name }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="tel" class="form-label">Téléphone</label>
+        <input type="number" class="form-control" id="tel" name="tel" value="{{ brand.tel if brand.tel else '' }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="nb_customer" class="form-label">Nombre de clients</label>
+        <input type="number" class="form-control" id="nb_customer" name="nb_customer" value="{{ brand.nb_customer if brand.nb_customer else '' }}">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a href="{{ url_for('view_brand', brand_id=brand.id) }}" class="btn btn-secondary">Annuler</a>
+</form>
+{% endblock %}

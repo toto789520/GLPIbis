@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Modifier la Facture{% endblock %}
+
+{% block content %}
+<h1>Modifier la Facture : {{ bill.name }}</h1>
+
+<form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    
+    <div class="mb-3">
+        <label for="name" class="form-label">Nom de la facture *</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ bill.name }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="id_brand" class="form-label">Marque</label>
+        <select class="form-select" id="id_brand" name="id_brand">
+            <option value="">-- Aucune marque --</option>
+            {% for brand in brands %}
+                <option value="{{ brand.id }}" {% if bill.id_brand == brand.id %}selected{% endif %}>{{ brand.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Fichiers actuels</label>
+        {% if bill.files %}
+        <ul class="list-group mb-2">
+            {% for file in bill.files %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ file.original_filename }}
+                <span class="text-muted small">{{ "%.2f"|format(file.file_size / 1024) }} Ko</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted">Aucun fichier</p>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="files" class="form-label">Ajouter des fichiers ({{ allowed_extensions|join(', ') }})</label>
+        <input type="file" class="form-control" id="files" name="files" multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
+        <small class="form-text text-muted">Vous pouvez ajouter plusieurs fichiers (max 16 Mo par fichier)</small>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a href="{{ url_for('view_bill', bill_id=bill.id) }}" class="btn btn-secondary">Annuler</a>
+</form>
+{% endblock %}

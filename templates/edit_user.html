@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Modifier l'Utilisateur{% endblock %}
+
+{% block content %}
+<h1>Modifier l'Utilisateur : {{ user.name }}</h1>
+
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    
+    <div class="mb-3">
+        <label for="name" class="form-label">Nom *</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="email" class="form-label">Email *</label>
+        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="id_group" class="form-label">Groupe</label>
+        <select class="form-select" id="id_group" name="id_group">
+            <option value="">-- Aucun groupe --</option>
+            {% for group in groups %}
+                <option value="{{ group.id }}" {% if user.id_group == group.id %}selected{% endif %}>
+                    {{ group.name }} (Permission : {{ group.permission_level }})
+                </option>
+            {% endfor %}
+        </select>
+        <small class="form-text text-muted">Assignez un groupe pour définir les permissions de cet utilisateur.</small>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a href="{{ url_for('view_user', user_id=user.id) }}" class="btn btn-secondary">Annuler</a>
+</form>
+{% endblock %}

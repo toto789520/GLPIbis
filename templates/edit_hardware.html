@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Éditer un Matériel{% endblock %}
+{% block content %}
+<h2>Éditer un Matériel</h2>
+<form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div class="mb-3">
+        <label for="name" class="form-label">Nom</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ hardware.name }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="def_" class="form-label">Définition</label>
+        <textarea class="form-control" id="def_" name="def_">{{ hardware.def_ }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label for="id_brand" class="form-label">Marque</label>
+        <select class="form-select" id="id_brand" name="id_brand">
+            <option value="">-- Aucune --</option>
+            {% for brand in brands %}
+                <option value="{{ brand.id }}" {% if hardware.id_brand == brand.id %}selected{% endif %}>{{ brand.name }}</option>
+            {% endfor %}
+        </select>
+        <a href="{{ url_for('create_brand') }}">Ajouter une nouvelle marque</a>
+    </div>
+    <div class="mb-3">
+        <label for="id_bill" class="form-label">Facture</label>
+        <select class="form-select" id="id_bill" name="id_bill">
+            <option value="">-- Aucune --</option>
+            {% for bill in bills %}
+                <option value="{{ bill.id }}" {% if hardware.id_bill == bill.id %}selected{% endif %}>{{ bill.name }}</option>
+            {% endfor %}
+        </select>
+        <a href="{{ url_for('create_bill') }}">Ajouter une nouvelle facture</a>
+    </div>
+    <button type="submit" class="btn btn-primary">Mettre à jour</button>
+    <a href="{{ url_for('hardware') }}" class="btn btn-secondary">Annuler</a>
+</form>
+{% endblock %}

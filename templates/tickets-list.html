@@ -8,7 +8,9 @@
         <h1>Liste des Tickets</h1>
     </div>
     <div class="col-md-4 text-end">
+        {% if has_permission(2) %}
         <a href="{{ url_for('create_ticket') }}" class="btn btn-success">+ Créer un ticket</a>
+        {% endif %}
     </div>
 </div>
 

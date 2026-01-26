@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Créer une Facture{% endblock %}
+
+{% block content %}
+<h1>Créer une Facture</h1>
+
+<form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    
+    <div class="mb-3">
+        <label for="name" class="form-label">Nom de la facture *</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="id_brand" class="form-label">Marque</label>
+        <select class="form-select" id="id_brand" name="id_brand">
+            <option value="">-- Aucune marque --</option>
+            {% for brand in brands %}
+                <option value="{{ brand.id }}">{{ brand.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="files" class="form-label">Fichiers ({{ allowed_extensions|join(', ') }})</label>
+        <input type="file" class="form-control" id="files" name="files" multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
+        <small class="form-text text-muted">Vous pouvez sélectionner plusieurs fichiers (max 16 Mo par fichier)</small>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Créer</button>
+    <a href="{{ url_for('bills') }}" class="btn btn-secondary">Annuler</a>
+</form>
+{% endblock %}

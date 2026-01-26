@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Utilisateur #{{ user.id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ user.name }}</h1>
+    <div>
+        <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-warning">Modifier</a>
+        {% if user.id != current_user.id %}
+        <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">Supprimer</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <p><strong>ID :</strong> {{ user.id }}</p>
+        <p><strong>Nom :</strong> {{ user.name }}</p>
+        <p><strong>Email :</strong> {{ user.email }}</p>
+        <p><strong>Groupe :</strong> 
+            {% if user.group %}
+                <a href="{{ url_for('view_group', group_id=user.group.id) }}">{{ user.group.name }}</a> 
+                (Niveau de permission : {{ user.group.permission_level }})
+            {% else %}
+                <span class="badge bg-warning">Aucun groupe assigné</span>
+            {% endif %}
+        </p>
+        <p><strong>Dernière connexion :</strong> {{ user.last_login.strftime('%d/%m/%Y à %H:%M') if user.last_login else 'Jamais' }}</p>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h3>Tickets créés par cet utilisateur</h3>
+    {% if user.tickets %}
+    <ul class="list-group">
+        {% for ticket in user.tickets %}
+        <li class="list-group-item">
+            <a href="{{ url_for('view_ticket', id_tickets=ticket.id) }}">{{ ticket.name_ticket }}</a> 
+            - Créé le {{ ticket.created_at.strftime('%d/%m/%Y') if ticket.created_at else 'N/A' }}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Aucun ticket créé.</p>
+    {% endif %}
+</div>
+
+<a href="{{ url_for('users') }}" class="btn btn-secondary mt-3">Retour à la liste</a>
+{% endblock %}

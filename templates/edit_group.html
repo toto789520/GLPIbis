@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Modifier le Groupe{% endblock %}
+
+{% block content %}
+<h1>Modifier le Groupe : {{ group.name }}</h1>
+
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    
+    <div class="mb-3">
+        <label for="name" class="form-label">Nom du groupe *</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ group.name }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="permission_level" class="form-label">Niveau de permission *</label>
+        <input type="number" class="form-control" id="permission_level" name="permission_level" value="{{ group.permission_level }}" required>
+        <small class="form-text text-muted">
+            0 = Banni | 1 = Lecture seule | 2 = Tickets | 4 = Hardware/Bill/Brand | 8 = Admin
+            <br>Les permissions s'additionnent (ex: 1 + 4 = 5)
+        </small>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Permissions prédéfinies :</label>
+        <div class="btn-group d-block" role="group">
+            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('permission_level').value = 0">Banni (0)</button>
+            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('permission_level').value = 1">Lecture seule (1)</button>
+            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('permission_level').value = 3">Tickets (3)</button>
+            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('permission_level').value = 5">Hardware (5)</button>
+            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('permission_level').value = 7">Tout sauf Admin (7)</button>
+            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('permission_level').value = 15">Admin complet (15)</button>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a href="{{ url_for('view_group', group_id=group.id) }}" class="btn btn-secondary">Annuler</a>
+</form>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Liste des Utilisateurs{% endblock %}
+
+{% block content %}
+<h1>Liste des Utilisateurs</h1>
+
+{% if users %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Groupe</th>
+                <th>Dernière connexion</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td><a href="{{ url_for('view_user', user_id=user.id) }}">{{ user.name }}</a></td>
+                <td>{{ user.email }}</td>
+                <td>
+                    {% if user.group %}
+                        <a href="{{ url_for('view_group', group_id=user.group.id) }}">{{ user.group.name }}</a>
+                    {% else %}
+                        <span class="badge bg-warning">Aucun groupe</span>
+                    {% endif %}
+                </td>
+                <td>{{ user.last_login.strftime('%d/%m/%Y %H:%M') if user.last_login else 'Jamais' }}</td>
+                <td>
+                    <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-warning">Modifier</a>
+                    {% if user.id != current_user.id %}
+                    <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">Supprimer</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p>Aucun utilisateur trouvé.</p>
+{% endif %}
+{% endblock %}

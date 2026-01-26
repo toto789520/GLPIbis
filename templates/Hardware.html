@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Matériel{% endblock %}
+{% block content %}
+{% if hardware %}
+    <h2>Détail du Matériel</h2>
+    <ul class="list-group mb-3">
+        <li class="list-group-item"><strong>ID :</strong> {{ hardware.id }}</li>
+        <li class="list-group-item"><strong>Nom :</strong> {{ hardware.name }}</li>
+        <li class="list-group-item"><strong>Définition :</strong> {{ hardware.def_ }}</li>
+        <li class="list-group-item"><strong>Marque :</strong> {{ hardware.brand.name if hardware.brand else '' }}</li>
+        <li class="list-group-item"><strong>Facture :</strong> {{ hardware.bill.name if hardware.bill else '' }}</li>
+    </ul>
+    <a href="{{ url_for('edit_hardware', hardware_id=hardware.id) }}" class="btn btn-warning">Éditer</a>
+    <form action="{{ url_for('delete_hardware', hardware_id=hardware.id) }}" method="post" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="submit" class="btn btn-danger" onclick="return confirm('Supprimer ce matériel ?')">Supprimer</button>
+    </form>
+    <a href="{{ url_for('hardware') }}" class="btn btn-secondary">Retour à la liste</a>
+{% else %}
+    <h2>{% if edit %}Éditer{% else %}Créer{% endif %} un Matériel</h2>
+    <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="mb-3">
+            <label for="name" class="form-label">Nom</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ hardware.name if hardware else '' }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="def_" class="form-label">Définition</label>
+            <textarea class="form-control" id="def_" name="def_">{{ hardware.def_ if hardware else '' }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="id_brand" class="form-label">Marque</label>
+            <select class="form-select" id="id_brand" name="id_brand">
+                <option value="">-- Aucune --</option>
+                {% for brand in brands %}
+                    <option value="{{ brand.id }}" {% if hardware and hardware.id_brand == brand.id %}selected{% endif %}>{{ brand.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="id_bill" class="form-label">Facture</label>
+            <select class="form-select" id="id_bill" name="id_bill">
+                <option value="">-- Aucune --</option>
+                {% for bill in bills %}
+                    <option value="{{ bill.id }}" {% if hardware and hardware.id_bill == bill.id %}selected{% endif %}>{{ bill.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">{% if edit %}Mettre à jour{% else %}Créer{% endif %}</button>
+        <a href="{{ url_for('hardware') }}" class="btn btn-secondary">Annuler</a>
+    </form>
+{% endif %}
+{% endblock %}
